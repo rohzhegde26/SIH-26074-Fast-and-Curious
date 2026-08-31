@@ -28,8 +28,9 @@ ready for the backend to call.
   enforces mass conservation and physical bounds (SIC ∈ [0,1]) per the
   canonical spec's loss formulation — implement this as an actual loss term
   computed from the ice-motion/divergence fields, not a placeholder comment.
-- Train/val/test split per canonical spec: Train 2018–2023, Test 2024–2025
-  strict holdout.
+- Load train/val/test windows from Sprint 1's `ingestion/splits_manifest.json`
+  — do not redefine the split here. If the manifest is missing or looks
+  wrong, fix it in Sprint 1's file, don't patch around it in training code.
 - Log every run to Weights & Biases (or a local equivalent if W&B isn't
   available) — you need these curves for the "how did you validate this"
   judge question.
@@ -50,13 +51,12 @@ ready for the backend to call.
   Error — for both your model and the baseline.
 - Run the three OOD checks from the canonical spec's dataset table:
   - Time holdout (already the test set by construction)
-  - Sensor holdout: feed inputs conditioned on one SIC product, score against
-    a different SIC product's ground truth for the same day, to test cross-
-    sensor generalization of the forecast itself
-  - Space holdout: train/validate on one sub-region of the corridor, test on
-    a distinct sub-region — pick two sectors that are actually geographically
-    distinct within your corridor (don't reuse a "0-60W Atlantic" label that
-    has nothing to do with this corridor)
+  - Sensor holdout and space holdout: use the exact pairs defined in
+    `ingestion/splits_manifest.json` (Sprint 1) — do not invent a different
+    split here. If you're tempted to test on regions like "Atlantic vs Ross
+    Sea," stop — those fall outside this project's corridor entirely and
+    were never ingested; the manifest's western/eastern sub-corridor split is
+    the correct one.
 - Save a results table (`docs/sea_ice_results.md`) and at least one example
   forecast-vs-actual visualization figure for the pitch deck.
 

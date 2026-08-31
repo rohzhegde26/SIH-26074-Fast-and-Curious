@@ -54,7 +54,26 @@ completeness first, polish second.
 |---|---|---|
 | **Pretrain** | Widest available per-provider (self-supervised, no labels) | Learn Antarctic physics via masked reconstruction |
 | **Train** | 2018–2023 | Supervised heads (SIC forecast, drift, weak-label detection) |
-| **Test** | 2024–2025 (strict, unseen) | Time holdout. Also run sensor holdout (train-time SIC source vs a different SIC product at test time) and space holdout (train on one sector, test on a distinct sector — **do not** reuse the "Atlantic sector 0-60W" label for anything near Bharati; Bharati is ~76°E, in the Indian Ocean sector, not the Atlantic/Weddell sector at 0-60W) |
+| **Test** | 2024–2025 (strict, unseen) | Time holdout. Also run sensor holdout and space holdout — see exact definitions below |
+
+### OOD split definitions (concrete, not aspirational)
+- **Sensor holdout:** condition the trained forecast head on OSI SAF-sourced
+  SIC inputs, score its output against NSIDC CDR (or Bremen, whichever you
+  did NOT train the target on) ground truth for the same days. Tests whether
+  the model overfit to one sensor's quirks rather than the underlying ice
+  edge.
+- **Space holdout:** split the corridor itself in two —
+  **train/validate on the western sub-corridor (30°E–60°E, Cape Town
+  approach), test on the eastern sub-corridor (60°E–90°E, Bharati approach)**.
+  Do **not** use "Atlantic sector (0–60°W) vs Ross Sea (~160°E–160°W)" as a
+  holdout pair — that was an error carried over from an earlier draft.
+  Neither sector falls inside this project's 30°E–90°E corridor at all, so a
+  model "tested" on Ross Sea data was never actually evaluated against
+  anything you ingested. Use the two sub-corridors above instead.
+- **Time holdout:** the 2024–2025 test window, by construction.
+- These three definitions must live in **one versioned manifest file**
+  (`ingestion/splits_manifest.json`, produced in Sprint 1 — see that sprint's
+  tasks), not be redecided ad hoc when Sprint 2 gets to evaluation.
 
 ## Feature cube (MVP = 10 channels)
 1. SIC (14-day history)
@@ -83,6 +102,28 @@ internal-round requirement. Don't let scope creep here eat sprint time.
   detector, or a documented open substitute if that access falls through) +
   USNIC/BYU points as weak labels. From-scratch YOLO fine-tuning on
   hand-labeled tiles is explicitly a **Finals-phase** task, not internal-round.
+
+## Explicitly descoped for the internal round (documented, not silently dropped)
+These were part of earlier drafts' full scope. Cutting them for the internal
+round is a deliberate choice to ship a working three-module system rather
+than a partially-working four-or-five-module one — but the choice must stay
+visible in the roadmap slide, not disappear quietly:
+- **RL/simulator-based routing** (Goldilocks' 4th dataset: state/action/
+  reward environment for route learning). Replaced for the internal round by
+  the deterministic A* router in Sprint 4, which directly satisfies the PS's
+  "identify safe routes" requirement with far less implementation risk than
+  standing up a converging RL loop in the same window as two other ML
+  models. Full RL-based routing is a named Finals-phase item.
+- **Full NSGA-II multi-objective routing** (Sprint 4 uses a weighted-sum
+  approximation instead).
+- **From-scratch YOLO fine-tuning on hand-labeled SAR tiles** (Sprint 3 uses
+  a pretrained detector instead).
+- **Full IDRIFTNET (Rotate Block + Gabor-Spectral network)** (Sprint 3 builds
+  the physics + 2-layer LSTM "lite" version instead).
+- **Circumpolar coverage** (MVP is the Cape Town–Bharati corridor only).
+- **WAV/GFS/INCOIS/HYCOM as extra-variance channels** (10-channel MVP cube
+  only; add via `ingestion/sources/wav.py`, `gfs.py`, `incois_hycom.py`
+  later, following the same pattern as the existing source scripts).
 
 ## Datasets (fully free, no manual labeling required)
 **Use fully:** OSI SAF 401-d/408-a (via CMEMS), Bremen AMSR2 6.25 km,

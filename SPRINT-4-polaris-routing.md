@@ -60,6 +60,11 @@ def compute_rio(ice_type_fractions: dict, vessel_ice_class: str) -> float:
 - Implement plain A* first and get it working correctly — only invest in the
   literature's HFS-A* heuristic refinement if time remains after the basic
   version is demo-ready. A working plain A* beats a broken "advanced" one.
+- This A* router is the internal-round replacement for the Goldilocks plan's
+  RL/simulator-based routing (state/action/reward environment) — see the
+  canonical spec's "Explicitly descoped" section. Mention this trade-off
+  explicitly in the pitch roadmap slide as a deliberate scope choice, not an
+  oversight.
 - Multi-objective: implement a simple weighted-sum sweep across
   (fuel-weight, risk-weight, time-weight) to approximate a Pareto front for
   the demo slider. Full NSGA-II is a documented Finals-phase item, not

@@ -68,6 +68,26 @@ a date range you already have shouldn't duplicate or corrupt data).
   neighbor distance — flag matches vs. new detections. This table feeds
   Sprint 3's detection/tracking pipeline directly; don't re-derive it there.
 
+### Dataset split manifest (`ingestion/splits.py`)
+- Generate `ingestion/splits_manifest.json`, the single versioned source of
+  truth for every train/val/test partition Sprint 2 will use — do this here,
+  not ad hoc during model evaluation:
+  - `pretrain_window`: widest available range per provider
+  - `train_window`: 2018-01-01 to 2023-12-31
+  - `test_window`: 2024-01-01 to 2025-12-31 (strict, unseen)
+  - `sensor_holdout`: `{"train_source": "OSI_SAF", "test_source": "NSIDC_CDR"}`
+    (or Bremen — whichever you did NOT use as the training target)
+  - `space_holdout`: `{"train_region": [30, 60, -70, -50], "test_region":
+    [60, 90, -70, -50]}` (lon_min, lon_max, lat_min, lat_max — western vs
+    eastern sub-corridor, both inside the actual AOI; see canonical spec)
+- Write a leakage test (`ingestion/tests/test_splits.py`) that programmatically
+  asserts: no date appears in both `train_window` and `test_window`, and no
+  grid cell assigned to `space_holdout.test_region` overlaps
+  `space_holdout.train_region`. This is cheap to write and catches the most
+  common way an OOD claim quietly becomes false — an accidental overlap
+  nobody noticed until a judge asks how it was validated.
+- Sprint 2 must load partitions from this manifest, not redefine them.
+
 ### Validation notebook (`ingestion/validate.ipynb`)
 - Plot the corridor extent on a map, confirm Maitri/Bharati fall where
   expected.
@@ -87,6 +107,9 @@ a date range you already have shouldn't duplicate or corrupt data).
 - [ ] `reproject_to_3412` passes the Bharati/Maitri sanity-check unit tests
 - [ ] Actual grid dimensions computed and recorded in the canonical spec
 - [ ] Zarr cube exists, loads via `xarray.open_zarr`, has all 10 channels
+- [ ] `splits_manifest.json` exists with pretrain/train/test windows plus
+      sensor-holdout and space-holdout definitions, and the leakage test in
+      `ingestion/tests/test_splits.py` passes
 - [ ] PostGIS has iceberg tracks (BYU/NIC) and weak-label detections
       (Sentinel-1 via pretrained detector)
 - [ ] Validation notebook committed with the coverage and corridor-extent
