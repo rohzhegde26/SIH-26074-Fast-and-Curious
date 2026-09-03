@@ -71,6 +71,7 @@ Convert raw 5× model gridded outputs into calibrated, uncertainty-bounded, panc
 ### A. Quantile Mapping Service (`src/eval/calibration.py`)
 - [ ] Implement `fit_quantile_mapper(imd_lr_history, chirps_hr_coarsened_history)` per $0.25^\circ$ cell using isotonic regression.
 - [ ] Apply mapping to raw 5× model predictions to enforce IMD gauge climatology while preserving intra-cell HR spatial structure.
+- [ ] Document in module that QM aligns the climatological cumulative distribution function (CDF) to IMD gauge totals, absorbing bulk offsets, but does not claim to alter daily convective storm timing (15:00–19:00 IST).
 - [ ] Generate and commit `docs/calibration_curve.png` (QQ plot showing pre- and post-calibration distributions).
 
 ### B. CQR Pipeline (`src/eval/cqr.py`)
@@ -81,15 +82,20 @@ Convert raw 5× model gridded outputs into calibrated, uncertainty-bounded, panc
 - [ ] Generate and commit `docs/cqr_coverage.png` (coverage reliability diagram and interval width distributions).
 
 ### C. Zonal Polygon Aggregation (`src/data/zonal_aggregation.py`)
-- [ ] Pre-compute intersection weights $w_i = f_i \cdot A_i$ for all 258 Mandya panchayats.
-- [ ] Run validation gate 1: verify polygon area completeness within $10^{-3}$ relative error.
+- [ ] Pre-compute intersection weights $w_i = f_i \cdot A_i$ for all 258 Mandya panchayats loading strictly from `data/processed/mandya_full.geojson` (never the simplified display TopoJSON).
+- [ ] Run validation gate 1: verify polygon area completeness within $10^{-3}$ relative error against `pyproj.Geod`.
 - [ ] Run validation gate 2: verify interior HR cell partition $\sum_P f_i \approx 1.0$.
 - [ ] Execute daily panchayat aggregations for Mandya across test year 2023.
 - [ ] Log difference statistic $|\text{mean\_HR}(P) - \text{mean\_LR}(P_{\text{cell}})|$.
 
 ### D. Comprehensive Metric Suite (`src/eval/metrics.py`)
 - [ ] Compute standard headline metrics on QM-calibrated output: MAE, RMSE, Pearson $r$, PBIAS.
-- [ ] Compute extreme-event metrics: Critical Success Index (CSI) for R95 ($>95\text{th}$ percentile) and R99 ($>99\text{th}$ percentile) heavy rainfall events.
+- [ ] **Dry-Day Separation & Categorical Skill:**
+  - Compute **Wet-Day MAE** strictly conditioned on $\text{Rain} > 2.5\text{ mm}$ (eliminates artificial dry-day inflation).
+  - Compute Critical Success Index (CSI), Probability of Detection (POD), and False Alarm Ratio (FAR) across standard IMD rainfall categories:
+    * Light rain: $2.5\text{--}15.5\text{ mm}$
+    * Moderate rain: $15.5\text{--}64.4\text{ mm}$
+    * Heavy / Extreme: $>64.5\text{ mm}$ (R95 / R99 percentiles)
 - [ ] Compute hill-vs-plains stratified error breakdown. Save artifact: `docs/hill_vs_plains.png`.
 - [ ] Perform manual spot-check audit across 3 diverse Mandya panchayats (e.g., hill boundary vs. canal irrigated plains).
 

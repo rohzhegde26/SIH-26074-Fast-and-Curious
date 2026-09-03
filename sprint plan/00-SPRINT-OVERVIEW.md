@@ -59,6 +59,7 @@
 | 2. SPATIAL PRE-PROCESSING & REGISTRATION ASSERT                                    |
 | - Grid Registration: Check IMD 6.5+0.25k vs CHIRPS +0.025° offset (catches 2.7km)  |
 | - Spatial Holdout: Mandya + 0.5° buffer strictly excluded from patch index         |
+| - Dual-Export Rule: mandya_full.geojson (math/audits) vs mandya_simplified.topojson|
 | - Patch Extraction: All-India 80x80 HR / 16x16 LR (stride 40, land fraction >=70%) |
 |   Yield: ~200k-240k usable patches stored in Zarr/LMDB (8.5 GB compressed)         |
 +-----------------------------------------+------------------------------------------+
@@ -77,7 +78,7 @@
 | 4. POST-PROCESSING, CALIBRATION & UNCERTAINTY                                      |
 | - Per-0.25°-Cell Quantile Mapping to IMD gauge gold (preserves intra-cell texture) |
 | - Conformalized Quantile Regression (CQR): 90% empirical coverage on test 2023     |
-| - Clean Zonal Polygon Aggregation: w_i = f_i * A_i (analytic spherical cell area)  |
+| - Clean Zonal Polygon Aggregation: w_i = f_i * A_i (using full-precision geodata)  |
 | - Bookkeeping Gates: Polygon area closed to 1e-3; interior cell partition sum ~ 1   |
 | - Mandatory Hill-vs-Plains Error Stratification & Extreme Event CSI (R95, R99)     |
 +-----------------------------------------+------------------------------------------+
@@ -85,8 +86,9 @@
                                           v
 +------------------------------------------------------------------------------------+
 | 5. DELIVERY & ADVISORY SYSTEM                                                      |
+| - Thin Orchestrator: scripts/run_pipeline.py (<=2hr timebox, single-command demo)   |
 | - FastAPI backend: /api/forecast/{lgd_code} & /api/egramswaraj/mock (labeled mock) |
-| - Mobile PWA: Offline viewing of cached forecasts with Airplane-Mode alert banner  |
+| - Mobile PWA: Offline viewing with Airplane-Mode alert (<400KB TopoJSON display)   |
 | - Bilingual Agro-Advisory: Stage-specific advice in Kannada & English (Ragi+Paddy) |
 | - "Honest Ceiling": Panchayat-scale (~5.5km = 1 GP), never overclaimed sub-GP      |
 +------------------------------------------------------------------------------------+
@@ -164,9 +166,12 @@
 - [ ] `test_quantile_mapping` passes: mapping executed per $0.25^\circ$ LR cell, preserving intra-cell spatial variance.
 - [ ] Downscale factor arithmetic verified: direct $5\times$ ($0.25^\circ \to 0.05^\circ$, kernel 5) used everywhere; grep for `3 blocks × 2x = 4x` returns 0.
 - [ ] Panchayat-level output verified across 3 Mandya panchayats with polygon area closure error $\le 10^{-3}$ and interior cell partition $\approx 1.0$.
+- [ ] Dual-export verified: `mandya_full.geojson` used strictly for backend aggregation and geodetic area closure, `mandya_simplified.topojson` used strictly for mobile PWA display ($<400\text{ KB}$).
+- [ ] Single-command demo orchestrator `scripts/run_pipeline.py` ($\le 2$-hour timebox) executes end-to-end in $< 5\text{ seconds}$ on a single date.
 - [ ] Calibration curve artifact generated: `docs/calibration_curve.png`.
 - [ ] CQR coverage report generated: `docs/cqr_coverage.png` ($90\% \pm 2\%$ on unseen 2023 test data).
 - [ ] Hill-vs-plains stratified error breakdown generated: `docs/hill_vs_plains.png`.
+- [ ] Wet-Day MAE ($>2.5\text{ mm}$) and Extreme Event CSI (R95/R99) reported separately from aggregate dry-day metrics.
 - [ ] Uncertainty reported as calibrated range: *"Expected X mm, likely Y–Z mm ($90\%$ coverage)"*, never bare uncalibrated percentage.
 - [ ] Offline PWA operational: displays *"Viewing cached forecast from {timestamp}"* with functional airplane-mode demonstration.
 - [ ] Mock government integration `/api/egramswaraj/mock` explicitly labeled as mock prototype in code, Swagger, and headers.

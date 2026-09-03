@@ -87,6 +87,7 @@ $$\mathcal{L}_{\text{cons}} = \text{MSE}(\mathcal{C}[\text{HR}], \text{LR})$$
 - [ ] **Implement `src/data/loaders.py`:**
   - Standardized xarray loader with lazy windowed reads and float32 casting.
   - Apply frozen registration transform.
+  - **Temporal Cutoff Documentation (03:00 UTC vs. Calendar Day):** Document that IMD daily observation represents 08:30 IST to 08:30 IST (03:00 UTC) accumulation, whereas CHIRPS is calendar day. Note in module docstring that downstream per-$0.25^\circ$-cell quantile mapping aligns the climatological cumulative distribution function (CDF), absorbing bulk offsets, but daily convective timing (15:00–19:00 IST) is an inherent boundary condition of 24-hour gridded data.
 
 ### B. Patch Extraction Pipeline
 - [ ] **Implement `scripts/build_patch_index.py` & `src/data/patch_extraction.py`:**
@@ -99,7 +100,7 @@ $$\mathcal{L}_{\text{cons}} = \text{MSE}(\mathcal{C}[\text{HR}], \text{LR})$$
 ### C. Conservation & Losses Implementation
 - [ ] **Implement `src/losses/conservation.py`:**
   - Function `conservation_loss_grid(hr_pred, lr_true, lats_deg)` implementing area-weighted average pooling with $\cos(\text{lat})$ at HR centers, $k=5, s=5$.
-  - Function `zonal_polygon_aggregate(hr_grid, polygons, lats_deg)` implementing clean $w_i = f_i \cdot A_i$ with analytic spherical cell area.
+  - Function `zonal_polygon_aggregate(hr_grid, polygons, lats_deg)` implementing clean $w_i = f_i \cdot A_i$ with analytic spherical cell area. **Constraint:** Input polygons must strictly load from `data/processed/mandya_full.geojson` (never the simplified display TopoJSON).
 - [ ] **Mandya Crop Documentation:**
   - Document Ragi and Paddy growth stages and rainfall sensitivities in `docs/agro_baseline.md`.
 

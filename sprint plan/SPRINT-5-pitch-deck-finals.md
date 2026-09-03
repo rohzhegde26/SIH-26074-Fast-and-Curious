@@ -54,6 +54,10 @@ Produce an unassailable pitch deck, a crisp 2-minute demonstration video, and co
 10. Will **NOT** claim Bangalore Urban as a pilot district (Bangalore Urban has 0 GPs under BBMP wards).
 11. Will **NOT** claim sub-panchayat resolution detail.
 
+### E. GFS Operational Boundary & Scientific Honesty
+* **GFS / NCUM Claim Rule:** Describe GFS 0.25° and NCUM strictly as **"Architecture Format-Compatible Roadmap"**. **Never claim "Tested on GFS"** unless real numerical cycles were evaluated.
+* **Temporal Cutoff Honesty:** Transparently state that IMD represents 08:30 IST (03:00 UTC) accumulation; explain that quantile mapping aligns the climatological cumulative distribution function (CDF), while intra-day convective timing (15:00–19:00 IST) is an inherent boundary condition of daily gridded products.
+
 ---
 
 ## 4. Pitch Deck Structure & Content (`docs/pitch_deck.pdf`)
@@ -66,17 +70,17 @@ Produce an unassailable pitch deck, a crisp 2-minute demonstration video, and co
    All-India monsoon training (2010–2023, 1,708 days, 310k raw patches $\to$ 200k–240k usable after $\ge 70\%$ land filter). GLO-30 DEM via CDSE S3. Mandya $+ 0.5^\circ$ buffer strictly held out (`patch_index ∩ buffer == ∅`).
 4. **Slide 4: Physics & Mathematics: Conservation & Registration**  
    Mass conservation pooling with kernel=5 and cosine weighting at HR pixel centers. Elimination of the $2.7\text{ km}$ grid registration shift. Elimination of the cos×area double-counting bug.
-5. **Slide 5: Calibration & Uncertainty: Gauge Gold Standard**  
-   Per-$0.25^\circ$-cell quantile mapping to IMD gauge truth (QQ plot artifact). Conformalized Quantile Regression (CQR) with 90% empirical coverage on unseen 2023 test data.
+5. **Slide 5: Calibration, Uncertainty & Honest Metrics (No Dry-Day Illusion)**  
+   Per-$0.25^\circ$-cell quantile mapping to IMD gauge truth (QQ plot artifact). Conformalized Quantile Regression (CQR) with 90% empirical coverage on unseen 2023 test data. **Reporting Wet-Day MAE ($>2.5\text{ mm}$) and Extreme Event CSI (R95/R99)** alongside aggregate MAE to prove skill on actual rainfall events.
 6. **Slide 6: Clean Polygon Aggregation & Bookkeeping Gates**  
-   Exact polygon fractional area weighting with analytic spherical cell areas ($A_i = R^2 \cdot \Delta\phi \cdot \Delta\lambda \cdot \cos(\text{lat})$). Proof that polygon boundary areas close within relative error $10^{-3}$.
+   Exact polygon fractional area weighting with analytic spherical cell areas ($A_i = R^2 \cdot \Delta\phi \cdot \Delta\lambda \cdot \cos(\text{lat})$) on full-precision geodata. Proof that polygon boundary areas close within relative error $10^{-3}$.
 7. **Slide 7: Product Experience: PWA & Bilingual Agro-Advisory**  
-   Offline-first mobile PWA with airplane-mode detection banner. Stage-specific farming advisories in Kannada and English for Ragi and Paddy.
+   Offline-first mobile PWA (<400 KB TopoJSON) with airplane-mode detection banner. Stage-specific farming advisories in Kannada and English for Ragi and Paddy.
 8. **Slide 8: System Architecture & Verification Gates**  
-   End-to-end pipeline diagram. CI automated test suite passing all 15 Definition of Done criteria.
+   End-to-end pipeline diagram. CI automated test suite passing all 15 Definition of Done criteria. Single-command reproducible execution via `python scripts/run_pipeline.py`.
 9. **Slide 9: What We Built vs. Future Roadmap**  
    Tier 1 (Built): Perfect-model supervised reconstruction with spatial holdout.  
-   Tier 2/3 (Roadmap): IMERG Early/Late near-real-time ingestion and BharatFS operational integration.
+   Tier 2/3 (Roadmap): Format-compatible GFS 0.25°/NCUM input integration, IMERG Early/Late near-real-time ingestion, and BharatFS operational integration.
 10. **Slide 10: "What We Will NOT Claim"**  
     The 11 technical guardrails displayed transparently. Demonstrates exceptional scientific maturity to jury members.
 

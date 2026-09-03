@@ -66,7 +66,7 @@ Establish environment scaffolding, verify cloud/data account credentials with li
     "area_per_pixel_km2": 30.1
   }
   ```
-- [ ] **DuckDB Panchayat Ingestion & Topology Validation:**
+- [ ] **DuckDB Panchayat Ingestion, Topology Validation & Dual-Export Rule:**
   - Implement `scripts/validate_panchayat.py --district MANDYA --buffer 0.5`.
   - Execute DuckDB pushdown: `SELECT * FROM read_parquet('panchayats.parquet') WHERE stname='KARNATAKA' AND dtname='MANDYA'` (<1 sec, <5 MB RAM).
   - Apply `shapely.validation.make_valid()`.
@@ -76,6 +76,10 @@ Establish environment scaffolding, verify cloud/data account credentials with li
     - Coordinate system: EPSG:4326 for analysis, EPSG:7755 for display/viz only.
     - Generate spatial holdout mask: Mandya boundary + 0.5° buffer (~50–100 km).
     - Assert `patch_index ∩ buffer == ∅`.
+  - **MANDATORY DUAL-EXPORT RULE (Prevents Broken Area Audits & Heavy PWA Loads):**
+    1. `data/processed/mandya_full.geojson`: Full geodetic precision. Used strictly for DuckDB queries, `src/data/zonal_aggregation.py`, and `pyproj.Geod` area closure audits ($\le 10^{-3}$ relative error).
+    2. `data/processed/mandya_simplified.topojson`: Coordinate-rounded / topology-preserved (tolerance $10^{-4}$ deg $\approx 10\text{ m}$ precision, payload $< 400\text{ KB}$). Used strictly for client-side mobile PWA rendering and IndexedDB caching.
+    - *Critical Guardrail:* Never feed simplified geometry into area calculation or $w_i = f_i \cdot A_i$ zonal weights, which would immediately break the $10^{-3}$ audit gate.
 
 ### C. Ingestion Kickoff & Bandwidth Risk Mitigation
 - [ ] **Download National CHIRPS Ingestion Kickoff:**
@@ -94,6 +98,7 @@ Establish environment scaffolding, verify cloud/data account credentials with li
 ### E. Repository Scaffolding, Governance & Documentation
 - [ ] **Scaffold Directory Structure:** Create directories per Section 8:
   - `data/raw/` (gitignored), `data/processed/`, `notebooks/`, `src/data/`, `src/losses/`, `src/eval/`, `src/api/`, `src/advisory/`, `scripts/`, `frontend/`, `docs/`, `tests/`.
+  - Include placeholder for `scripts/run_pipeline.py` (dedicated $\le 2$-hour timeboxed thin orchestrator glue script for single-command live demo).
 - [ ] **Environment & Ignore Files:**
   - Create `.gitignore` ignoring `data/raw/`, `*.parquet`, `*.nc`, `*.hgt`, `*.zarr`, `.env`.
   - Create `.env.example` with `CDSE_TOKEN=`, `CDS_API_KEY=` placeholders (no secrets committed).
@@ -118,7 +123,7 @@ Establish environment scaffolding, verify cloud/data account credentials with li
 - [ ] `CDSE` token active and `scripts/test_cdse.py` retrieves GLO-30 test tile from S3 without quota error.
 - [ ] `CDS` test retrieve `test.nc` passes (conditional, only if ERA5 is used).
 - [ ] `src/data/pinned_district.json` created with Mandya parameters and Bangalore Urban explicitly forbidden.
-- [ ] `scripts/validate_panchayat.py` runs in <5 seconds using DuckDB, asserts 80–300 GPs (Mandya = 258), valid > 98%, and exports spatial holdout buffer mask (0.5°).
+- [ ] `scripts/validate_panchayat.py` runs in <5 seconds using DuckDB, asserts 80–300 GPs (Mandya = 258), valid > 98%, exports spatial holdout buffer mask (0.5°), and strictly generates both `mandya_full.geojson` (math/audits) and `mandya_simplified.topojson` (PWA display <400KB).
 - [ ] `scripts/check_registration.py` created to assert cell edge coincidence and catch 2.7 km offset.
 - [ ] `scripts/download_chirps.py` executed and actively downloading monsoon 2010–2023 (or fallback 2014–2023).
 - [ ] `.gitignore`, `.env.example`, `CODEOWNERS`, and data-attribution block committed to repository.

@@ -97,8 +97,9 @@ Deliver an integration-ready FastAPI backend serving calibrated forecasts and CQ
   - Harvest and drying precautions.
 
 ### C. Frontend Progressive Web App (`frontend/`)
+### C. Frontend Progressive Web App (`frontend/`)
 - [ ] **Interactive Panchayat Map Interface:**
-  - Render Mandya's 258 panchayat polygons using Leaflet / MapLibre.
+  - Render Mandya's 258 panchayat polygons using Leaflet / MapLibre, loading strictly from `data/processed/mandya_simplified.topojson` (<400 KB payload) for instant rural rendering and zero lag.
   - Color choropleth reflecting expected rainfall intensity.
   - Tap/click polygon to view localized forecast, CQR uncertainty card, and bilingual advisory toggle.
 - [ ] **PWA Service Worker & Offline Storage:**
@@ -112,6 +113,17 @@ Deliver an integration-ready FastAPI backend serving calibrated forecasts and CQ
     `"⚠️ Offline: Viewing cached forecast from [Timestamp]. Local generation not supported."`
   - Ensure full UI, map navigation, and cached advisories remain interactive in offline mode.
 
+### D. Single-Command Demo Orchestrator (`scripts/run_pipeline.py`)
+- [ ] **Implement Thin Orchestrator Script (Timeboxed to $\le 2$ hours):**
+  - CLI invocation: `python scripts/run_pipeline.py --date 2023-07-15 --district MANDYA`
+  - Acts strictly as a lightweight glue script calling established modules without duplicating logic:
+    1. Calls `src/data/loaders.py` to retrieve the day's LR input grid.
+    2. Calls `src/models/unet_5x.py` to produce raw 5× downscaled output.
+    3. Calls `src/eval/calibration.py` to apply per-$0.25^\circ$ quantile mapping.
+    4. Calls `src/eval/cqr.py` to evaluate prediction intervals.
+    5. Calls `src/data/zonal_aggregation.py` using `data/processed/mandya_full.geojson` to produce the final GeoJSON payload.
+  - Eliminates manual terminal friction and guarantees a flawless 1-line execution on stage during the jury demo.
+
 ---
 
 ## 5. Verification Gates & Definition of Done
@@ -119,7 +131,9 @@ Deliver an integration-ready FastAPI backend serving calibrated forecasts and CQ
 - [ ] FastAPI backend starts with `uvicorn src.api.main:app` and passes OpenAPI validation.
 - [ ] `/api/forecast/{lgd_code}` responds in $< 100\text{ ms}$ with valid JSON containing expected rainfall, calibrated CQR bounds, and Kannada/English advisories.
 - [ ] `/api/egramswaraj/mock` is documented and labeled as a mock prototype in Swagger UI.
+- [ ] `scripts/run_pipeline.py` runs end-to-end in $< 5\text{ seconds}$ on a single date, generating valid Mandya panchayat GeoJSON.
 - [ ] PWA passes browser Lighthouse PWA audit (installable, service worker registered, offline-capable).
+- [ ] PWA loads Mandya vector boundaries from `mandya_simplified.topojson` with payload size $< 400\text{ KB}$.
 - [ ] Airplane-mode live test:
   1. Open PWA, load Mandya map.
   2. Disconnect Wi-Fi / enable airplane mode.

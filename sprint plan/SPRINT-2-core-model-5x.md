@@ -92,9 +92,9 @@ Train the primary 5× direct downscaling architecture (terrain-conditioned CNN/U
 - [ ] **`tests/test_registration.py`:**
   - Input loader transforms confirmed frozen; no coordinate misalignment.
 - [ ] **Baseline Comparison Report (`docs/model_comparison.md`):**
-  - Validation 2021 MAE, RMSE, and Pearson $r$ recorded for:
-    1. Bilinear Interpolation
-    2. DeepSD-style Baseline
+  - Validation 2021 metrics recorded across all splits, reporting both All-Day MAE and **Wet-Day MAE (strictly conditioned on $\text{Rain} > 2.5\text{ mm}$ to eliminate dry-day inflation bias)**, RMSE, and Pearson $r$ for:
+    1. Bilinear Interpolation Baseline
+    2. DeepSD-style CNN + Elevation Baseline
     3. Proposed 5× Terrain-Conditioned Model
-  - Proposed model demonstrates superior spatial sharpness in hilly/orographic regions over Bilinear baseline.
+  - Proposed model demonstrates superior spatial sharpness in hilly/orographic regions over Bilinear baseline and improved wet-day skill.
 - [ ] **Execution Exit Rule:** Best model weights saved and verified by EOD Day 4. If training diverges or conservation fails, revert to baseline checkpoint and re-tune $\lambda_{\text{cons}}$.
