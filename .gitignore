@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment / local configs
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# Temporary / Scratch files
+scratch/
+*.tmp
+*.log

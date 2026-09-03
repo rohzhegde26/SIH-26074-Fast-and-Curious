@@ -1,0 +1,37 @@
+{
+  "scale_factor": 5.0,
+  "imd_cell_size_deg": 0.25,
+  "chirps_cell_size_deg": 0.05,
+  "test_cell": {
+    "lat": 12.5,
+    "lon": 76.75
+  },
+  "chirps_5x5_block_lons": [
+    76.65,
+    76.7,
+    76.75,
+    76.8,
+    76.85
+  ],
+  "chirps_5x5_block_lats": [
+    12.4,
+    12.45,
+    12.5,
+    12.55,
+    12.6
+  ],
+  "offset_deg": {
+    "lat": 0.0,
+    "lon": 0.0
+  },
+  "offset_km": 0.0,
+  "is_aligned": true,
+  "frozen_affine_transform": {
+    "scale_x": 5,
+    "scale_y": 5,
+    "shift_x_deg": 0.0,
+    "shift_y_deg": 0.0,
+    "hr_kernel_size": 5,
+    "hr_stride": 5
+  }
+}

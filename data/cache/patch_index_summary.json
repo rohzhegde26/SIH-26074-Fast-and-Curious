@@ -1,0 +1,24 @@
+{
+  "hr_patch_size": 80,
+  "lr_patch_size": 16,
+  "hr_stride": 40,
+  "land_fraction_threshold": 0.7,
+  "raw_windows_per_day": 196,
+  "usable_windows_per_day": 129,
+  "total_monsoon_days": 1708,
+  "total_usable_patches": 220332,
+  "total_raw_patches": 334768,
+  "splits_days": {
+    "train": 1342,
+    "val": 122,
+    "cal": 122,
+    "test": 122
+  },
+  "splits_patches": {
+    "train": 173118,
+    "val": 15738,
+    "cal": 15738,
+    "test": 15738
+  },
+  "spatial_parquet_path": "data/cache/spatial_patch_index.parquet"
+}
