@@ -103,3 +103,42 @@ def test_spherical_cell_area_consistency():
     area_m2 = compute_spherical_cell_area_m2(lat_deg=13.0, d_lat_deg=0.05, d_lon_deg=0.05)
     area_km2 = area_m2 / 1e6
     assert 29.0 <= area_km2 <= 31.0, f"Expected ~30.1 km^2, got {area_km2:.2f} km^2"
+
+
+def test_log_domain_composite_loss_physical_conservation():
+    """
+    Verify that log1p training domain with expm1 physical conservation loss
+    preserves mass conservation with relative error < 1e-3.
+    """
+    from src.losses.conservation import (
+        CompositeLogConservationLoss,
+        expm1_transform,
+        log1p_transform,
+    )
+
+    batch_size = 4
+    h_hr, w_hr = 80, 80
+    h_lr, w_lr = 16, 16
+    hr_lats = torch.linspace(12.0, 16.0, h_hr, dtype=torch.float32)
+
+    # Physical rainfall: realistic range 5 to 80 mm
+    torch.manual_seed(42)
+    hr_true_phys = torch.rand(batch_size, 1, h_hr, w_hr) * 50.0 + 5.0
+    lr_true_phys = coarsen_hr_to_lr_torch(hr_true_phys, hr_lats, kernel_size=5, stride=5)
+
+    # Log space transforms
+    target_log = log1p_transform(hr_true_phys)
+    pred_log = target_log + torch.randn_like(target_log) * 0.001  # small log error
+
+    # Compute composite loss
+    loss_fn = CompositeLogConservationLoss(lambda_cons=0.1, kernel_size=5, stride=5)
+    total_loss, metrics = loss_fn(pred_log, target_log, lr_true_phys, hr_lats)
+
+    # Invert to physical domain
+    pred_phys = expm1_transform(pred_log)
+    pred_lr_coarsened = coarsen_hr_to_lr_torch(pred_phys, hr_lats, kernel_size=5, stride=5)
+
+    # Calculate relative error in physical space
+    rel_error = torch.mean(torch.abs(pred_lr_coarsened - lr_true_phys) / lr_true_phys).item()
+    assert rel_error < 1e-3, f"Physical conservation relative error too high: {rel_error:.6f} >= 1e-3"
+    assert metrics["loss_conservation"].item() < 0.05

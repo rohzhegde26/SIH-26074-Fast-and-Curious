@@ -1,7 +1,7 @@
 """
 src/losses/conservation.py
 
-Physical Mass Conservation Grid-to-Grid (Kernel=5, Scale 5x).
+Physical Mass Conservation Grid-to-Grid (Kernel=5, Scale 5x) & Log-Domain Transform.
 
 Mathematical Formulation:
     w_HR = cos(lat_HR_rad)
@@ -9,17 +9,37 @@ Mathematical Formulation:
             avg_pool2d(w_HR, k=5, s=5, count_include_pad=False)
     L_cons = MSE(C[HR], LR)
 
-Critical Guardrails:
-    1. Direct 5x scaling (0.25° / 0.05° = 5, k=5, s=5).
-    2. Cosine weights computed at HR pixel centers, NOT LR.
-    3. Never use naive summation (avoids the 25x Conservation-as-Sum Bug).
-    4. count_include_pad=False prevents boundary zero-leakage.
+Log-Domain Training Safeguard:
+    1. Training in log-domain:
+       x_log = log1p(x_phys)
+       y_log = log1p(y_phys)
+       pred_log = model(x_log)
+       pred_phys = torch.clamp(expm1(pred_log), min=0.0)
+    2. Composite Loss:
+       L_total = L1(pred_log, y_log) + lambda_cons * L_cons(pred_phys, x_phys)
+    3. CRITICAL: Conservation loss MUST be computed after expm1 in FP32 physical mm space.
+       Average pooling in log space produces a geometric mean, violating mass conservation.
 """
 
-from typing import Union
+from typing import Dict, Tuple, Union
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+
+
+def log1p_transform(x: Union[torch.Tensor, np.ndarray]) -> Union[torch.Tensor, np.ndarray]:
+    """Log-transform rainfall: log(1 + x). Stabilizes extreme heavy-tail skewness."""
+    if isinstance(x, torch.Tensor):
+        return torch.log1p(torch.clamp(x, min=0.0))
+    return np.log1p(np.maximum(x, 0.0))
+
+
+def expm1_transform(x: Union[torch.Tensor, np.ndarray]) -> Union[torch.Tensor, np.ndarray]:
+    """Inverse log-transform: exp(x) - 1. Maps back to physical precipitation (mm)."""
+    if isinstance(x, torch.Tensor):
+        return torch.clamp(torch.expm1(x), min=0.0)
+    return np.maximum(np.expm1(x), 0.0)
 
 
 def coarsen_hr_to_lr_numpy(
@@ -60,8 +80,7 @@ def coarsen_hr_to_lr_numpy(
 
     weighted_hr = hr_grid.astype(np.float64) * w_hr
 
-    # Reshape for exact block average pooling
-    # [B, out_h, k, out_w, k]
+    # Reshape for exact block average pooling: [B, out_h, k, out_w, k]
     w_hr_blocks = w_hr.reshape(b, out_h, kernel_size, out_w, kernel_size)
     hr_blocks = weighted_hr.reshape(b, out_h, kernel_size, out_w, kernel_size)
 
@@ -86,7 +105,7 @@ def coarsen_hr_to_lr_torch(
     Area-weighted coarsening of HR tensor to LR using cosine weights at HR centers via PyTorch.
     
     Args:
-        hr_tensor: [B, C, H, W] tensor of HR predictions.
+        hr_tensor: [B, C, H, W] tensor of HR predictions in physical mm.
         hr_lats_deg: [H] 1D tensor of HR center latitudes in degrees.
         kernel_size: 5
         stride: 5
@@ -146,3 +165,48 @@ def conservation_loss_grid(
         coarsened_lr = coarsen_hr_to_lr_numpy(hr_pred, hr_lats_deg, kernel_size, stride)
         loss = float(np.mean((coarsened_lr - lr_true) ** 2))
         return loss
+
+
+class CompositeLogConservationLoss(nn.Module):
+    """
+    Dual-Domain Composite Loss:
+        - Reconstruction Loss in Log Domain: L1(pred_log, target_log)
+        - Conservation Loss in Physical Domain: MSE(Coarsen(expm1(pred_log)), lr_phys)
+    """
+
+    def __init__(self, lambda_cons: float = 0.1, kernel_size: int = 5, stride: int = 5):
+        super().__init__()
+        self.lambda_cons = lambda_cons
+        self.kernel_size = kernel_size
+        self.stride = stride
+
+    def forward(
+        self,
+        pred_log: torch.Tensor,
+        target_log: torch.Tensor,
+        lr_phys: torch.Tensor,
+        hr_lats_deg: torch.Tensor,
+    ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+        # 1. Reconstruction loss in log domain (stabilizes gradients for extremes)
+        loss_recon = F.l1_loss(pred_log, target_log)
+
+        # 2. Invert to physical domain in FP32 and clamp non-negative
+        pred_phys = torch.clamp(torch.expm1(pred_log.float()), min=0.0)
+
+        # 3. Mass conservation loss in physical space (mm)
+        loss_cons = conservation_loss_grid(
+            pred_phys,
+            lr_phys.float(),
+            hr_lats_deg,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
+        )
+
+        total_loss = loss_recon + self.lambda_cons * loss_cons
+
+        metrics = {
+            "loss_total": total_loss.detach(),
+            "loss_recon_l1": loss_recon.detach(),
+            "loss_conservation": loss_cons.detach(),
+        }
+        return total_loss, metrics
