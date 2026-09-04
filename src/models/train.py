@@ -12,7 +12,7 @@ Features:
 import os
 import time
 import argparse
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 import numpy as np
 import torch
 import torch.nn as nn
@@ -70,6 +70,7 @@ def evaluate_model(
     val_loader,
     device: torch.device,
     is_log_model: bool = True,
+    max_batches: Optional[int] = 50,
 ) -> Dict[str, float]:
     """Evaluates a model across the validation dataloader."""
     model.eval()
@@ -77,7 +78,9 @@ def evaluate_model(
     all_trues = []
 
     with torch.no_grad():
-        for batch in val_loader:
+        for i, batch in enumerate(val_loader):
+            if max_batches is not None and i >= max_batches:
+                break
             lr = batch["lr"].to(device)
             hr_phys = batch["hr_phys"].to(device)
 
@@ -128,8 +131,8 @@ def train_epoch(
             pred_log = model(lr_log)
             loss, loss_dict = criterion(
                 pred_log=pred_log,
-                y_true_log=hr_log,
-                x_lr_phys=lr_phys,
+                target_log=hr_log,
+                lr_phys=lr_phys,
                 hr_lats_deg=lats,
             )
 
@@ -137,9 +140,9 @@ def train_epoch(
         scaler.step(optimizer)
         scaler.update()
 
-        total_loss += loss_dict["loss_total"]
-        total_log_err += loss_dict["loss_log"]
-        total_cons_err += loss_dict["loss_cons"]
+        total_loss += float(loss_dict["loss_total"])
+        total_log_err += float(loss_dict.get("loss_log", loss_dict.get("loss_recon_l1", 0.0)))
+        total_cons_err += float(loss_dict.get("loss_cons", loss_dict.get("loss_conservation", 0.0)))
         steps += 1
 
     return total_loss / steps, total_log_err / steps, total_cons_err / steps
@@ -182,10 +185,10 @@ def run_training(
     # 3. Initialize 5x U-Net and Optimizer
     print("\n--- Training 5x Terrain-Conditioned U-Net ---")
     model = UNet5x(in_channels=1, out_channels=1, base_channels=32).to(device)
-    criterion = CompositeLogConservationLoss(lambda_cons=lambda_cons, log_loss_type="l1")
+    criterion = CompositeLogConservationLoss(lambda_cons=lambda_cons)
     optimizer = AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = CosineAnnealingLR(optimizer, T_max=epochs)
-    scaler = torch.amp.GradScaler(device_type=device.type, enabled=device.type == "cuda")
+    scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda")
 
     best_val_mae = float("inf")
     best_checkpoint_path = os.path.join(output_dir, "best_5x_model.pt")
@@ -212,7 +215,8 @@ def run_training(
             f"Loss: {train_loss:.4f} (Log: {train_log_err:.4f}, Cons: {train_cons_err:.4f}) | "
             f"Val All MAE: {val_metrics['all_mae']:.3f} mm | "
             f"Val Wet MAE: {val_metrics['wet_mae']:.3f} mm | "
-            f"Val r: {val_metrics['pearson_r']:.3f}"
+            f"Val r: {val_metrics['pearson_r']:.3f}",
+            flush=True,
         )
 
         # Save checkpoint if best wet-day skill
@@ -228,7 +232,7 @@ def run_training(
                 },
                 best_checkpoint_path,
             )
-            print(f"  [+] Saved new best model checkpoint to {best_checkpoint_path}")
+            print(f"  [+] Saved new best model checkpoint to {best_checkpoint_path}", flush=True)
 
     print(f"\n[SUCCESS] Training loop completed. Best Val Wet MAE: {best_val_mae:.3f} mm")
     return {

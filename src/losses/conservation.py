@@ -116,12 +116,18 @@ def coarsen_hr_to_lr_torch(
     b, c, h, w = hr_tensor.shape
     device = hr_tensor.device
 
-    # Ensure hr_lats is on same device
-    hr_lats_deg = hr_lats_deg.to(device)
+    # Ensure hr_lats is on same device and float32
+    hr_lats_deg = hr_lats_deg.to(device=device, dtype=torch.float32)
+    hr_tensor = hr_tensor.float()
 
-    # Compute cosine weights at HR centers: [1, 1, H, 1]
-    cos_lats = torch.cos(torch.deg2rad(hr_lats_deg)).view(1, 1, h, 1)
-    w_hr = cos_lats.expand(b, c, h, w)
+    # Compute cosine weights at HR centers: [B, C, H, W]
+    if hr_lats_deg.ndim == 1 and hr_lats_deg.shape[0] == h:
+        cos_lats = torch.cos(torch.deg2rad(hr_lats_deg)).view(1, 1, h, 1)
+        w_hr = cos_lats.expand(b, c, h, w).float()
+    else:
+        delta = (torch.arange(h, device=device, dtype=torch.float32) - (h - 1) / 2.0) * 0.05
+        lats_2d = hr_lats_deg.view(-1, 1, 1, 1) + delta.view(1, 1, h, 1)
+        w_hr = torch.cos(torch.deg2rad(lats_2d)).expand(b, c, h, w).float()
 
     # Numerator: avg_pool2d(HR * w_hr)
     num = F.avg_pool2d(

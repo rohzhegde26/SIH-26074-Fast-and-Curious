@@ -84,6 +84,20 @@ def create_zarr_store(
             chunks=(chunk_patches,),
             dtype=str,
         )
+    if "center_lats" not in root:
+        root.create_array(
+            "center_lats",
+            shape=(total_patches,),
+            chunks=(chunk_patches,),
+            dtype="float32",
+        )
+    if "center_lons" not in root:
+        root.create_array(
+            "center_lons",
+            shape=(total_patches,),
+            chunks=(chunk_patches,),
+            dtype="float32",
+        )
 
     # Store metadata attributes
     root.attrs["scale_factor"] = 5
@@ -130,6 +144,11 @@ def populate_zarr(
     win_arr = root["window_ids"]
     date_arr = root["dates"]
     split_arr = root["splits"]
+    lat_arr = root["center_lats"]
+    lon_arr = root["center_lons"]
+
+    day_center_lats = ((df_spatial["min_lat"] + df_spatial["max_lat"]) / 2.0).values.astype(np.float32)
+    day_center_lons = ((df_spatial["min_lon"] + df_spatial["max_lon"]) / 2.0).values.astype(np.float32)
 
     # Ingest / slice patches day by day
     # Note: If real 14-year files are on disk or mounted, load daily. Otherwise fallback to sample grids.
@@ -176,6 +195,8 @@ def populate_zarr(
         win_arr[patch_cursor:idx_end] = day_win_ids
         date_arr[patch_cursor:idx_end] = [day_str] * n_spatial
         split_arr[patch_cursor:idx_end] = [split_name] * n_spatial
+        lat_arr[patch_cursor:idx_end] = day_center_lats
+        lon_arr[patch_cursor:idx_end] = day_center_lons
         patch_cursor = idx_end
 
         if (day_idx + 1) % 50 == 0 or (day_idx + 1) == len(dates):
