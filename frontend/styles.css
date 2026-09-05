@@ -535,6 +535,212 @@ select:focus {
   margin: 0;
 }
 
+/* Grounded Agro-Economics Card */
+.economics-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  border-left: 4px solid #eab308;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+}
+
+.economics-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.economics-body {
+  flex: 1;
+}
+
+.economics-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #854d0e;
+  margin-bottom: 0.2rem;
+}
+
+.economics-text {
+  font-size: 0.85rem;
+  color: #713f12;
+  line-height: 1.4;
+  margin: 0 0 0.35rem 0;
+}
+
+.economics-source {
+  display: block;
+  font-size: 0.72rem;
+  color: #a16207;
+  font-style: italic;
+}
+
+/* Field Actions: WhatsApp & Voice */
+.field-actions-bar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.25rem;
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.15rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  min-height: 44px;
+}
+
+.btn-action:hover {
+  transform: translateY(-1px);
+}
+
+.btn-action:active {
+  transform: translateY(0);
+}
+
+.btn-whatsapp {
+  background: #25d366;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(37, 211, 102, 0.2);
+}
+
+.btn-whatsapp:hover {
+  background: #20ba59;
+  box-shadow: 0 3px 6px rgba(37, 211, 102, 0.3);
+}
+
+.btn-voice {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(11, 110, 79, 0.2);
+}
+
+.btn-voice:hover {
+  background: var(--primary-dark);
+  box-shadow: 0 3px 6px rgba(11, 110, 79, 0.3);
+}
+
+.btn-action-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* Scientific Verification / Jury Mode */
+.science-section {
+  margin-top: 0.5rem;
+}
+
+.btn-science {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-science:hover {
+  background: #e2e8f0;
+}
+
+.jury-drawer {
+  margin-top: 0.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.jury-card {
+  background: var(--bg-card);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.jury-card h4 {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.95rem;
+  color: var(--primary-dark);
+}
+
+.jury-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0 0 0.75rem 0;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.jury-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  text-align: left;
+  margin-bottom: 0.75rem;
+}
+
+.jury-table th {
+  background: #f8fafc;
+  color: #475569;
+  padding: 0.5rem 0.65rem;
+  border-bottom: 2px solid #e2e8f0;
+  font-weight: 600;
+}
+
+.jury-table td {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.highlight-row {
+  background: #f0fdf4;
+  font-weight: 600;
+}
+
+.text-danger {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.text-success {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.jury-note {
+  font-size: 0.78rem;
+  color: #475569;
+  line-height: 1.4;
+  background: #f8fafc;
+  border-left: 3px solid #64748b;
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+  border-radius: 0 4px 4px 0;
+}
+
 /* Footer Integration Prototype */
 .integration-footer {
   margin-top: 1rem;
@@ -576,6 +782,12 @@ select:focus {
   }
   .advisories-grid {
     grid-template-columns: 1fr;
+  }
+  .field-actions-bar {
+    flex-direction: column;
+  }
+  .btn-action {
+    width: 100%;
   }
   .map-container {
     height: 280px;

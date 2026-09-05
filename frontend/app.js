@@ -110,6 +110,26 @@ function renderForecastDetails(record) {
   const ragiAdv = currentLanguage === "kn" ? record.advisory.ragi.action_kn : record.advisory.ragi.action_en;
   const paddyAdv = currentLanguage === "kn" ? record.advisory.paddy.action_kn : record.advisory.paddy.action_en;
 
+  const showEconomics = lMax > 10.0 || exp >= 15.0;
+  const economicsHtml = showEconomics
+    ? `
+      <div class="economics-card" role="note" aria-label="Economic impact">
+        <div class="economics-icon">💰</div>
+        <div class="economics-body">
+          <div class="economics-title">${currentLanguage === "kn" ? "ರೈತರ ಉಳಿತಾಯ (Protected Farm Input)" : "Smallholder Input Protected"}</div>
+          <p class="economics-text">
+            ${
+              currentLanguage === "kn"
+                ? "ಜೋರು ಮಳೆಯ ಮುನ್ಸೂಚನೆ ಇರುವಾಗ ರಸಗೊಬ್ಬರ ಹಾಕುವುದನ್ನು ಮುಂದೂಡುವುದರಿಂದ ಎಕರೆಗೆ ಸುಮಾರು <strong>₹700–₹1,200</strong> ಉಳಿತಾಯವಾಗುತ್ತದೆ (೧ ಚೀಲ ಡಿಎಪಿಗೆ ಸಮಾನ)."
+                : "Postponing fertilizer before heavy rain prevents nitrogen leaching, protecting ~<strong>₹700–₹1,200 per acre</strong> (equivalent to 1 bag of DAP)."
+            }
+          </p>
+          <span class="economics-source">${currentLanguage === "kn" ? "ಮೂಲ: ಕೃಷಿ ವೆಚ್ಚ ಮತ್ತು ಬೆಲೆ ಆಯೋಗ (DES) ಮಾನದಂಡ" : "Source: Directorate of Economics & Statistics (DES) Cultivation Benchmark"}</span>
+        </div>
+      </div>
+    `
+    : "";
+
   container.innerHTML = `
     <article class="forecast-card">
       <div class="forecast-header">
@@ -157,8 +177,168 @@ function renderForecastDetails(record) {
           <p class="advisory-text" lang="${currentLanguage}">${paddyAdv}</p>
         </div>
       </div>
+
+      ${economicsHtml}
+
+      <!-- Field Actions: Krishi Sakhi WhatsApp Broadcast & Voice Assistant -->
+      <div class="field-actions-bar">
+        <button id="btn-share-whatsapp" class="btn-action btn-whatsapp" title="Share forecast to WhatsApp" aria-label="Share forecast to WhatsApp">
+          <span class="btn-action-icon">💬</span>
+          <span>${currentLanguage === "kn" ? "ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳಿ" : "Share on WhatsApp"}</span>
+        </button>
+
+        <button id="btn-voice" class="btn-action btn-voice hidden" title="Listen to advisory" aria-label="Listen to advisory">
+          <span class="btn-action-icon">🔊</span>
+          <span id="voice-btn-text">${currentLanguage === "kn" ? "ಕೇಳಿ" : "Listen"}</span>
+        </button>
+      </div>
     </article>
   `;
+
+  // Attach Action Handlers
+  const shareBtn = container.querySelector("#btn-share-whatsapp");
+  if (shareBtn) {
+    shareBtn.onclick = () => broadcastToWhatsApp(record);
+  }
+
+  const voiceBtn = container.querySelector("#btn-voice");
+  if (voiceBtn) {
+    voiceBtn.onclick = () => playVoiceAdvisory(record);
+    checkVoiceAvailability(voiceBtn);
+  }
+}
+
+// -------------------------------------------------------------
+// Krishi Sakhi WhatsApp Community Broadcaster (0% Risk Universal Link)
+// -------------------------------------------------------------
+function broadcastToWhatsApp(record) {
+  const exp = record.rainfall_mm.expected;
+  const lMin = record.rainfall_mm.likely_min;
+  const lMax = record.rainfall_mm.likely_max;
+  const intensity = getIntensityLabel(exp);
+
+  let message = "";
+  if (currentLanguage === "kn") {
+    const alertLine = lMax > 10.0 ? "⚠️ ಎಚ್ಚರಿಕೆ: ಸಂಜೆ ಜೋರು ಮಳೆ ಸಾಧ್ಯತೆ ಇದೆ!" : "✅ ಸಾಮಾನ್ಯ ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ";
+    const econLine = lMax > 10.0 ? "\n💰 ಸಲಹೆ: ಗೊಬ್ಬರ ವ್ಯರ್ಥವಾಗುವುದನ್ನು ತಪ್ಪಿಸಿ (ಎಕರೆಗೆ ~₹700-1200 ಉಳಿತಾಯ)." : "";
+    message =
+      `🌾 *ಗ್ರಾಮ ಪಂಚಾಯತ್: ${record.panchayat_name}* (ಮಂಡ್ಯ ಜಿಲ್ಲೆ)\n` +
+      `📅 ದಿನಾಂಕ: ${record.forecast_date}\n\n` +
+      `🌧️ *ಮಳೆ ಮುನ್ಸೂಚನೆ:* ${intensity.label} (${exp.toFixed(1)} mm)\n` +
+      `📊 *ಸಂಭಾವ್ಯ ವ್ಯಾಪ್ತಿ:* ${lMin.toFixed(1)} mm – ${lMax.toFixed(1)} mm\n` +
+      `${alertLine}\n\n` +
+      `🌱 *ರಾಗಿ ಬೆಳೆ ಸಲಹೆ:* ${record.advisory.ragi.action_kn}\n` +
+      `🌾 *ಭತ್ತದ ಬೆಳೆ ಸಲಹೆ:* ${record.advisory.paddy.action_kn}\n` +
+      `${econLine}\n` +
+      `🔗 *ಮಂಡ್ಯ ಕೃಷಿ ಹವಾಮಾನ ಸೇವೆ*`;
+  } else {
+    const alertLine = lMax > 10.0 ? "⚠️ Alert: Evening heavy rainfall burst likely!" : "✅ Normal agricultural conditions";
+    const econLine = lMax > 10.0 ? "\n💰 Input Notice: Postponing fertilizer protects ~₹700–1,200/acre." : "";
+    message =
+      `🌾 *Gram Panchayat: ${record.panchayat_name}* (Mandya District)\n` +
+      `📅 Date: ${record.forecast_date}\n\n` +
+      `🌧️ *Rainfall Forecast:* ${intensity.label} (${exp.toFixed(1)} mm)\n` +
+      `📊 *CQR 90% Likely Range:* ${lMin.toFixed(1)} mm – ${lMax.toFixed(1)} mm\n` +
+      `${alertLine}\n\n` +
+      `🌱 *Ragi Advisory:* ${record.advisory.ragi.action_en}\n` +
+      `🌾 *Paddy Advisory:* ${record.advisory.paddy.action_en}\n` +
+      `${econLine}\n` +
+      `🔗 *Mandya Agro-Weather Service*`;
+  }
+
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  if (navigator.share) {
+    navigator
+      .share({ title: `Weather Advisory - ${record.panchayat_name}`, text: message })
+      .catch(() => window.open(waUrl, "_blank", "noopener,noreferrer"));
+  } else {
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+  }
+}
+
+// -------------------------------------------------------------
+// Voice Assistant with "Ghost Button" Local-Service Guard
+// -------------------------------------------------------------
+function checkVoiceAvailability(btnElement) {
+  if (!btnElement || !("speechSynthesis" in window)) {
+    if (btnElement) btnElement.classList.add("hidden");
+    return;
+  }
+
+  const voices = window.speechSynthesis.getVoices();
+  const hasLocalKn = voices.some(
+    v => v.localService && (v.lang.toLowerCase().includes("kn") || v.lang.toLowerCase().includes("kan"))
+  );
+  const hasEn = voices.some(v => v.lang.toLowerCase().includes("en"));
+
+  if (currentLanguage === "kn") {
+    // Only show if actual local Kannada voice exists to avoid English phoneme distortion
+    if (hasLocalKn) {
+      btnElement.classList.remove("hidden");
+    } else {
+      btnElement.classList.add("hidden");
+    }
+  } else {
+    if (hasEn) {
+      btnElement.classList.remove("hidden");
+    } else {
+      btnElement.classList.add("hidden");
+    }
+  }
+}
+
+function playVoiceAdvisory(record) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel(); // Stop ongoing speech
+
+  const exp = record.rainfall_mm.expected;
+  const lMax = record.rainfall_mm.likely_max;
+  const voices = window.speechSynthesis.getVoices();
+
+  let textToSpeak = "";
+  let voiceToUse = null;
+
+  if (currentLanguage === "kn") {
+    voiceToUse = voices.find(
+      v => v.localService && (v.lang.toLowerCase().includes("kn") || v.lang.toLowerCase().includes("kan"))
+    );
+    if (!voiceToUse) return; // Silent guard
+
+    // Natural 2-sentence colloquial copy (no technical jargon or raw decimals)
+    if (lMax > 10.0) {
+      textToSpeak = `ಇಂದು ${record.panchayat_name}ದಲ್ಲಿ ಸಾಧಾರಣ ಮಳೆ ನಿರೀಕ್ಷೆ ಇದೆ. ಸಂಜೆ ಜೋರು ಮಳೆ ಸಾಧ್ಯತೆ ಇರುವುದರಿಂದ ರಾಗಿ ಬೆಳೆಗೆ ಗೊಬ್ಬರ ಹಾಕಬೇಡಿ.`;
+    } else if (exp >= 2.5) {
+      textToSpeak = `ಇಂದು ${record.panchayat_name}ದಲ್ಲಿ ಹಗುರ ಮಳೆ ಬರಬಹುದು. ಕೃಷಿ ಕೆಲಸಗಳನ್ನು ಮುಂದುವರಿಸಬಹುದು.`;
+    } else {
+      textToSpeak = `ಇಂದು ${record.panchayat_name}ದಲ್ಲಿ ಒಣ ಹವೆ ಇರುತ್ತದೆ. ಅಗತ್ಯವಿದ್ದರೆ ನೀರಾವರಿ ಒದಗಿಸಬಹುದು.`;
+    }
+  } else {
+    voiceToUse = voices.find(v => v.lang.toLowerCase().includes("en")) || null;
+    if (lMax > 10.0) {
+      textToSpeak = `Moderate rain expected in ${record.panchayat_name}. Heavy burst likely by evening. Please postpone fertilizer application.`;
+    } else if (exp >= 2.5) {
+      textToSpeak = `Light rain expected in ${record.panchayat_name}. Field operations can safely proceed.`;
+    } else {
+      textToSpeak = `Dry weather expected in ${record.panchayat_name}. Normal irrigation can continue.`;
+    }
+  }
+
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
+  if (voiceToUse) utterance.voice = voiceToUse;
+  utterance.rate = 0.9; // 10% slower for field clarity
+  utterance.pitch = 1.0;
+
+  const btnText = document.querySelector("#voice-btn-text");
+  if (btnText) btnText.textContent = currentLanguage === "kn" ? "ಪ್ಲೇ ಆಗುತ್ತಿದೆ…" : "Playing…";
+
+  utterance.onend = () => {
+    if (btnText) btnText.textContent = currentLanguage === "kn" ? "ಕೇಳಿ" : "Listen";
+  };
+  utterance.onerror = () => {
+    if (btnText) btnText.textContent = currentLanguage === "kn" ? "ಕೇಳಿ" : "Listen";
+  };
+
+  window.speechSynthesis.speak(utterance);
 }
 
 // Render Choropleth Map
@@ -360,13 +540,36 @@ async function loadData() {
   }
 }
 
+// Setup Jury / Science Drawer Toggle
+function setupJuryDrawer() {
+  const btn = document.querySelector("#btn-jury-mode");
+  const drawer = document.querySelector("#jury-drawer");
+  if (!btn || !drawer) return;
+
+  btn.addEventListener("click", () => {
+    const isHidden = drawer.classList.contains("hidden");
+    drawer.classList.toggle("hidden", !isHidden);
+    btn.setAttribute("aria-expanded", String(isHidden));
+    const icon = btn.querySelector(".toggle-icon");
+    if (icon) icon.textContent = isHidden ? "▲" : "▼";
+  });
+}
+
 // Lifecycle Events
 window.addEventListener("offline", loadData);
 window.addEventListener("online", loadData);
+
+if ("speechSynthesis" in window) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    const voiceBtn = document.querySelector("#btn-voice");
+    if (voiceBtn) checkVoiceAvailability(voiceBtn);
+  };
+}
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/service-worker.js").catch(console.error);
 }
 
 setupMapControls();
+setupJuryDrawer();
 loadData();
