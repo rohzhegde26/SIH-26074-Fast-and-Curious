@@ -1,4 +1,4 @@
-const CACHE = "mandya-pwa-v6";
+const CACHE = "mandya-pwa-v7";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -45,17 +45,16 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // Cache-First for static assets, scripts, styles, and TopoJSON map boundaries
+  // Network-First with Cache Fallback for all assets (ensures immediate updates when online, 100% offline resilience when disconnected)
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (event.request.method === "GET" && url.origin === self.location.origin) {
+    fetch(event.request)
+      .then(response => {
+        if (response.ok && event.request.method === "GET" && url.origin === self.location.origin) {
           const clone = response.clone();
           caches.open(CACHE).then(cache => cache.put(event.request, clone));
         }
         return response;
-      });
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });

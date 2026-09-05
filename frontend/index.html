@@ -8,7 +8,7 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
-    <link rel="stylesheet" href="/styles.css?v=6">
+    <link rel="stylesheet" href="/styles.css?v=7">
     <title>Mandya Weather Advisory — Panchayat Forecasts</title>
   </head>
   <body>
@@ -109,9 +109,9 @@
         </button>
         <div id="jury-drawer" class="jury-drawer hidden">
           <div class="jury-card">
-            <h4>Physical Mass Conservation Invariant ($\mathcal{L}_{\text{cons}}$)</h4>
+            <h4>Physical Mass Conservation Invariant (L<sub>cons</sub>)</h4>
             <p class="jury-desc">
-              Comparison of integrated precipitation volume across Mandya district ($1,250 \times 10^3\text{ m}^3$ coarse observation):
+              Comparison of integrated precipitation volume across Mandya district (1,250 × 10³ m³ coarse observation):
             </p>
             <div class="table-responsive">
               <table class="jury-table">
@@ -131,7 +131,7 @@
                     <td>❌ Unconstrained</td>
                   </tr>
                   <tr class="highlight-row">
-                    <td><strong>Fast & Curious UNet ($\mathcal{L}_{\text{cons}}$)</strong></td>
+                    <td><strong>Fast & Curious UNet (L<sub>cons</sub>)</strong></td>
                     <td class="text-success">&lt; 0.2% discrepancy</td>
                     <td class="text-success">&lt; 0.3% error</td>
                     <td>✅ 99.8% Conserved</td>
@@ -140,7 +140,7 @@
               </table>
             </div>
             <p class="jury-note">
-              <strong>Technical Defense:</strong> Soft penalty $\lambda_{\text{cons}}\mathcal{L}_{\text{cons}}$ was deliberately chosen over hard projection layers to prevent gradient division-by-zero instability across zero-inflated dry-season regimes.
+              <strong>Technical Defense:</strong> Soft penalty λ<sub>cons</sub> · L<sub>cons</sub> was deliberately chosen over hard projection layers to prevent gradient division-by-zero instability across zero-inflated dry-season regimes.
             </p>
           </div>
         </div>
@@ -156,6 +156,6 @@
       </footer>
     </main>
 
-    <script type="module" src="/app.js?v=6"></script>
+    <script type="module" src="/app.js?v=7"></script>
   </body>
 </html>

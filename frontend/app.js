@@ -623,8 +623,11 @@ async function loadData() {
   );
 
   select.onchange = () => {
-    const match = records.find(r => r.lgd_code === select.value);
-    if (match) renderForecastDetails(match);
+    const match = records.find(r => String(r.lgd_code) === String(select.value));
+    if (match) {
+      selectedLgdCode = match.lgd_code;
+      renderForecastDetails(match);
+    }
   };
 
   // Language Toggles
@@ -633,7 +636,7 @@ async function loadData() {
       document.querySelectorAll(".lang-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       currentLanguage = btn.dataset.lang;
-      const current = records.find(r => r.lgd_code === (selectedLgdCode || select.value));
+      const current = records.find(r => String(r.lgd_code) === String(selectedLgdCode || select.value));
       if (current) renderForecastDetails(current);
     };
   });
@@ -642,7 +645,7 @@ async function loadData() {
   await renderMap(records);
 
   if (records.length) {
-    const initial = records.find(r => r.lgd_code === selectedLgdCode) || records[0];
+    const initial = records.find(r => String(r.lgd_code) === String(selectedLgdCode)) || records[0];
     select.value = initial.lgd_code;
     renderForecastDetails(initial);
   }
@@ -654,13 +657,20 @@ function setupJuryDrawer() {
   const drawer = document.querySelector("#jury-drawer");
   if (!btn || !drawer) return;
 
-  btn.addEventListener("click", () => {
+  btn.onclick = () => {
     const isHidden = drawer.classList.contains("hidden");
-    drawer.classList.toggle("hidden", !isHidden);
-    btn.setAttribute("aria-expanded", String(isHidden));
-    const icon = btn.querySelector(".toggle-icon");
-    if (icon) icon.textContent = isHidden ? "▲" : "▼";
-  });
+    if (isHidden) {
+      drawer.classList.remove("hidden");
+      btn.setAttribute("aria-expanded", "true");
+      const icon = btn.querySelector(".toggle-icon");
+      if (icon) icon.textContent = "▲";
+    } else {
+      drawer.classList.add("hidden");
+      btn.setAttribute("aria-expanded", "false");
+      const icon = btn.querySelector(".toggle-icon");
+      if (icon) icon.textContent = "▼";
+    }
+  };
 }
 
 // Lifecycle Events
