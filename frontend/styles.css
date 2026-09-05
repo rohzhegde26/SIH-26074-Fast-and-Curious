@@ -535,6 +535,126 @@ select:focus {
   margin: 0;
 }
 
+/* #1: ನಾಳೆ ಕೂಲಿ ಬೇಕಾ? (48-Hour Coolie & Labour Booking Planner) */
+.decision-card {
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.decision-hold {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 5px solid #ef4444;
+}
+
+.decision-safe {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-left: 5px solid #22c55e;
+}
+
+.decision-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.decision-tag {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #334155;
+  letter-spacing: 0.02em;
+}
+
+.decision-badge {
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+}
+
+.badge-hold {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-safe {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.decision-main {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin: 0;
+  color: #1e293b;
+}
+
+/* #2: ಮಳೆ ನಂತರ ಕೀಟ ಎಚ್ಚರಿಕೆ (Post-Rain 48-Hour Blast & Pest Warning) */
+.pest-card {
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+}
+
+.pest-alert {
+  background: #fff7ed;
+  border: 1px solid #ffedd5;
+  border-left: 5px solid #f97316;
+}
+
+.pest-low {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 5px solid #94a3b8;
+}
+
+.pest-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+  color: #1e293b;
+  margin-bottom: 0.35rem;
+}
+
+.pest-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.pest-level {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.level-high {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.level-low {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.pest-text {
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #334155;
+  margin: 0;
+}
+
 /* Grounded Agro-Economics Card */
 .economics-card {
   display: flex;
@@ -577,7 +697,7 @@ select:focus {
   font-style: italic;
 }
 
-/* Field Actions: WhatsApp & Voice */
+/* Field Actions: WhatsApp, Voice & Katte */
 .field-actions-bar {
   display: flex;
   gap: 0.75rem;
@@ -630,9 +750,110 @@ select:focus {
   box-shadow: 0 3px 6px rgba(11, 110, 79, 0.3);
 }
 
+.btn-katte {
+  background: #334155;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(51, 65, 85, 0.2);
+}
+
+.btn-katte:hover {
+  background: #1e293b;
+  box-shadow: 0 3px 6px rgba(51, 65, 85, 0.3);
+}
+
 .btn-action-icon {
   font-size: 1.1rem;
   line-height: 1;
+}
+
+/* #4: ಗುಡಿ ಕಟ್ಟೆ ಚೀಟಿ (Chalkboard Modal for Non-Phone Farmers) */
+.katte-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.katte-board {
+  background: #0f172a;
+  border: 4px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  color: #f8fafc;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.katte-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  border-bottom: 2px dashed #475569;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.katte-symbol {
+  font-size: 8rem;
+  font-weight: 900;
+  line-height: 1;
+  margin: 0.25rem 0;
+}
+
+.katte-x {
+  color: #ef4444;
+  text-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
+}
+
+.katte-check {
+  color: #22c55e;
+  text-shadow: 0 0 25px rgba(34, 197, 94, 0.4);
+}
+
+.katte-action {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.4rem;
+}
+
+.katte-rain-val {
+  font-size: 1.05rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.katte-note {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+  margin-bottom: 1.5rem;
+}
+
+.btn-close-katte {
+  background: #334155;
+  color: #ffffff;
+  border: 1px solid #475569;
+  padding: 0.6rem 1.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-close-katte:hover {
+  background: #475569;
 }
 
 /* Scientific Verification / Jury Mode */

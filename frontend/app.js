@@ -110,6 +110,58 @@ function renderForecastDetails(record) {
   const ragiAdv = currentLanguage === "kn" ? record.advisory.ragi.action_kn : record.advisory.ragi.action_en;
   const paddyAdv = currentLanguage === "kn" ? record.advisory.paddy.action_kn : record.advisory.paddy.action_en;
 
+  // #1. ನಾಳೆ ಕೂಲಿ ಬೇಕಾ? (48-Hour Coolie & Labour Booking Planner)
+  const isRainRisk = lMax > 5.0 || exp >= 2.5;
+  const coolieHtml = `
+    <div class="decision-card ${isRainRisk ? "decision-hold" : "decision-safe"}" role="region" aria-label="Labour Booking Decision">
+      <div class="decision-header">
+        <span class="decision-tag">${currentLanguage === "kn" ? "ನಾಳೆ ಕೂಲಿ ಬೇಕಾ? (7 PM ನಿರ್ಧಾರ)" : "Tomorrow's Labour Booking (7 PM Decision)"}</span>
+        <span class="decision-badge ${isRainRisk ? "badge-hold" : "badge-safe"}">
+          ${isRainRisk ? (currentLanguage === "kn" ? "🚨 ಕೂಲಿ ಬೇಡ (HOLD)" : "🚨 HOLD LABOUR") : (currentLanguage === "kn" ? "✅ ಕೂಲಿ ಮುಂದುವರಿಸಿ (SAFE)" : "✅ SAFE TO BOOK")}
+        </span>
+      </div>
+      <div class="decision-body">
+        <p class="decision-main">
+          ${
+            isRainRisk
+              ? currentLanguage === "kn"
+                ? "ಸಂಜೆ/ಬೆಳಗ್ಗೆ ಮಳೆ ಸಾಧ್ಯತೆಯಿದೆ. ಕಳೆ ಕೀಳುವಿಕೆ ಅಥವಾ ಸಿಂಪಡಣೆ ಕೆಲಸಕ್ಕೆ ಕೂಲಿ ಬುಕ್ ಮಾಡಬೇಡಿ — <strong>₹800 ವರೆಗೆ ಕೂಲಿ ಹಣ ಉಳಿಸಿ</strong>."
+                : "Rain risk expected during working hours. Avoid booking labour for weeding or spraying — <strong>save ~₹800 in wasted wages</strong>."
+              : currentLanguage === "kn"
+                ? "ಒಣ ಹವೆ / ಅನುಕೂಲಕರ ಹವಾಮಾನ. ಕಳೆ ಕೀಳುವಿಕೆ, ಗೊಬ್ಬರ ಹಾಗೂ ಸಿಂಪಡಣೆ ಕೆಲಸಕ್ಕೆ ಕೂಲಿಗಳನ್ನು ನಿರಾತಂಕವಾಗಿ ಬುಕ್ ಮಾಡಬಹುದು."
+                : "Dry and favorable weather. Safe to contract agricultural labour for spraying, weeding, and intercultural operations."
+          }
+        </p>
+      </div>
+    </div>
+  `;
+
+  // #2. ಮಳೆ ನಂತರ ಕೀಟ ಎಚ್ಚರಿಕೆ (Post-Rain 48-Hour Blast & Pest Warning)
+  const isPestRisk = lMax >= 15.0 || exp >= 10.0;
+  const pestHtml = `
+    <div class="pest-card ${isPestRisk ? "pest-alert" : "pest-low"}" role="region" aria-label="Post-rain pest advisory">
+      <div class="pest-header">
+        <span class="pest-icon">${isPestRisk ? "🍄" : "🛡️"}</span>
+        <strong>${currentLanguage === "kn" ? "ಮಳೆ ನಂತರ ಕೀಟ/ರೋಗ ಎಚ್ಚರಿಕೆ (48h Protocol)" : "Post-Rain Pest & Blast Alert (48h Protocol)"}</strong>
+        <span class="pest-level ${isPestRisk ? "level-high" : "level-low"}">
+          ${isPestRisk ? (currentLanguage === "kn" ? "ತೀವ್ರ ನಿಗಾ" : "HIGH RISK") : (currentLanguage === "kn" ? "ಕಡಿಮೆ ಬಾಧೆ" : "LOW RISK")}
+        </span>
+      </div>
+      <p class="pest-text">
+        ${
+          isPestRisk
+            ? currentLanguage === "kn"
+              ? "ಮಳೆ ನಿಂತ 48 ಗಂಟೆಗಳಲ್ಲಿ ಎಲೆ ಚುಕ್ಕೆ ಮತ್ತು <strong>ರಾಗಿ/ಭತ್ತದ ಬೆಂಕಿ ರೋಗ (Blast)</strong> ಹರಡುವ ಅಪಾಯವಿದೆ. ಮುಂಜಾಗ್ರತೆಯಾಗಿ ಜೈವಿಕ ಶಿಲೀಂಧ್ರನಾಶಕ <em>ಸೂಡೋಮೊನಾಸ್ (Pseudomonas 10g/L)</em> ಅಥವಾ <em>ಟ್ರೈಸೈಕ್ಲಾಜೋಲ್ 75% WP (0.6g/L)</em> ಔಷಧಿಯನ್ನು ಲಭ್ಯವಿಟ್ಟುಕೊಳ್ಳಿ."
+              : "High canopy wetness will favor <strong>Ragi & Paddy Blast (Pyricularia oryzae)</strong> within 48h after rain. Keep bio-agent <em>Pseudomonas fluorescens (10g/L)</em> or <em>Tricyclazole 75% WP (0.6g/L)</em> ready for prophylactic spray."
+            : currentLanguage === "kn"
+              ? "ಪ್ರಸ್ತುತ ಹವಾಮಾನದಲ್ಲಿ ಕೀಟ ಮತ್ತು ಶಿಲೀಂಧ್ರ ಬಾಧೆ ಕಡಿಮೆ. ಸಾಮಾನ್ಯ ಕ್ಷೇತ್ರ ವೀಕ್ಷಣೆ ಮುಂದುವರಿಸಿ."
+              : "Current micro-climate indicates low pest and fungal pressure. Continue routine crop surveillance."
+        }
+      </p>
+    </div>
+  `;
+
+  // Grounded Agro-Economics
   const showEconomics = lMax > 10.0 || exp >= 15.0;
   const economicsHtml = showEconomics
     ? `
@@ -145,6 +197,9 @@ function renderForecastDetails(record) {
         </div>
       </div>
 
+      <!-- Decision Trigger #1: 48-Hour Labour / Coolie Booking Planner -->
+      ${coolieHtml}
+
       <!-- CQR 90% Calibrated Uncertainty Section -->
       <div class="cqr-box">
         <div class="cqr-header">
@@ -178,9 +233,12 @@ function renderForecastDetails(record) {
         </div>
       </div>
 
+      <!-- Decision Trigger #2: Post-Rain 48-Hour Pest & Blast Warning -->
+      ${pestHtml}
+
       ${economicsHtml}
 
-      <!-- Field Actions: Krishi Sakhi WhatsApp Broadcast & Voice Assistant -->
+      <!-- Field Actions: Krishi Sakhi WhatsApp Broadcast & Voice Assistant & Chalkboard Mode -->
       <div class="field-actions-bar">
         <button id="btn-share-whatsapp" class="btn-action btn-whatsapp" title="Share forecast to WhatsApp" aria-label="Share forecast to WhatsApp">
           <span class="btn-action-icon">💬</span>
@@ -191,6 +249,46 @@ function renderForecastDetails(record) {
           <span class="btn-action-icon">🔊</span>
           <span id="voice-btn-text">${currentLanguage === "kn" ? "ಕೇಳಿ" : "Listen"}</span>
         </button>
+
+        <button id="btn-katte-mode" class="btn-action btn-katte" title="Temple / Dairy Chalkboard Display" aria-label="Temple Chalkboard Display">
+          <span class="btn-action-icon">📋</span>
+          <span>${currentLanguage === "kn" ? "ಕಟ್ಟೆ ಚೀಟಿ (Chalkboard)" : "Chalkboard Mode"}</span>
+        </button>
+      </div>
+
+      <!-- #4: ಗುಡಿ ಕಟ್ಟೆ ಚೀಟಿ (Chalkboard Modal for Non-Phone Farmers) -->
+      <div id="katte-overlay" class="katte-overlay hidden" role="dialog" aria-modal="true">
+        <div class="katte-board">
+          <div class="katte-top">
+            <span>${record.panchayat_name}</span>
+            <span>${record.forecast_date}</span>
+          </div>
+          <div class="katte-symbol ${isRainRisk ? "katte-x" : "katte-check"}">
+            ${isRainRisk ? "✕" : "✓"}
+          </div>
+          <div class="katte-action">
+            ${
+              isRainRisk
+                ? currentLanguage === "kn"
+                  ? "ಸಿಂಪಡಣೆ / ಕೂಲಿ ಬೇಡ (HOLD)"
+                  : "NO SPRAY / HOLD LABOUR"
+                : currentLanguage === "kn"
+                  ? "ಕೆಲಸ ಮುಂದುವರಿಸಿ (PROCEED)"
+                  : "SAFE FOR FIELD WORK"
+            }
+          </div>
+          <div class="katte-rain-val">
+            ${exp.toFixed(1)} mm (${lMin.toFixed(1)}–${lMax.toFixed(1)} mm)
+          </div>
+          <div class="katte-note">
+            ${
+              currentLanguage === "kn"
+                ? "ದೇವಸ್ಥಾನದ ಕಟ್ಟೆ ಅಥವಾ ಹಾಲಿನ ಡೈರಿ ಬೋರ್ಡ್ ಮೇಲೆ ಸೀಮೆಸುಣ್ಣದಿಂದ ಬರೆಯಲು"
+                : "Chalkboard template for village dairy / temple wall"
+            }
+          </div>
+          <button id="btn-close-katte" class="btn-close-katte">✕ ${currentLanguage === "kn" ? "ಮುಚ್ಚಿ" : "Close"}</button>
+        </div>
       </div>
     </article>
   `;
@@ -205,6 +303,17 @@ function renderForecastDetails(record) {
   if (voiceBtn) {
     voiceBtn.onclick = () => playVoiceAdvisory(record);
     checkVoiceAvailability(voiceBtn);
+  }
+
+  const katteBtn = container.querySelector("#btn-katte-mode");
+  const katteOverlay = container.querySelector("#katte-overlay");
+  const katteClose = container.querySelector("#btn-close-katte");
+  if (katteBtn && katteOverlay && katteClose) {
+    katteBtn.onclick = () => katteOverlay.classList.remove("hidden");
+    katteClose.onclick = () => katteOverlay.classList.add("hidden");
+    katteOverlay.onclick = e => {
+      if (e.target === katteOverlay) katteOverlay.classList.add("hidden");
+    };
   }
 }
 
