@@ -1,7 +1,7 @@
 import pytest
 
-from src.advisory.engine import build_advisory, rainfall_band, VALID_CROPS, VALID_STAGES
-from src.advisory.rules import DRY, LIGHT, MODERATE, HEAVY
+from src.advisory.engine import build_advisory, rainfall_band, VALID_CROPS
+from src.advisory.rules import DRY, LIGHT, MODERATE, HEAVY, CROP_STAGE_ACTIONS
 
 
 def test_heavy_rain_advisory_avoids_fertilizer():
@@ -14,14 +14,17 @@ def test_heavy_rain_advisory_avoids_fertilizer():
 def test_crop_and_stage_change_the_advice():
     ragi = build_advisory("ragi", "flowering", 8.0, 12.0)
     paddy = build_advisory("paddy", "flowering", 8.0, 12.0)
+    sugarcane = build_advisory("sugarcane", "grand_growth", 8.0, 12.0)
     assert ragi.action_en != paddy.action_en
     assert "24 hours" in ragi.action_en
     assert "excess water" in paddy.action_en
+    assert "Wrap and prop" in sugarcane.action_en
+    assert "ಜಡೆ ಕಟ್ಟಿ" in sugarcane.action_kn
 
 
 def test_all_crop_stage_combinations_produce_valid_bilingual_advisory():
     for crop in VALID_CROPS:
-        for stage in VALID_STAGES:
+        for stage in CROP_STAGE_ACTIONS[crop]:
             adv = build_advisory(crop, stage, expected_mm=10.0, likely_max_mm=18.0)
             assert adv.stage == stage.title()
             assert len(adv.action_en) > 20

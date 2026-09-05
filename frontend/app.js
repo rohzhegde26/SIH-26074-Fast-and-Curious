@@ -109,6 +109,9 @@ function renderForecastDetails(record) {
 
   const ragiAdv = currentLanguage === "kn" ? record.advisory.ragi.action_kn : record.advisory.ragi.action_en;
   const paddyAdv = currentLanguage === "kn" ? record.advisory.paddy.action_kn : record.advisory.paddy.action_en;
+  const sugarcaneAdv = record.advisory?.sugarcane
+    ? (currentLanguage === "kn" ? record.advisory.sugarcane.action_kn : record.advisory.sugarcane.action_en)
+    : "";
 
   // #1. ನಾಳೆ ಕೂಲಿ ಬೇಕಾ? (48-Hour Coolie & Labour Booking Planner)
   const isRainRisk = lMax > 5.0 || exp >= 2.5;
@@ -231,6 +234,16 @@ function renderForecastDetails(record) {
           </div>
           <p class="advisory-text" lang="${currentLanguage}">${paddyAdv}</p>
         </div>
+
+        ${record.advisory?.sugarcane ? `
+        <div class="advisory-card">
+          <div class="advisory-header">
+            <span class="crop-name">🎋 Sugarcane (Kabbina / ಕಬ್ಬು)</span>
+            <span class="stage-tag">${record.advisory.sugarcane.stage}</span>
+          </div>
+          <p class="advisory-text" lang="${currentLanguage}">${sugarcaneAdv}</p>
+        </div>
+        ` : ""}
       </div>
 
       <!-- Decision Trigger #2: Post-Rain 48-Hour Pest & Blast Warning -->
@@ -380,15 +393,20 @@ function checkVoiceAvailability(btnElement) {
   const hasEn = voices.some(v => v.lang.toLowerCase().includes("en"));
 
   if (currentLanguage === "kn") {
-    // Only show if actual local Kannada voice exists to avoid English phoneme distortion
+    // If local Kannada voice is absent, keep button visible with fallback tooltip & guard
+    btnElement.classList.remove("hidden");
     if (hasLocalKn) {
-      btnElement.classList.remove("hidden");
+      btnElement.classList.remove("disabled-voice");
+      btnElement.title = "ಕನ್ನಡ ಧ್ವನಿ ಮುನ್ಸೂಚನೆ ಕೇಳಿ (Listen in Kannada)";
     } else {
-      btnElement.classList.add("hidden");
+      btnElement.classList.add("disabled-voice");
+      btnElement.title = "Kannada voice pack not installed on device";
     }
   } else {
     if (hasEn) {
       btnElement.classList.remove("hidden");
+      btnElement.classList.remove("disabled-voice");
+      btnElement.title = "Listen to advisory";
     } else {
       btnElement.classList.add("hidden");
     }
@@ -410,7 +428,14 @@ function playVoiceAdvisory(record) {
     voiceToUse = voices.find(
       v => v.localService && (v.lang.toLowerCase().includes("kn") || v.lang.toLowerCase().includes("kan"))
     );
-    if (!voiceToUse) return; // Silent guard
+    if (!voiceToUse) {
+      const voiceBtn = document.querySelector("#btn-voice");
+      if (voiceBtn) {
+        voiceBtn.title = "Kannada voice pack not installed on device";
+      }
+      alert("Kannada voice pack not installed on device. Speech synthesis is guarded.");
+      return;
+    }
 
     // Natural 2-sentence colloquial copy (no technical jargon or raw decimals)
     if (lMax > 10.0) {
@@ -502,8 +527,16 @@ async function renderMap(records) {
       path.addEventListener("click", () => {
         const match = records.find(r => String(r.lgd_code) === code);
         if (match) {
+          const searchInput = document.querySelector("#panchayat-search");
           const select = document.querySelector("#panchayat-select");
+          if (searchInput && searchInput.value) {
+            searchInput.value = "";
+            select.replaceChildren(
+              ...records.map(r => new Option(`${r.panchayat_name} (${r.rainfall_mm.expected.toFixed(1)} mm)`, r.lgd_code))
+            );
+          }
           select.value = code;
+          selectedLgdCode = code;
           renderForecastDetails(match);
         }
       });
@@ -616,11 +649,36 @@ async function loadData() {
     syncStatus.textContent = `Last synced: ${timestamp} (${records.length} GPs)`;
   }
 
-  // Populate Dropdown
+  // Populate Dropdown with searchable filter
   const select = document.querySelector("#panchayat-select");
-  select.replaceChildren(
-    ...records.map(r => new Option(`${r.panchayat_name} (${r.rainfall_mm.expected.toFixed(1)} mm)`, r.lgd_code))
-  );
+  const searchInput = document.querySelector("#panchayat-search");
+
+  function populateOptions(filterText = "") {
+    const q = filterText.trim().toLowerCase();
+    const filtered = q
+      ? records.filter(r => r.panchayat_name.toLowerCase().includes(q) || String(r.lgd_code).includes(q))
+      : records;
+
+    select.replaceChildren(
+      ...filtered.map(r => new Option(`${r.panchayat_name} (${r.rainfall_mm.expected.toFixed(1)} mm)`, r.lgd_code))
+    );
+
+    if (filtered.length > 0) {
+      if (filtered.some(r => String(r.lgd_code) === String(selectedLgdCode))) {
+        select.value = selectedLgdCode;
+      } else {
+        select.value = filtered[0].lgd_code;
+        selectedLgdCode = filtered[0].lgd_code;
+        renderForecastDetails(filtered[0]);
+      }
+    }
+  }
+
+  populateOptions();
+
+  if (searchInput) {
+    searchInput.oninput = (e) => populateOptions(e.target.value);
+  }
 
   select.onchange = () => {
     const match = records.find(r => String(r.lgd_code) === String(select.value));

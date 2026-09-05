@@ -4,8 +4,11 @@ from dataclasses import dataclass
 
 from .rules import Advice, CROP_STAGE_ACTIONS, DRY, HEAVY, LIGHT, MODERATE, STAGE_PREFIX
 
-VALID_CROPS = {"ragi", "paddy"}
-VALID_STAGES = {"sowing", "vegetative", "flowering", "harvest"}
+VALID_CROPS = {"ragi", "paddy", "sugarcane"}
+VALID_STAGES = {
+    "sowing", "vegetative", "flowering", "harvest",
+    "germination", "tillering", "grand_growth", "ripening"
+}
 
 
 @dataclass(frozen=True)
@@ -28,7 +31,7 @@ def rainfall_band(expected_mm: float) -> Advice:
 def build_advisory(crop: str, stage: str, expected_mm: float, likely_max_mm: float) -> Advisory:
     if crop not in VALID_CROPS:
         raise ValueError(f"Unsupported crop: {crop}")
-    if stage not in VALID_STAGES:
+    if stage not in CROP_STAGE_ACTIONS.get(crop, {}):
         raise ValueError(f"Unsupported crop stage: {stage}")
 
     base = rainfall_band(expected_mm)
@@ -43,7 +46,7 @@ def build_advisory(crop: str, stage: str, expected_mm: float, likely_max_mm: flo
     if likely_max_mm > 5:
         notes_en.append("Skip scheduled irrigation if rainfall occurs.")
         notes_kn.append("ಮಳೆ ಬಂದರೆ ನಿಗದಿತ ನೀರಾವರಿ ತಪ್ಪಿಸಿ.")
-    if stage == "harvest" and likely_max_mm >= 15.5:
+    if stage in {"harvest", "ripening"} and likely_max_mm >= 15.5:
         notes_en.append("Protect harvested produce and drying areas from rain.")
         notes_kn.append("ಕೊಯ್ಲು ಮಾಡಿದ ಬೆಳೆ ಮತ್ತು ಒಣಗಿಸುವ ಸ್ಥಳಗಳನ್ನು ಮಳೆಯಿಂದ ರಕ್ಷಿಸಿ.")
 

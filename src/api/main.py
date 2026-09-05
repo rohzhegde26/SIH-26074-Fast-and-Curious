@@ -43,6 +43,7 @@ def _response(record: dict) -> ForecastResponse:
     likely_max = float(record["likely_max_mm"])
     ragi = build_advisory("ragi", record.get("ragi_stage", "vegetative"), expected, likely_max)
     paddy = build_advisory("paddy", record.get("paddy_stage", "vegetative"), expected, likely_max)
+    sugarcane = build_advisory("sugarcane", record.get("sugarcane_stage", "grand_growth"), expected, likely_max)
     return ForecastResponse(
         lgd_code=str(record["lgd_code"]),
         panchayat_name=record["panchayat_name"],
@@ -51,7 +52,9 @@ def _response(record: dict) -> ForecastResponse:
         timestamp_utc=record["timestamp_utc"],
         rainfall_mm=Rainfall(expected=expected, likely_min=record["likely_min_mm"], likely_max=likely_max),
         advisory=AdvisorySet(
-            ragi=CropAdvisory(**ragi.__dict__), paddy=CropAdvisory(**paddy.__dict__)
+            ragi=CropAdvisory(**ragi.__dict__),
+            paddy=CropAdvisory(**paddy.__dict__),
+            sugarcane=CropAdvisory(**sugarcane.__dict__),
         ),
     )
 

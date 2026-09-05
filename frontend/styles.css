@@ -352,6 +352,24 @@ body {
   letter-spacing: 0.02em;
 }
 
+.search-input {
+  width: 100%;
+  font: inherit;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  outline: none;
+  font-size: 0.88rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(11, 110, 79, 0.15);
+}
+
 select {
   width: 100%;
   font: inherit;
@@ -495,7 +513,7 @@ select:focus {
 /* Advisory Cards */
 .advisories-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
 }
 
@@ -752,6 +770,20 @@ select:focus {
 .btn-voice:hover {
   background: var(--primary-dark);
   box-shadow: 0 3px 6px rgba(11, 110, 79, 0.3);
+}
+
+.btn-voice.disabled-voice {
+  background: #94a3b8;
+  color: #f8fafc;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.85;
+}
+
+.btn-voice.disabled-voice:hover {
+  background: #64748b;
+  box-shadow: none;
+  transform: none;
 }
 
 .btn-katte {

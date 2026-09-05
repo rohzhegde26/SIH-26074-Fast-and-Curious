@@ -19,6 +19,7 @@ class CropAdvisory(BaseModel):
 class AdvisorySet(BaseModel):
     ragi: CropAdvisory
     paddy: CropAdvisory
+    sugarcane: CropAdvisory | None = None
 
 
 class ForecastResponse(BaseModel):

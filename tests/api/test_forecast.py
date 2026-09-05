@@ -21,6 +21,8 @@ def test_forecast_response():
     assert "calibrated" in body["rainfall_mm"]["empirical_coverage"]
     assert body["advisory"]["ragi"]["action_kn"]
     assert body["advisory"]["paddy"]["action_en"]
+    assert body["advisory"]["sugarcane"]["action_kn"]
+    assert body["advisory"]["sugarcane"]["stage"] == "Grand_Growth"
 
 
 def test_bulk_forecasts_returns_all_mandya_panchayats():

@@ -29,6 +29,10 @@ STAGE_PREFIX = {
     "vegetative": ("Vegetative stage: ", "ಬೆಳವಣಿಗೆಯ ಹಂತ: "),
     "flowering": ("Flowering stage: ", "ಹೂ ಬಿಡುವ ಹಂತ: "),
     "harvest": ("Harvest stage: ", "ಕೊಯ್ಲು ಹಂತ: "),
+    "germination": ("Germination stage: ", "ಮೊಳಕೆ ಹಂತ: "),
+    "tillering": ("Tillering stage: ", "ಕವಲೊಡೆಯುವ ಹಂತ: "),
+    "grand_growth": ("Grand growth stage: ", "ಕಾಂಡ ಬೆಳವಣಿಗೆ ಹಂತ: "),
+    "ripening": ("Ripening/Harvest: ", "ಪಕ್ವತೆ/ಕೊಯ್ಲು ಹಂತ: "),
 }
 
 CROP_STAGE_ACTIONS = {
@@ -66,6 +70,24 @@ CROP_STAGE_ACTIONS = {
         "harvest": Advice(
             "Drain the field before harvest and protect cut panicles and drying grain from rain.",
             "ಕೊಯ್ಲಿಗೆ ಮುನ್ನ ಹೊಲದ ನೀರು ಹೊರಹಾಕಿ; ಕತ್ತರಿಸಿದ ತೆನೆಗಳು ಮತ್ತು ಒಣಗಿಸುವ ಧಾನ್ಯವನ್ನು ಮಳೆಯಿಂದ ರಕ್ಷಿಸಿ.",
+        ),
+    },
+    "sugarcane": {
+        "germination": Advice(
+            "Maintain light soil moisture for setts; ensure furrow drainage to prevent sett rot during heavy rainfall.",
+            "ಕಬ್ಬಿನ ತುಂಡುಗಳು ಕೊಳೆಯದಂತೆ ಹೆಚ್ಚುವರಿ ನೀರನ್ನು ಹೊರಹಾಕಿ; ಮೊಳಕೆಯೊಡೆಯಲು ಹದವಾದ ತೇವಾಂಶ ಕಾಪಾಡಿ.",
+        ),
+        "tillering": Advice(
+            "Earthing up and weed control; postpone urea top-dressing if heavy rainfall burst is forecasted.",
+            "ಬುಡಕ್ಕೆ ಮಣ್ಣು ಏರಿಸಿ ಮತ್ತು ಕಳೆ ತೆಗೆಯಿರಿ; ಭಾರಿ ಮಳೆಯ ಮುನ್ಸೂಚನೆ ಇದ್ದರೆ ಯೂರಿಯಾ ಮೇಲುಗೊಬ್ಬರ ಹಾಕುವುದನ್ನು ಮುಂದೂಡಿ.",
+        ),
+        "grand_growth": Advice(
+            "Wrap and prop canes to prevent lodging; ensure deep furrow drainage to prevent waterlogging and root rot.",
+            "ಕಬ್ಬು ನೆಲಕ್ಕುರುಳದಂತೆ ಜಡೆ ಕಟ್ಟಿ ಮತ್ತು ಒಣಗಿದ ಎಲೆ ಮುಚ್ಚಿಡಿ; ಸಾಲುಗಳಲ್ಲಿ ನೀರು ನಿಲ್ಲದಂತೆ ಬಸಿದು ಹೋಗಲು ಕಾಲುವೆ ಮಾಡಿ.",
+        ),
+        "ripening": Advice(
+            "Withhold canal/borewell irrigation 15 days prior to harvest to maximize sucrose content (Brix).",
+            "ಸಕ್ಕರೆ ಅಂಶ (ಬ್ರಿಕ್ಸ್) ಹೆಚ್ಚಿಸಲು ಕಬ್ಬು ಕಡಿಯುವ 15 ದಿನಗಳ ಮುನ್ನ ನೀರಾವರಿ ನಿಲ್ಲಿಸಿ; ಮಳೆ ನೀರು ನಿಲ್ಲದಂತೆ ಜಾಗ್ರತೆವಹಿಸಿ.",
         ),
     },
 }
