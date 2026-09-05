@@ -250,44 +250,42 @@ function renderForecastDetails(record) {
           <span id="voice-btn-text">${currentLanguage === "kn" ? "ಕೇಳಿ" : "Listen"}</span>
         </button>
 
-        <button id="btn-katte-mode" class="btn-action btn-katte" title="Temple / Dairy Chalkboard Display" aria-label="Temple Chalkboard Display">
+        <button id="btn-katte-mode" class="btn-action btn-katte" aria-expanded="false" title="Toggle Temple / Dairy Chalkboard Template" aria-label="Toggle Chalkboard Display">
           <span class="btn-action-icon">📋</span>
           <span>${currentLanguage === "kn" ? "ಕಟ್ಟೆ ಚೀಟಿ (Chalkboard)" : "Chalkboard Mode"}</span>
+          <span class="katte-toggle-icon">▼</span>
         </button>
       </div>
 
-      <!-- #4: ಗುಡಿ ಕಟ್ಟೆ ಚೀಟಿ (Chalkboard Modal for Non-Phone Farmers) -->
-      <div id="katte-overlay" class="katte-overlay hidden" role="dialog" aria-modal="true">
-        <div class="katte-board">
-          <div class="katte-top">
-            <span>${record.panchayat_name}</span>
-            <span>${record.forecast_date}</span>
-          </div>
-          <div class="katte-symbol ${isRainRisk ? "katte-x" : "katte-check"}">
-            ${isRainRisk ? "✕" : "✓"}
-          </div>
-          <div class="katte-action">
-            ${
-              isRainRisk
-                ? currentLanguage === "kn"
-                  ? "ಸಿಂಪಡಣೆ / ಕೂಲಿ ಬೇಡ (HOLD)"
-                  : "NO SPRAY / HOLD LABOUR"
-                : currentLanguage === "kn"
-                  ? "ಕೆಲಸ ಮುಂದುವರಿಸಿ (PROCEED)"
-                  : "SAFE FOR FIELD WORK"
-            }
-          </div>
-          <div class="katte-rain-val">
-            ${exp.toFixed(1)} mm (${lMin.toFixed(1)}–${lMax.toFixed(1)} mm)
-          </div>
-          <div class="katte-note">
-            ${
-              currentLanguage === "kn"
-                ? "ದೇವಸ್ಥಾನದ ಕಟ್ಟೆ ಅಥವಾ ಹಾಲಿನ ಡೈರಿ ಬೋರ್ಡ್ ಮೇಲೆ ಸೀಮೆಸುಣ್ಣದಿಂದ ಬರೆಯಲು"
-                : "Chalkboard template for village dairy / temple wall"
-            }
-          </div>
-          <button id="btn-close-katte" class="btn-close-katte">✕ ${currentLanguage === "kn" ? "ಮುಚ್ಚಿ" : "Close"}</button>
+      <!-- #4: ಗುಡಿ ಕಟ್ಟೆ ಚೀಟಿ (Inline Chalkboard Display for Non-Phone Farmers) -->
+      <div id="katte-inline-card" class="katte-inline-board hidden" role="region" aria-label="Chalkboard Notice Template">
+        <div class="katte-top">
+          <span>🏛️ ${record.panchayat_name}</span>
+          <span>${record.forecast_date}</span>
+        </div>
+        <div class="katte-symbol ${isRainRisk ? "katte-x" : "katte-check"}">
+          ${isRainRisk ? "✕" : "✓"}
+        </div>
+        <div class="katte-action">
+          ${
+            isRainRisk
+              ? currentLanguage === "kn"
+                ? "ಸಿಂಪಡಣೆ / ಕೂಲಿ ಬೇಡ (HOLD)"
+                : "NO SPRAY / HOLD LABOUR"
+              : currentLanguage === "kn"
+                ? "ಕೆಲಸ ಮುಂದುವರಿಸಿ (PROCEED)"
+                : "SAFE FOR FIELD WORK"
+          }
+        </div>
+        <div class="katte-rain-val">
+          ${exp.toFixed(1)} mm (${lMin.toFixed(1)}–${lMax.toFixed(1)} mm)
+        </div>
+        <div class="katte-note">
+          ${
+            currentLanguage === "kn"
+              ? "ದೇವಸ್ಥಾನದ ಕಟ್ಟೆ ಅಥವಾ ಹಾಲಿನ ಡೈರಿ ಬೋರ್ಡ್ ಮೇಲೆ ಸೀಮೆಸುಣ್ಣದಿಂದ ಬರೆಯಲು ಸುಲಭ ಮಾದರಿ"
+              : "Chalkboard template for village dairy / temple wall bulletin"
+          }
         </div>
       </div>
     </article>
@@ -306,13 +304,14 @@ function renderForecastDetails(record) {
   }
 
   const katteBtn = container.querySelector("#btn-katte-mode");
-  const katteOverlay = container.querySelector("#katte-overlay");
-  const katteClose = container.querySelector("#btn-close-katte");
-  if (katteBtn && katteOverlay && katteClose) {
-    katteBtn.onclick = () => katteOverlay.classList.remove("hidden");
-    katteClose.onclick = () => katteOverlay.classList.add("hidden");
-    katteOverlay.onclick = e => {
-      if (e.target === katteOverlay) katteOverlay.classList.add("hidden");
+  const katteInline = container.querySelector("#katte-inline-card");
+  if (katteBtn && katteInline) {
+    katteBtn.onclick = () => {
+      const isHidden = katteInline.classList.contains("hidden");
+      katteInline.classList.toggle("hidden", !isHidden);
+      katteBtn.setAttribute("aria-expanded", String(isHidden));
+      const icon = katteBtn.querySelector(".katte-toggle-icon");
+      if (icon) icon.textContent = isHidden ? "▲" : "▼";
     };
   }
 }
