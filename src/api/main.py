@@ -38,6 +38,18 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_no_cache_header(request, call_next):
+    response = await call_next(request)
+    # Ensure browsers don't hold stale PWA / frontend assets during development
+    path = request.url.path
+    if path == "/" or path.endswith((".html", ".js", ".css", ".webmanifest")):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 def _response(record: dict) -> ForecastResponse:
     expected = float(record["expected_mm"])
     likely_max = float(record["likely_max_mm"])

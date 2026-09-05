@@ -273,6 +273,14 @@ body {
   filter: drop-shadow(0 0 6px rgba(217, 119, 6, 0.7));
 }
 
+#map path:focus,
+#map path:focus-visible {
+  outline: none;
+  stroke: #e11d48;
+  stroke-width: 0.06;
+  filter: drop-shadow(0 0 8px rgba(225, 29, 72, 0.9));
+}
+
 /* Tooltip */
 .map-tooltip {
   position: absolute;

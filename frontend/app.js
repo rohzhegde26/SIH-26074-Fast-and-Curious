@@ -521,11 +521,16 @@ async function renderMap(records) {
       path.setAttribute("d", pathStringFor(topology, geometry.type === "Polygon" ? geometry.arcs : geometry.arcs.flat()));
 
       const expectedMm = rainLookup.get(code) || 0;
+      const pName = nameLookup.get(code) || geometry.properties.gpname || `GP ${code}`;
       path.style.fill = getRainColor(expectedMm);
       path.dataset.lgdCode = code;
 
-      // Click event
-      path.addEventListener("click", () => {
+      // Accessibility & full keyboard navigation for map
+      path.setAttribute("tabindex", "0");
+      path.setAttribute("role", "button");
+      path.setAttribute("aria-label", `${pName}: ${expectedMm.toFixed(1)} mm`);
+
+      const triggerSelect = () => {
         const match = records.find(r => String(r.lgd_code) === code);
         if (match) {
           if (selectPanchayat) {
@@ -535,11 +540,21 @@ async function renderMap(records) {
             renderForecastDetails(match);
           }
         }
+      };
+
+      // Click event
+      path.addEventListener("click", triggerSelect);
+
+      // Keyboard activation (Enter / Space)
+      path.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          triggerSelect();
+        }
       });
 
       // Hover Tooltip
-      path.addEventListener("mouseenter", e => {
-        const pName = nameLookup.get(code) || geometry.properties.gpname || `GP ${code}`;
+      path.addEventListener("mouseenter", () => {
         tooltip.textContent = `${pName}: ${expectedMm.toFixed(1)} mm`;
         tooltip.classList.remove("hidden");
       });
@@ -551,6 +566,20 @@ async function renderMap(records) {
       });
 
       path.addEventListener("mouseleave", () => {
+        tooltip.classList.add("hidden");
+      });
+
+      // Keyboard focus tooltip
+      path.addEventListener("focus", () => {
+        tooltip.textContent = `${pName}: ${expectedMm.toFixed(1)} mm`;
+        tooltip.classList.remove("hidden");
+        const b = path.getBoundingClientRect();
+        const rect = svg.getBoundingClientRect();
+        tooltip.style.left = `${Math.max(20, Math.min(rect.width - 20, b.left - rect.left + b.width / 2))}px`;
+        tooltip.style.top = `${Math.max(20, b.top - rect.top - 10)}px`;
+      });
+
+      path.addEventListener("blur", () => {
         tooltip.classList.add("hidden");
       });
 
@@ -614,6 +643,9 @@ async function loadData() {
   try {
     const res = await fetch("/api/forecasts");
     if (!res.ok) throw new Error("Network API unavailable");
+    if (res.headers.get("X-Cache-Fallback") === "1") {
+      isCachedMode = true;
+    }
     records = await res.json();
     await saveAllToDb(records);
   } catch {
@@ -698,6 +730,8 @@ async function loadData() {
         const item = document.createElement("div");
         item.className = "suggestion-item" + (idx === 0 ? " active" : "");
         item.dataset.code = r.lgd_code;
+        item.setAttribute("role", "option");
+        item.setAttribute("aria-selected", idx === 0 ? "true" : "false");
         item.innerHTML = `
           <span class="suggestion-name">${r.panchayat_name}</span>
           <span class="suggestion-meta">
@@ -719,7 +753,12 @@ async function loadData() {
     searchInput.oninput = (e) => renderSuggestions(e.target.value);
 
     searchInput.onfocus = () => {
-      if (searchInput.value.trim()) renderSuggestions(searchInput.value);
+      searchInput.select();
+      renderSuggestions(searchInput.value);
+    };
+
+    searchInput.onclick = () => {
+      renderSuggestions(searchInput.value);
     };
 
     searchInput.onblur = () => {
@@ -729,13 +768,15 @@ async function loadData() {
     };
 
     searchInput.onkeydown = (e) => {
+      // If suggestions box is hidden, ArrowDown or Enter opens it immediately
       if (!suggestionsBox || suggestionsBox.classList.contains("hidden")) {
-        if (e.key === "Enter") {
+        if (e.key === "ArrowDown" || e.key === "Enter") {
           e.preventDefault();
           renderSuggestions(searchInput.value);
         }
         return;
       }
+
       const items = Array.from(suggestionsBox.querySelectorAll(".suggestion-item:not([style*='cursor:default'])"));
       if (!items.length) return;
       let activeIdx = items.findIndex(i => i.classList.contains("active"));
@@ -750,11 +791,21 @@ async function loadData() {
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
         const next = (activeIdx + 1) % items.length;
-        items.forEach((it, i) => it.classList.toggle("active", i === next));
+        items.forEach((it, i) => {
+          const isActive = i === next;
+          it.classList.toggle("active", isActive);
+          it.setAttribute("aria-selected", String(isActive));
+        });
+        items[next]?.scrollIntoView({ block: "nearest" });
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         const prev = (activeIdx - 1 + items.length) % items.length;
-        items.forEach((it, i) => it.classList.toggle("active", i === prev));
+        items.forEach((it, i) => {
+          const isActive = i === prev;
+          it.classList.toggle("active", isActive);
+          it.setAttribute("aria-selected", String(isActive));
+        });
+        items[prev]?.scrollIntoView({ block: "nearest" });
       } else if (e.key === "Escape") {
         suggestionsBox.classList.add("hidden");
       }
@@ -784,6 +835,73 @@ async function loadData() {
       const current = records.find(r => String(r.lgd_code) === String(selectedLgdCode || select.value));
       if (current) renderForecastDetails(current);
     };
+  });
+
+  // Global Keyboard Shortcuts
+  window.addEventListener("keydown", (e) => {
+    const activeEl = document.activeElement;
+    const isEditing = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.tagName === "SELECT");
+
+    // Shortcut: '/' or 'k' focuses search if not currently typing in an input
+    if ((e.key === "/" || e.key.toLowerCase() === "k") && !isEditing) {
+      e.preventDefault();
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+        renderSuggestions(searchInput.value);
+      }
+      return;
+    }
+
+    // Prev / Next Panchayat: '[' and ']' or Alt+ArrowLeft / Alt+ArrowRight
+    if ((e.key === "[" || e.key === "]" || (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight"))) && !isEditing) {
+      e.preventDefault();
+      const currentIdx = records.findIndex(r => String(r.lgd_code) === String(selectedLgdCode));
+      if (currentIdx >= 0) {
+        const delta = (e.key === "[" || e.key === "ArrowLeft") ? -1 : 1;
+        const nextIdx = (currentIdx + delta + records.length) % records.length;
+        selectPanchayat(records[nextIdx]);
+      }
+      return;
+    }
+
+    // Language switch: '1' for English, '2' for Kannada
+    if ((e.key === "1" || e.key === "2") && !isEditing) {
+      const targetLang = e.key === "1" ? "en" : "kn";
+      const targetBtn = document.querySelector(`.lang-btn[data-lang="${targetLang}"]`);
+      if (targetBtn) targetBtn.click();
+      return;
+    }
+
+    // Chalkboard Mode toggle: 'c' or 'C'
+    if (e.key.toLowerCase() === "c" && !isEditing) {
+      const katteBtn = document.querySelector("#btn-katte-mode");
+      if (katteBtn) katteBtn.click();
+      return;
+    }
+
+    // Scientific Verification Drawer toggle: 's' or 'S'
+    if (e.key.toLowerCase() === "s" && !isEditing) {
+      const juryBtn = document.querySelector("#btn-jury-mode");
+      if (juryBtn) juryBtn.click();
+      return;
+    }
+
+    // WhatsApp Broadcaster: 'w' or 'W'
+    if (e.key.toLowerCase() === "w" && !isEditing) {
+      const shareBtn = document.querySelector("#btn-share-whatsapp");
+      if (shareBtn) shareBtn.click();
+      return;
+    }
+
+    // Map Zoom: '+' / '=' to zoom in, '-' to zoom out, '0' to reset
+    if ((e.key === "+" || e.key === "=") && !isEditing) {
+      document.querySelector("#zoom-in")?.click();
+    } else if (e.key === "-" && !isEditing) {
+      document.querySelector("#zoom-out")?.click();
+    } else if (e.key === "0" && !isEditing) {
+      document.querySelector("#zoom-reset")?.click();
+    }
   });
 
   updateStatsBar(records);

@@ -1,4 +1,4 @@
-const CACHE = "mandya-pwa-v9";
+const CACHE = "mandya-pwa-v13";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -40,7 +40,19 @@ self.addEventListener("fetch", event => {
           }
           return response;
         })
-        .catch(() => caches.match(event.request))
+        .catch(async () => {
+          const cached = await caches.match(event.request, { ignoreSearch: true });
+          if (cached) {
+            const headers = new Headers(cached.headers);
+            headers.set("X-Cache-Fallback", "1");
+            return new Response(cached.body, {
+              status: cached.status,
+              statusText: cached.statusText,
+              headers
+            });
+          }
+          return cached;
+        })
     );
     return;
   }
@@ -55,6 +67,6 @@ self.addEventListener("fetch", event => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(event.request, { ignoreSearch: true }))
   );
 });
