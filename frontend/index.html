@@ -8,7 +8,7 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
-    <link rel="stylesheet" href="/styles.css?v=8">
+    <link rel="stylesheet" href="/styles.css?v=9">
     <title>Mandya Weather Advisory — Panchayat Forecasts</title>
   </head>
   <body>
@@ -86,9 +86,20 @@
       <!-- Filter / Selection Controls -->
       <section class="controls-grid" aria-label="Selection Controls">
         <div class="control-group">
-          <label for="panchayat-search">Select Panchayat</label>
-          <input type="text" id="panchayat-search" class="search-input" placeholder="🔍 Quick search (e.g. Halaguru)..." autocomplete="off" aria-label="Quick filter panchayat" />
-          <select id="panchayat-select" aria-label="Select panchayat"></select>
+          <label for="panchayat-search">Select Panchayat / ಪಂಚಾಯತಿ ಆಯ್ಕೆ</label>
+          <div class="search-box-wrapper">
+            <input
+              type="text"
+              id="panchayat-search"
+              class="search-input"
+              placeholder="🔍 Search name (e.g. Halaguru, Banavasi, 215504)..."
+              autocomplete="off"
+              aria-label="Quick search panchayat"
+            />
+            <button type="button" id="search-clear-btn" class="search-clear-btn hidden" title="Clear search" aria-label="Clear search">✕</button>
+            <div id="search-suggestions" class="search-suggestions hidden" role="listbox"></div>
+          </div>
+          <select id="panchayat-select" aria-label="Select panchayat from list"></select>
         </div>
         <div class="control-group">
           <label for="language-select">Advisory Language / ಭಾಷೆ</label>
@@ -157,6 +168,6 @@
       </footer>
     </main>
 
-    <script type="module" src="/app.js?v=8"></script>
+    <script type="module" src="/app.js?v=9"></script>
   </body>
 </html>

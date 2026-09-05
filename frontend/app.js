@@ -51,6 +51,7 @@ let mapPaths = new Map();
 let currentZoom = 1.0;
 let panOffset = { x: 0, y: 0 };
 let initialViewBox = null;
+let selectPanchayat = null;
 
 // TopoJSON Arc Decoder
 function decodeArc(topology, index) {
@@ -527,17 +528,12 @@ async function renderMap(records) {
       path.addEventListener("click", () => {
         const match = records.find(r => String(r.lgd_code) === code);
         if (match) {
-          const searchInput = document.querySelector("#panchayat-search");
-          const select = document.querySelector("#panchayat-select");
-          if (searchInput && searchInput.value) {
-            searchInput.value = "";
-            select.replaceChildren(
-              ...records.map(r => new Option(`${r.panchayat_name} (${r.rainfall_mm.expected.toFixed(1)} mm)`, r.lgd_code))
-            );
+          if (selectPanchayat) {
+            selectPanchayat(match);
+          } else {
+            selectedLgdCode = code;
+            renderForecastDetails(match);
           }
-          select.value = code;
-          selectedLgdCode = code;
-          renderForecastDetails(match);
         }
       });
 
@@ -649,43 +645,134 @@ async function loadData() {
     syncStatus.textContent = `Last synced: ${timestamp} (${records.length} GPs)`;
   }
 
-  // Populate Dropdown with searchable filter
+  // Search combobox and dropdown controls
   const select = document.querySelector("#panchayat-select");
   const searchInput = document.querySelector("#panchayat-search");
+  const clearBtn = document.querySelector("#search-clear-btn");
+  const suggestionsBox = document.querySelector("#search-suggestions");
 
-  function populateOptions(filterText = "") {
-    const q = filterText.trim().toLowerCase();
-    const filtered = q
-      ? records.filter(r => r.panchayat_name.toLowerCase().includes(q) || String(r.lgd_code).includes(q))
-      : records;
+  // Populate dropdown with all 234 panchayats
+  select.replaceChildren(
+    ...records.map(r => new Option(`${r.panchayat_name} (${r.rainfall_mm.expected.toFixed(1)} mm)`, r.lgd_code))
+  );
 
-    select.replaceChildren(
-      ...filtered.map(r => new Option(`${r.panchayat_name} (${r.rainfall_mm.expected.toFixed(1)} mm)`, r.lgd_code))
-    );
-
-    if (filtered.length > 0) {
-      if (filtered.some(r => String(r.lgd_code) === String(selectedLgdCode))) {
-        select.value = selectedLgdCode;
-      } else {
-        select.value = filtered[0].lgd_code;
-        selectedLgdCode = filtered[0].lgd_code;
-        renderForecastDetails(filtered[0]);
-      }
+  selectPanchayat = function(record) {
+    if (!record) return;
+    selectedLgdCode = record.lgd_code;
+    select.value = record.lgd_code;
+    if (searchInput) {
+      searchInput.value = record.panchayat_name;
+      if (clearBtn) clearBtn.classList.remove("hidden");
     }
+    if (suggestionsBox) {
+      suggestionsBox.classList.add("hidden");
+      suggestionsBox.replaceChildren();
+    }
+    renderForecastDetails(record);
+  };
+
+  function renderSuggestions(query) {
+    if (!suggestionsBox) return;
+    const q = (query || "").trim().toLowerCase();
+    if (!q) {
+      suggestionsBox.classList.add("hidden");
+      suggestionsBox.replaceChildren();
+      if (clearBtn) clearBtn.classList.add("hidden");
+      return;
+    }
+
+    if (clearBtn) clearBtn.classList.remove("hidden");
+
+    const matches = records.filter(r =>
+      r.panchayat_name.toLowerCase().includes(q) || String(r.lgd_code).includes(q)
+    ).slice(0, 8);
+
+    if (!matches.length) {
+      suggestionsBox.innerHTML = `<div class="suggestion-item" style="color:var(--text-muted); cursor:default;">No panchayat found for "${query}"</div>`;
+      suggestionsBox.classList.remove("hidden");
+      return;
+    }
+
+    suggestionsBox.replaceChildren(
+      ...matches.map((r, idx) => {
+        const item = document.createElement("div");
+        item.className = "suggestion-item" + (idx === 0 ? " active" : "");
+        item.dataset.code = r.lgd_code;
+        item.innerHTML = `
+          <span class="suggestion-name">${r.panchayat_name}</span>
+          <span class="suggestion-meta">
+            <span class="suggestion-badge">${r.rainfall_mm.expected.toFixed(1)} mm</span>
+            <span>LGD: ${r.lgd_code}</span>
+          </span>
+        `;
+        item.onmousedown = (e) => {
+          e.preventDefault();
+          selectPanchayat(r);
+        };
+        return item;
+      })
+    );
+    suggestionsBox.classList.remove("hidden");
   }
 
-  populateOptions();
-
   if (searchInput) {
-    searchInput.oninput = (e) => populateOptions(e.target.value);
+    searchInput.oninput = (e) => renderSuggestions(e.target.value);
+
+    searchInput.onfocus = () => {
+      if (searchInput.value.trim()) renderSuggestions(searchInput.value);
+    };
+
+    searchInput.onblur = () => {
+      setTimeout(() => {
+        if (suggestionsBox) suggestionsBox.classList.add("hidden");
+      }, 250);
+    };
+
+    searchInput.onkeydown = (e) => {
+      if (!suggestionsBox || suggestionsBox.classList.contains("hidden")) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          renderSuggestions(searchInput.value);
+        }
+        return;
+      }
+      const items = Array.from(suggestionsBox.querySelectorAll(".suggestion-item:not([style*='cursor:default'])"));
+      if (!items.length) return;
+      let activeIdx = items.findIndex(i => i.classList.contains("active"));
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const target = items[activeIdx >= 0 ? activeIdx : 0];
+        if (target) {
+          const match = records.find(r => String(r.lgd_code) === target.dataset.code);
+          if (match) selectPanchayat(match);
+        }
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = (activeIdx + 1) % items.length;
+        items.forEach((it, i) => it.classList.toggle("active", i === next));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prev = (activeIdx - 1 + items.length) % items.length;
+        items.forEach((it, i) => it.classList.toggle("active", i === prev));
+      } else if (e.key === "Escape") {
+        suggestionsBox.classList.add("hidden");
+      }
+    };
+  }
+
+  if (clearBtn) {
+    clearBtn.onclick = () => {
+      searchInput.value = "";
+      clearBtn.classList.add("hidden");
+      if (suggestionsBox) suggestionsBox.classList.add("hidden");
+      searchInput.focus();
+    };
   }
 
   select.onchange = () => {
     const match = records.find(r => String(r.lgd_code) === String(select.value));
-    if (match) {
-      selectedLgdCode = match.lgd_code;
-      renderForecastDetails(match);
-    }
+    if (match) selectPanchayat(match);
   };
 
   // Language Toggles
@@ -704,8 +791,7 @@ async function loadData() {
 
   if (records.length) {
     const initial = records.find(r => String(r.lgd_code) === String(selectedLgdCode)) || records[0];
-    select.value = initial.lgd_code;
-    renderForecastDetails(initial);
+    selectPanchayat(initial);
   }
 }
 
