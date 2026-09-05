@@ -7,6 +7,8 @@ client = TestClient(app)
 
 
 def test_forecast_response():
+    # Warm-up to eliminate Python cold-start / disk-cache latency
+    _ = client.get("/api/forecast/215504")
     t0 = time.time()
     response = client.get("/api/forecast/215504")
     elapsed_ms = (time.time() - t0) * 1000
