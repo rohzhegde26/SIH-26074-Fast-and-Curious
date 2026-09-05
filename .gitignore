@@ -1,0 +1,64 @@
+# -- Python --------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+*.so
+
+# -- Virtual Environments -------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# -- Pytest / Coverage ----------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# -- IDE / Editor ---------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*~
+
+# -- OS ------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -- Large / Raw Data (do NOT commit raw satellite/IMD grids) ------------------
+data/raw/
+data/processed/
+
+# -- Model Checkpoints (large binary files) ------------------------------------
+models/checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.safetensors
+
+# -- Logs ----------------------------------------------------------------------
+*.log
+logs/
+
+# -- Env / Secrets -------------------------------------------------------------
+.env
+.env.*
+!.env.example
+secrets/
+
+# -- Generated OpenAPI spec (auto-regenerated on startup) ----------------------
+docs/openapi.json
+
+# -- Node (if any frontend tooling is added later) -----------------------------
+node_modules/
+.npm/
