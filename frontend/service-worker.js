@@ -1,4 +1,4 @@
-const CACHE = "mandya-pwa-v13";
+const CACHE = "mandya-pwa-v14";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -8,7 +8,14 @@ const STATIC_ASSETS = [
   "/icon.svg",
   "/icon-192.png",
   "/icon-512.png",
-  "/mandya_simplified.topojson"
+  "/mandya_simplified.topojson",
+  "/audio/ragi_veg_rain_kn.mp3",
+  "/audio/ragi_harvest_rot_kn.mp3",
+  "/audio/ragi_sow_dry_kn.mp3",
+  "/audio/paddy_veg_rain_kn.mp3",
+  "/audio/paddy_harvest_rot_kn.mp3",
+  "/audio/dry_window_safe_kn.mp3",
+  "/audio/heavy_cloudburst_kn.mp3"
 ];
 
 self.addEventListener("install", event => {

@@ -132,13 +132,263 @@ body {
   box-shadow: 0 0 6px #f59e0b;
 }
 
-/* Main Layout */
+/* Intermediary Operator Bar */
+.operator-bar {
+  background: #064e3b;
+  border-bottom: 2px solid #047857;
+  padding: 0.65rem 1rem;
+  color: #ecfdf5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.operator-content {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.operator-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.operator-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+}
+
+.operator-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #a7f3d0;
+}
+
+.operator-roles {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-role {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #f0fdf4;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.btn-role:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: #6ee7b7;
+}
+
+.btn-role.active {
+  background: #ffffff;
+  color: #064e3b;
+  border-color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.role-purpose-banner {
+  font-size: 0.78rem;
+  color: #d1fae5;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.4rem 0.7rem;
+  border-radius: 4px;
+  border-left: 3px solid #34d399;
+  margin-top: 0.15rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+/* Main Layout & Role-Driven Reordering */
 .app-main {
   max-width: 860px;
   margin: 0 auto;
   padding: 1.25rem 1rem 3rem;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1.25rem;
+}
+
+.forecast-card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 1. Dairy Secretary: 2-Tap Sensor First, Broadcast Second */
+body[data-operator-role="dairy"] #nandini-section {
+  order: 1 !important;
+  border: 2px solid #059669;
+  box-shadow: 0 4px 16px rgba(5, 150, 105, 0.2);
+}
+body[data-operator-role="dairy"] .controls-grid {
+  order: 2;
+}
+body[data-operator-role="dairy"] #forecast-details {
+  order: 3;
+}
+body[data-operator-role="dairy"] #forecast-details .field-actions-bar {
+  order: 1 !important;
+  background: #f0fdf4;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #bbf7d0;
+}
+body[data-operator-role="dairy"] #forecast-details .forecast-header {
+  order: 2;
+}
+body[data-operator-role="dairy"] #forecast-details #katte-inline-card {
+  order: 3;
+}
+body[data-operator-role="dairy"] #forecast-details .advisories-grid {
+  order: 4;
+}
+body[data-operator-role="dairy"] .map-card {
+  order: 4;
+}
+body[data-operator-role="dairy"] .stats-bar {
+  order: 5;
+}
+body[data-operator-role="dairy"] .science-section {
+  order: 6;
+}
+
+/* 2. RSK Officer: Crop Stage & Phenology Risk First */
+body[data-operator-role="rsk"] .controls-grid {
+  order: 1;
+}
+body[data-operator-role="rsk"] #forecast-details {
+  order: 2;
+}
+body[data-operator-role="rsk"] #forecast-details .stage-selector-container {
+  order: 1 !important;
+  background: #f0fdf4;
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+body[data-operator-role="rsk"] #forecast-details .financial-risk-card {
+  order: 2 !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.18);
+}
+body[data-operator-role="rsk"] #forecast-details .decision-card {
+  order: 3 !important;
+}
+body[data-operator-role="rsk"] #forecast-details .forecast-header {
+  order: 4;
+}
+body[data-operator-role="rsk"] #forecast-details .advisories-grid {
+  order: 5;
+}
+body[data-operator-role="rsk"] #forecast-details .cqr-box {
+  order: 6;
+}
+body[data-operator-role="rsk"] #forecast-details .field-actions-bar {
+  order: 7;
+}
+body[data-operator-role="rsk"] .map-card {
+  order: 3;
+}
+body[data-operator-role="rsk"] .stats-bar {
+  order: 4;
+}
+body[data-operator-role="rsk"] #nandini-section {
+  order: 5;
+}
+body[data-operator-role="rsk"] .science-section {
+  order: 6;
+}
+
+/* 3. GP Secretary: Chalkboard & Virtual ARG Schema First */
+body[data-operator-role="gp"] .controls-grid {
+  order: 1;
+}
+body[data-operator-role="gp"] #forecast-details {
+  order: 2;
+}
+body[data-operator-role="gp"] #forecast-details #katte-inline-card {
+  order: 1 !important;
+  display: block !important;
+  border: 2px solid #0284c7;
+}
+body[data-operator-role="gp"] #forecast-details .forecast-header {
+  order: 2;
+}
+body[data-operator-role="gp"] #forecast-details .decision-card {
+  order: 3;
+}
+body[data-operator-role="gp"] #forecast-details .advisories-grid {
+  order: 4;
+}
+body[data-operator-role="gp"] .science-section {
+  order: 3 !important;
+}
+body[data-operator-role="gp"] .varg-jury-card {
+  border: 2px solid #0284c7;
+}
+body[data-operator-role="gp"] .map-card {
+  order: 4;
+}
+body[data-operator-role="gp"] .stats-bar {
+  order: 5;
+}
+body[data-operator-role="gp"] #nandini-section {
+  order: 6;
+}
+
+/* 4. Lead Farmer: Simple Banner Only, Zero Jargon */
+body[data-operator-role="lead"] .controls-grid {
+  order: 1;
+}
+body[data-operator-role="lead"] #forecast-details {
+  order: 2;
+}
+body[data-operator-role="lead"] #forecast-details .decision-card {
+  order: 1 !important;
+  font-size: 1.15rem;
+  padding: 1.25rem;
+}
+body[data-operator-role="lead"] #forecast-details .forecast-header {
+  order: 2;
+}
+body[data-operator-role="lead"] #forecast-details .advisories-grid {
+  order: 3;
+}
+body[data-operator-role="lead"] #forecast-details .field-actions-bar {
+  order: 4;
+}
+body[data-operator-role="lead"] #forecast-details .cqr-box {
+  display: none !important;
+}
+body[data-operator-role="lead"] #forecast-details .pest-card {
+  order: 5;
+}
+body[data-operator-role="lead"] .map-card {
+  order: 3;
+}
+body[data-operator-role="lead"] .stats-bar {
+  order: 4;
+}
+body[data-operator-role="lead"] #nandini-section {
+  display: none !important;
+}
+body[data-operator-role="lead"] .science-section {
+  display: none !important;
 }
 
 /* Stats Summary Bar */
@@ -1509,4 +1759,33 @@ select:focus {
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* Offline Dispatch Toast Notification */
+.app-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #064e3b;
+  color: #ecfdf5;
+  border: 1.5px solid #34d399;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  padding: 0.8rem 1.4rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  z-index: 10000;
+  text-align: center;
+  max-width: 90vw;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.app-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
 

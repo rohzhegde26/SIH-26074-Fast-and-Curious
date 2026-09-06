@@ -218,5 +218,16 @@
     "observation_period": "LAST_12_HOURS",
     "recorded_at_utc": "2026-09-06T07:10:23.624682+00:00",
     "recalibration_flagged": false
+  },
+  {
+    "validation_id": "c633bfae",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:31:45.847185+00:00",
+    "recalibration_flagged": false
   }
 ]

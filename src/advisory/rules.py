@@ -115,7 +115,7 @@ def compute_financial_risk(crop: str, stage: str, expected_mm: float, likely_max
                 impact_title_en="Crop Spoilage & Grain Rot Alert",
                 impact_title_kn="ಧಾನ್ಯ ಕೊಳೆಯುವಿಕೆ ಮತ್ತು ಬೆಳೆ ನಷ್ಟದ ಎಚ್ಚರಿಕೆ",
                 impact_desc_en="Severe threat of earhead sprouting and grain rotting (₹5,000–₹8,000/acre loss). Expedite harvesting or cover cut stacks immediately.",
-                impact_desc_kn="ತೆನೆ ಮೊಳಕೆಯೊಡೆಯುವ ಮತ್ತು ಧಾನ್ಯ ಕೊಳೆಯುವ ತೀವ್ರ ಅಪಾಯ (ಎಕರೆಗೆ ₹5,000-₹8,000 ನಷ್ಟ). ತಕ್ಷಣ ಕೊಯ್ಲು ಮಾಡಿ ಅಥವಾ ಕಟಾವು ಮಾಡಿದ ಬೆಳೆಯನ್ನು ತಾಡಪಾಲಿನಿಂದ ಮುಚ್ಚಿ.",
+                impact_desc_kn="ತೆನೆ ಮೊಳಕೆಯೊಡೆಯುವ ಮತ್ತು ಧಾನ್ಯ ಕೊಳೆಯುವ ತೀವ್ರ ಅಪಾಯ (ಎಕರೆಗೆ ₹5,000-₹8,000 ನಷ್ಟ). ಇಂದೇ ಕೊಯ್ಲು ಮುಗಿಸಿ ಒಣ ಜಾಗದಲ್ಲಿ ಭದ್ರಪಡಿಸಿ ಅಥವಾ ತಾಡಪಾಲಿನಿಂದ ಮುಚ್ಚಿ.",
             )
         return FinancialRisk(
             risk_level="LOW",

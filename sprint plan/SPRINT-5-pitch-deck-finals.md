@@ -66,22 +66,26 @@ Produce an unassailable pitch deck, a crisp 2-minute demonstration video, and co
    *A Panchayat-Aware, Terrain-Conditioned Weather Downscaling and Agro-Advisory System* (Theme: Agriculture, FoodTech & Rural Development).
 2. **Slide 2: The Core Problem: The 0.25° Resolution Gap**  
    IMD 0.25° block forecasts (~752 km²) average out orographic variation across 30–39 panchayats. Showing why a farmer in a rain-shadow valley gets the same forecast as a farmer on a windward ridge.
-3. **Slide 3: Data Pipeline & Spatial Integrity**  
+3. **Slide 3: The Delivery Pivot: The Intermediary Reality**  
+   *"Direct-to-farmer agri-apps show near-zero sustained retention — the sector's graveyard is well documented."*  
+   Reframing: The farmer is the beneficiary, not the user. Empowering the 4 village intermediaries (Dairy Secretary, RSK Officer, GP Secretary, Lead Farmer) who already dispense daily advice. Detailed master deck in [pitch_deck_finals.md](file:///c:/Users/Rohith P Hegde/Desktop/SIH-FINALISTS-2026/docs/pitch_deck_finals.md).
+4. **Slide 4: Data Pipeline & Spatial Integrity**  
    All-India monsoon training (2010–2023, 1,708 days, 310k raw patches $\to$ 200k–240k usable after $\ge 70\%$ land filter). GLO-30 DEM via CDSE S3. Mandya $+ 0.5^\circ$ buffer strictly held out (`patch_index ∩ buffer == ∅`).
-4. **Slide 4: Physics & Mathematics: Conservation & Registration**  
+5. **Slide 5: Physics & Mathematics: Conservation & Registration**  
    Mass conservation pooling with kernel=5 and cosine weighting at HR pixel centers. Elimination of the $2.7\text{ km}$ grid registration shift. Elimination of the cos×area double-counting bug.
-5. **Slide 5: Calibration, Uncertainty & Honest Metrics (No Dry-Day Illusion)**  
+6. **Slide 6: Calibration, Uncertainty & Honest Metrics (No Dry-Day Illusion)**  
    Per-$0.25^\circ$-cell quantile mapping to IMD gauge truth (QQ plot artifact). Conformalized Quantile Regression (CQR) with 90% empirical coverage on unseen 2023 test data. **Reporting Wet-Day MAE ($>2.5\text{ mm}$) and Extreme Event CSI (R95/R99)** alongside aggregate MAE to prove skill on actual rainfall events.
-6. **Slide 6: Clean Polygon Aggregation & Bookkeeping Gates**  
+7. **Slide 7: Clean Polygon Aggregation & Bookkeeping Gates**  
    Exact polygon fractional area weighting with analytic spherical cell areas ($A_i = R^2 \cdot \Delta\phi \cdot \Delta\lambda \cdot \cos(\text{lat})$) on full-precision geodata. Proof that polygon boundary areas close within relative error $10^{-3}$.
-7. **Slide 7: Product Experience: PWA & Bilingual Agro-Advisory**  
-   Offline-first mobile PWA (<400 KB TopoJSON) with airplane-mode detection banner. Stage-specific farming advisories in Kannada and English for Ragi and Paddy.
-8. **Slide 8: System Architecture & Verification Gates**  
-   End-to-end pipeline diagram. CI automated test suite passing all 15 Definition of Done criteria. Single-command reproducible execution via `python scripts/run_pipeline.py`.
-9. **Slide 9: What We Built vs. Future Roadmap**  
-   Tier 1 (Built): Perfect-model supervised reconstruction with spatial holdout.  
-   Tier 2/3 (Roadmap): Format-compatible GFS 0.25°/NCUM input integration, IMERG Early/Late near-real-time ingestion, and BharatFS operational integration.
-10. **Slide 10: "What We Will NOT Claim"**  
+8. **Slide 8: Product Experience: The Democratized Intermediary Cockpit**  
+   Dynamic role toggle (Dairy Secretary, RSK Officer, GP Secretary, Lead Farmer) reordering cards to each operator's 2-second routine. Offline-first PWA (<400 KB TopoJSON) with 100% offline precached audio and factual status banner.
+9. **Slide 9: Closed-Loop Sensor Network: Nandini Dairy Ground-Truth**  
+   2-tap validation loop solving gauge sparsity across 232 unmonitored Panchayats. Auto-flagging micro-clusters for dynamic quantile recalibration.
+10. **Slide 10: Headless Virtual ARG Feed (IMD AWS Schema)**  
+    Synthetic Automated Rain Gauge feed for all 232 unmonitored panchayats via `/api/v1/virtual-arg/{lgd_code}` in exact IMD AWS JSON format.
+11. **Slide 11: System Architecture & Verification Gates**  
+    End-to-end pipeline diagram. CI automated test suite passing all 15 Definition of Done criteria. Single-command reproducible execution via `python scripts/run_pipeline.py`.
+12. **Slide 12: "What We Will NOT Claim" & Scientific Honesty**  
     The 11 technical guardrails displayed transparently. Demonstrates exceptional scientific maturity to jury members.
 
 ---

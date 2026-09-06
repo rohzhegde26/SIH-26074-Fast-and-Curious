@@ -15,7 +15,7 @@
     <!-- Top Offline Warning Banner -->
     <div id="offline-banner" class="banner hidden" role="alert" aria-live="assertive">
       <span class="banner-icon">⚠️</span>
-      <span id="offline-banner-text">Offline: Viewing cached forecast. Local generation not supported.</span>
+      <span id="offline-banner-text">⚠️ No network — operating on cached 06:00 IST advisory. Chalkboard & dispatch queue active.</span>
     </div>
 
     <header class="app-header">
@@ -23,8 +23,8 @@
         <div class="header-brand">
           <img src="/icon.svg" alt="Weather logo" class="header-logo" width="34" height="34">
           <div>
-            <h1>Mandya Agro-Weather</h1>
-            <p class="subtitle">5× Downscaled Panchayat Forecast & Bilingual Advisory</p>
+            <h1>Mandya Agro-Weather Cockpit</h1>
+            <p class="subtitle">Village Intermediary Console (RSK Officer • Dairy Secretary • GP Development)</p>
           </div>
         </div>
         <div class="sync-badge" id="sync-badge">
@@ -33,6 +33,25 @@
         </div>
       </div>
     </header>
+
+    <!-- Intermediary Operator Bar -->
+    <section class="operator-bar" aria-label="Village Intermediary Role">
+      <div class="operator-content">
+        <div class="operator-title-wrap">
+          <span class="operator-pulse"></span>
+          <span class="operator-label">OPERATOR CONSOLE / ಗ್ರಾಮದ ಮಧ್ಯವರ್ತಿ ಕಾರ್ಯಕ್ಷೇತ್ರ:</span>
+        </div>
+        <div class="operator-roles" role="radiogroup" aria-label="Active village operator role">
+          <button type="button" class="btn-role active" data-role="dairy">🥛 Dairy Secretary (ಡೈರಿ ಕಾರ್ಯದರ್ಶಿ)</button>
+          <button type="button" class="btn-role" data-role="rsk">🌾 RSK Agriculture Officer (ಕೃಷಿ ಅಧಿಕಾರಿ)</button>
+          <button type="button" class="btn-role" data-role="gp">🏛️ GP Secretary (ಗ್ರಾ.ಪಂ. ಅಧಿಕಾರಿ)</button>
+          <button type="button" class="btn-role" data-role="lead">👩‍🌾 Lead Farmer / SHG (ಪ್ರಗತಿಪರ ರೈತ)</button>
+        </div>
+        <div id="role-purpose-banner" class="role-purpose-banner">
+          🥛 Dairy Secretary Mode: 06:00 AM 2-Tap Rain Verification during milk weighing &amp; Milk Center broadcast prioritised.
+        </div>
+      </div>
+    </section>
 
     <main class="app-main">
       <!-- District Summary Stats Bar -->

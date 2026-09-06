@@ -5,15 +5,37 @@
 
 const DB_NAME = "mandya-weather-db";
 const STORE = "forecasts";
+const DISPATCH_STORE = "dispatches";
+
+// Toast Notification Manager
+function showToast(message) {
+  let toast = document.querySelector("#app-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "app-toast";
+    toast.className = "app-toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.remove("hidden");
+  toast.classList.add("visible");
+  setTimeout(() => {
+    toast.classList.remove("visible");
+    setTimeout(() => toast.classList.add("hidden"), 300);
+  }, 4200);
+}
 
 // IndexedDB Helper
 function getDb() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 2);
-    request.onupgradeneeded = () => {
+    const request = indexedDB.open(DB_NAME, 3);
+    request.onupgradeneeded = (e) => {
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: "lgd_code" });
+      }
+      if (!db.objectStoreNames.contains(DISPATCH_STORE)) {
+        db.createObjectStore(DISPATCH_STORE, { keyPath: "id", autoIncrement: true });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -41,6 +63,38 @@ async function getAllFromDb() {
     request.onsuccess = () => resolve(request.result || []);
     request.onerror = () => reject(request.error);
   });
+}
+
+async function queueOfflineDispatch(dispatchPayload) {
+  try {
+    const db = await getDb();
+    const tx = db.transaction(DISPATCH_STORE, "readwrite");
+    const store = tx.objectStore(DISPATCH_STORE);
+    store.add(dispatchPayload);
+  } catch (err) {
+    console.warn("Could not queue offline dispatch:", err);
+  }
+}
+
+async function syncQueuedDispatches() {
+  try {
+    const db = await getDb();
+    const tx = db.transaction(DISPATCH_STORE, "readonly");
+    const store = tx.objectStore(DISPATCH_STORE);
+    const getAllReq = store.getAll();
+    getAllReq.onsuccess = () => {
+      const queued = getAllReq.result || [];
+      if (queued.length > 0) {
+        showToast(
+          currentLanguage === "kn"
+            ? `ನೆಟ್ವರ್ಕ್ ಮರಳಿದೆ: ಕ್ಯೂನಲ್ಲಿರುವ ${queued.length} ಸಂದೇಶಗಳು ಕಳುಹಿಸಲು ಸಿದ್ಧವಾಗಿವೆ`
+            : `Network restored: ${queued.length} queued advisories ready for broadcast`
+        );
+      }
+    };
+  } catch (err) {
+    console.warn("Could not sync queued dispatches:", err);
+  }
 }
 
 // Application State
@@ -103,7 +157,7 @@ function getFinancialRisk(stage, exp, lMax, lang) {
         icon: "🚨",
         title: lang === "kn" ? "ಧಾನ್ಯ ಕೊಳೆಯುವಿಕೆ ಮತ್ತು ಬೆಳೆ ನಷ್ಟದ ಗಂಭೀರ ಅಪಾಯ" : "Crop Spoilage & Grain Rot Alert",
         cost: lang === "kn" ? "ಎಕರೆಗೆ ₹5,000–₹8,000 ನಷ್ಟ" : "₹5,000–₹8,000 / acre at risk",
-        desc: lang === "kn" ? "ತೆನೆ ಮೊಳಕೆಯೊಡೆಯುವ ಮತ್ತು ಕಾಳು ಕೊಳೆಯುವ ತೀವ್ರ ಅಪಾಯ. ತಕ್ಷಣ ಕೊಯ್ಲು ಪೂರ್ಣಗೊಳಿಸಿ ಅಥವಾ ಕಟಾವು ಮಾಡಿದ ಬೆಳೆಯನ್ನು ತಾಡಪಾಲಿನಿಂದ ಮುಚ್ಚಿ." : "Severe risk of earhead sprouting and grain rotting. Expedite harvesting or cover cut crop immediately.",
+        desc: lang === "kn" ? "ತೆನೆ ಮೊಳಕೆಯೊಡೆಯುವ ಮತ್ತು ಧಾನ್ಯ ಕೊಳೆಯುವ ತೀವ್ರ ಅಪಾಯವಿದೆ. ಇಂದೇ ಕೊಯ್ಲು ಮುಗಿಸಿ ಒಣ ಜಾಗದಲ್ಲಿ ಭದ್ರಪಡಿಸಿ ಅಥವಾ ತಾಡಪಾಲಿನಿಂದ ಮುಚ್ಚಿ." : "Severe risk of earhead sprouting and grain rotting. Expedite harvesting or cover cut crop immediately.",
       };
     }
     return {
@@ -218,10 +272,10 @@ function renderForecastDetails(record) {
           ${
             isRainRisk
               ? currentLanguage === "kn"
-                ? "ಸಂಜೆ/ಬೆಳಗ್ಗೆ ಮಳೆ ಸಾಧ್ಯತೆಯಿದೆ. ಕಳೆ ಕೀಳುವಿಕೆ ಅಥವಾ ಸಿಂಪಡಣೆ ಕೆಲಸಕ್ಕೆ ಕೂಲಿ ಬುಕ್ ಮಾಡಬೇಡಿ — <strong>₹800 ವರೆಗೆ ಕೂಲಿ ಹಣ ಉಳಿಸಿ</strong>."
+                ? "ಸಂಜೆ ಅಥವಾ ಬೆಳಗ್ಗೆ ಮಳೆ ಸಾಧ್ಯತೆ ಇದೆ. ಸಿಂಪಡಣೆ ಅಥವಾ ಕಳೆ ಕೆಲಸಕ್ಕೆ ಕೂಲಿ ಕರೆಯಬೇಡಿ — <strong>₹800 ವರೆಗೆ ಕೂಲಿ ಹಣ ಉಳಿಸಿ</strong>."
                 : "Rain risk expected during working hours. Avoid booking labour for weeding or spraying — <strong>save ~₹800 in wasted wages</strong>."
               : currentLanguage === "kn"
-                ? "ಒಣ ಹವೆ / ಅನುಕೂಲಕರ ಹವಾಮಾನ. ಕಳೆ ಕೀಳುವಿಕೆ, ಗೊಬ್ಬರ ಹಾಗೂ ಸಿಂಪಡಣೆ ಕೆಲಸಕ್ಕೆ ಕೂಲಿಗಳನ್ನು ನಿರಾತಂಕವಾಗಿ ಬುಕ್ ಮಾಡಬಹುದು."
+                ? "ಒಣ ಹವೆ ಮತ್ತು ಅನುಕೂಲಕರ ಹವಾಮಾನ. ಕಳೆ ಕೀಳಲು ಮತ್ತು ಔಷಧಿ ಸಿಂಪಡಿಸಲು ಧೈರ್ಯವಾಗಿ ಕೂಲಿಗಳನ್ನು ಕರೆಯಬಹುದು."
                 : "Dry and favorable weather. Safe to contract agricultural labour for spraying, weeding, and intercultural operations."
           }
         </p>
@@ -466,6 +520,38 @@ function renderForecastDetails(record) {
 }
 
 // -------------------------------------------------------------
+// Audio Matrix Resolver & Local Precache Audio Player
+// -------------------------------------------------------------
+function resolveAudioFile(crop, stage, record) {
+  const exp = record.rainfall_mm.expected;
+  const lMax = record.rainfall_mm.likely_max;
+  const c = (crop || "ragi").toLowerCase();
+  const s = (stage || "vegetative").toLowerCase();
+
+  let risk = "dry";
+  if (lMax >= 15.0 || exp >= 15.0) {
+    risk = "heavy_rain";
+  } else if (exp >= 2.5) {
+    risk = "light_rain";
+  }
+
+  if (risk === "heavy_rain") {
+    if (s === "harvest") return `${c}_harvest_rot_kn.mp3`;
+    if (s === "vegetative") return `${c}_veg_rain_kn.mp3`;
+    return "heavy_cloudburst_kn.mp3";
+  } else if (risk === "light_rain") {
+    if (s === "harvest") return `${c}_harvest_rot_kn.mp3`;
+    if (s === "sowing" && c === "ragi") return "ragi_sow_dry_kn.mp3";
+    return "dry_window_safe_kn.mp3";
+  } else {
+    if (s === "sowing" && c === "ragi") return "ragi_sow_dry_kn.mp3";
+    return "dry_window_safe_kn.mp3";
+  }
+}
+
+let activeAudio = null;
+
+// -------------------------------------------------------------
 // Krishi Sakhi WhatsApp Community Broadcaster (0% Risk Universal Link)
 // -------------------------------------------------------------
 function broadcastToWhatsApp(record) {
@@ -503,6 +589,45 @@ function broadcastToWhatsApp(record) {
       `🔗 *Mandya Agro-Weather Service*`;
   }
 
+  // Directive 4: Offline Broadcast = Queue, Local Audio Play, and Chalkboard Unfold
+  const isOffline = !navigator.onLine;
+
+  if (isOffline) {
+    // 1. Play matching audio locally
+    playVoiceAdvisory(record);
+
+    // 2. Unfold and render chalkboard template immediately
+    const katteInline = document.querySelector("#katte-inline-card");
+    const katteBtn = document.querySelector("#btn-katte-mode");
+    if (katteInline) {
+      katteInline.classList.remove("hidden");
+      if (katteBtn) {
+        katteBtn.setAttribute("aria-expanded", "true");
+        const icon = katteBtn.querySelector(".katte-toggle-icon");
+        if (icon) icon.textContent = "▲";
+      }
+      katteInline.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    // 3. Queue WhatsApp dispatch payload in IndexedDB
+    queueOfflineDispatch({
+      lgd_code: record.lgd_code,
+      panchayat_name: record.panchayat_name,
+      forecast_date: record.forecast_date,
+      message: message,
+      timestamp: new Date().toISOString()
+    });
+
+    // 4. Show localized toast alert
+    showToast(
+      currentLanguage === "kn"
+        ? "ಸೇರಿಸಲಾಗಿದೆ — ನೆಟ್ವರ್ಕ್ ಬಂದ ಕೂಡಲೇ ಕಳುಹಿಸಲಾಗುವುದು (Queued — will dispatch when network returns)"
+        : "Queued for dispatch — will automatically send when network returns"
+    );
+    return;
+  }
+
+  // Online Flow: Universal Link
   const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
   if (navigator.share) {
     navigator
@@ -514,44 +639,54 @@ function broadcastToWhatsApp(record) {
 }
 
 // -------------------------------------------------------------
-// Voice Assistant with "Ghost Button" Local-Service Guard
+// Voice Assistant with Precached Audio & Local-Service Guard
 // -------------------------------------------------------------
 function checkVoiceAvailability(btnElement) {
-  if (!btnElement || !("speechSynthesis" in window)) {
-    if (btnElement) btnElement.classList.add("hidden");
-    return;
-  }
-
-  const voices = window.speechSynthesis.getVoices();
-  const hasLocalKn = voices.some(
-    v => v.localService && (v.lang.toLowerCase().includes("kn") || v.lang.toLowerCase().includes("kan"))
-  );
-  const hasEn = voices.some(v => v.lang.toLowerCase().includes("en"));
-
-  if (currentLanguage === "kn") {
-    // If local Kannada voice is absent, keep button visible with fallback tooltip & guard
-    btnElement.classList.remove("hidden");
-    if (hasLocalKn) {
-      btnElement.classList.remove("disabled-voice");
-      btnElement.title = "ಕನ್ನಡ ಧ್ವನಿ ಮುನ್ಸೂಚನೆ ಕೇಳಿ (Listen in Kannada)";
-    } else {
-      btnElement.classList.add("disabled-voice");
-      btnElement.title = "Kannada voice pack not installed on device";
-    }
-  } else {
-    if (hasEn) {
-      btnElement.classList.remove("hidden");
-      btnElement.classList.remove("disabled-voice");
-      btnElement.title = "Listen to advisory";
-    } else {
-      btnElement.classList.add("hidden");
-    }
-  }
+  if (!btnElement) return;
+  btnElement.classList.remove("hidden");
+  btnElement.classList.remove("disabled-voice");
+  btnElement.title = currentLanguage === "kn"
+    ? "ಕನ್ನಡ ಧ್ವನಿ ಮುನ್ಸೂಚನೆ ಕೇಳಿ (Listen in Kannada)"
+    : "Listen to advisory";
 }
 
 function playVoiceAdvisory(record) {
+  const btnText = document.querySelector("#voice-btn-text");
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio.currentTime = 0;
+    activeAudio = null;
+  }
+
+  if (currentLanguage === "kn") {
+    // Play canonical precached Mandya Kannada MP3 audio file
+    const filename = resolveAudioFile("ragi", currentCropStage, record);
+    const audioUrl = `/audio/${filename}`;
+    const audio = new Audio(audioUrl);
+    activeAudio = audio;
+
+    if (btnText) btnText.textContent = "ಪ್ಲೇ ಆಗುತ್ತಿದೆ…";
+    audio.onended = () => {
+      if (btnText) btnText.textContent = "ಕೇಳಿ";
+      activeAudio = null;
+    };
+    audio.onerror = () => {
+      playFallbackSynthesis(record);
+    };
+
+    audio.play().catch(() => {
+      playFallbackSynthesis(record);
+    });
+    return;
+  }
+
+  // English Speech Synthesis
+  playFallbackSynthesis(record);
+}
+
+function playFallbackSynthesis(record) {
   if (!("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel(); // Stop ongoing speech
+  window.speechSynthesis.cancel();
 
   const exp = record.rainfall_mm.expected;
   const lMax = record.rainfall_mm.likely_max;
@@ -564,16 +699,6 @@ function playVoiceAdvisory(record) {
     voiceToUse = voices.find(
       v => v.localService && (v.lang.toLowerCase().includes("kn") || v.lang.toLowerCase().includes("kan"))
     );
-    if (!voiceToUse) {
-      const voiceBtn = document.querySelector("#btn-voice");
-      if (voiceBtn) {
-        voiceBtn.title = "Kannada voice pack not installed on device";
-      }
-      alert("Kannada voice pack not installed on device. Speech synthesis is guarded.");
-      return;
-    }
-
-    // Natural 2-sentence colloquial copy (no technical jargon or raw decimals)
     if (lMax > 10.0) {
       textToSpeak = `ಇಂದು ${record.panchayat_name}ದಲ್ಲಿ ಸಾಧಾರಣ ಮಳೆ ನಿರೀಕ್ಷೆ ಇದೆ. ಸಂಜೆ ಜೋರು ಮಳೆ ಸಾಧ್ಯತೆ ಇರುವುದರಿಂದ ರಾಗಿ ಬೆಳೆಗೆ ಗೊಬ್ಬರ ಹಾಕಬೇಡಿ.`;
     } else if (exp >= 2.5) {
@@ -594,7 +719,7 @@ function playVoiceAdvisory(record) {
 
   const utterance = new SpeechSynthesisUtterance(textToSpeak);
   if (voiceToUse) utterance.voice = voiceToUse;
-  utterance.rate = 0.9; // 10% slower for field clarity
+  utterance.rate = 0.9;
   utterance.pitch = 1.0;
 
   const btnText = document.querySelector("#voice-btn-text");
@@ -803,7 +928,7 @@ async function loadData() {
 
   if (isOffline) {
     banner.classList.remove("hidden");
-    bannerText.textContent = `⚠️ Offline: Viewing cached forecast from ${timestamp}. Local generation not supported.`;
+    bannerText.textContent = "⚠️ No network — operating on cached 06:00 IST advisory. Chalkboard & dispatch queue active.";
     syncBadge.classList.add("offline-mode");
     syncStatus.textContent = `Offline: Cached (${records.length} GPs)`;
   } else {
@@ -967,6 +1092,7 @@ async function loadData() {
       document.querySelectorAll(".lang-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       currentLanguage = btn.dataset.lang;
+      setOperatorRole(currentRole);
       const current = records.find(r => String(r.lgd_code) === String(selectedLgdCode || select.value));
       if (current) renderForecastDetails(current);
     };
@@ -1239,9 +1365,73 @@ async function loadVirtualArgPayload() {
   }
 }
 
+// -------------------------------------------------------------
+// Village Intermediary Role Cockpit Reordering & Persistence
+// -------------------------------------------------------------
+const ROLE_DESCRIPTIONS = {
+  dairy: {
+    en: "🥛 Dairy Secretary Mode: 06:00 AM 2-Tap Rain Verification during milk weighing & Milk Center broadcast prioritised.",
+    kn: "🥛 ಡೈರಿ ಕಾರ್ಯದರ್ಶಿ: ಹಾಲು ಅಳೆಯುವ ಸಮಯದ 2-ಟ್ಯಾಪ್ ಮಳೆ ದೃಢೀಕರಣ ಮತ್ತು ಹಾಲು ಸಂಘದ ಬ್ರಾಡ್‌ಕಾಸ್ಟ್ ಮೊದಲ ಪ್ರಾಶಸ್ತ್ಯ."
+  },
+  rsk: {
+    en: "🌾 RSK Officer Mode: Crop phenology stage & ₹ cost-of-error financial risk prioritised.",
+    kn: "🌾 ಕೃಷಿ ಅಧಿಕಾರಿ: ಬೆಳೆಯ ಬೆಳವಣಿಗೆ ಹಂತ ಮತ್ತು ₹ ಆರ್ಥಿಕ ನಷ್ಟ ಅಪಾಯ ವಿಶ್ಲೇಷಣೆ ಮೊದಲ ಪ್ರಾಶಸ್ತ್ಯ."
+  },
+  gp: {
+    en: "🏛️ GP Secretary Mode: A4 Notice Board / Chalkboard template & Virtual ARG API feed prioritised.",
+    kn: "🏛️ ಗ್ರಾ.ಪಂ. ಅಧಿಕಾರಿ: ಗ್ರಾಮ ಪಂಚಾಯತಿ ನೋಟಿಸ್ ಬೋರ್ಡ್ ಸೀಮೆಸುಣ್ಣದ ಚೀಟಿ ಮತ್ತು ವರ್ಚುವಲ್ ರೇನ್ ಗೇಜ್ ಡಾಟಾ ಮೊದಲ ಪ್ರಾಶಸ್ತ್ಯ."
+  },
+  lead: {
+    en: "👩‍🌾 Lead Farmer Mode: High-contrast today/tomorrow field action decision only (Technical jargon hidden).",
+    kn: "👩‍🌾 ಪ್ರಗತಿಪರ ರೈತ: ಇಂದಿನ ಮತ್ತು ನಾಳೆಯ ನೇರ ಕೃಷಿ ನಿರ್ಧಾರ (ತಾಂತ್ರಿಕ ಗೊಂದಲಗಳಿಲ್ಲದ ಸರಳ ನೋಟ)."
+  }
+};
+
+let currentRole = "dairy";
+
+function setOperatorRole(role) {
+  if (!role) return;
+  currentRole = role;
+  localStorage.setItem("mandya_operator_role", role);
+
+  document.body.setAttribute("data-operator-role", role);
+  const mainEl = document.querySelector(".app-main");
+  if (mainEl) mainEl.setAttribute("data-operator-role", role);
+
+  document.querySelectorAll(".btn-role").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.role === role);
+  });
+
+  const purposeBanner = document.querySelector("#role-purpose-banner");
+  if (purposeBanner) {
+    const desc = ROLE_DESCRIPTIONS[role];
+    purposeBanner.textContent = currentLanguage === "kn" ? desc.kn : desc.en;
+  }
+
+  // If GP role selected, automatically expand Chalkboard template
+  if (role === "gp") {
+    const katteInline = document.querySelector("#katte-inline-card");
+    if (katteInline) katteInline.classList.remove("hidden");
+  }
+}
+
+function setupOperatorRoles() {
+  const savedRole = localStorage.getItem("mandya_operator_role") || "dairy";
+  setOperatorRole(savedRole);
+
+  document.querySelectorAll(".btn-role").forEach(btn => {
+    btn.onclick = () => {
+      setOperatorRole(btn.dataset.role);
+    };
+  });
+}
+
 // Lifecycle Events
 window.addEventListener("offline", loadData);
-window.addEventListener("online", loadData);
+window.addEventListener("online", () => {
+  loadData();
+  syncQueuedDispatches();
+});
 
 if ("speechSynthesis" in window) {
   window.speechSynthesis.onvoiceschanged = () => {
@@ -1254,9 +1444,11 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/service-worker.js").catch(console.error);
 }
 
+setupOperatorRoles();
 setupMapControls();
 setupJuryDrawer();
 setupNandiniModule();
 setupVirtualArgViewer();
 fetchNandiniStats();
 loadData();
+
