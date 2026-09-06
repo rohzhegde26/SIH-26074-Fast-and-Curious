@@ -1124,3 +1124,389 @@ select:focus {
     margin-top: 0.4rem;
   }
 }
+
+/* ==========================================================================
+   STRATEGIC TRIAD: NANDINI LOOP, PHENOLOGY RISK, VIRTUAL ARG
+   ========================================================================== */
+
+/* 1. KMF Nandini Dairy Ground-Truth Loop */
+.nandini-card {
+  margin-top: 1rem;
+  background: linear-gradient(135deg, #ffffff 0%, #fefcf3 100%);
+  border: 1.5px solid #fed7aa;
+  border-left: 6px solid #ea580c;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.08);
+}
+
+.nandini-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.nandini-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.nandini-icon {
+  font-size: 1.6rem;
+}
+
+.nandini-brand h3 {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #9a3412;
+  margin: 0;
+}
+
+.nandini-sub {
+  font-size: 0.8rem;
+  color: #78350f;
+  margin: 0.15rem 0 0 0;
+}
+
+.nandini-stats-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  background: #ffedd5;
+  color: #9a3412;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nandini-stat-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #16a34a;
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.25); }
+}
+
+.nandini-prompt {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.85rem 0;
+  line-height: 1.4;
+}
+
+.nandini-btn-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.btn-nandini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-size: 0.96rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  border: none;
+}
+
+.btn-nandini-yes {
+  background: #15803d;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(21, 128, 61, 0.25);
+}
+
+.btn-nandini-yes:hover {
+  background: #166534;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(21, 128, 61, 0.35);
+}
+
+.btn-nandini-no {
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+}
+
+.btn-nandini-no:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+}
+
+.nandini-alert {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.nandini-alert.alert-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.nandini-alert.alert-flagged {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* 2. Phenology-Weighted Cost-of-Error & Crop Stage Selector */
+.stage-selector-container {
+  margin: 0.85rem 0 0.5rem 0;
+  padding: 0.6rem 0.85rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.stage-selector-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.45rem;
+}
+
+.stage-pill-group {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.btn-stage {
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-stage:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.btn-stage.active {
+  background: #0b6e4f;
+  color: #ffffff;
+  border-color: #0b6e4f;
+  box-shadow: 0 2px 6px rgba(11, 110, 79, 0.25);
+}
+
+.financial-risk-card {
+  margin: 0.85rem 0;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.financial-risk-card.risk-high {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-left: 6px solid #dc2626;
+}
+
+.financial-risk-card.risk-moderate {
+  background: #fffbeb;
+  border: 1.5px solid #fef3c7;
+  border-left: 6px solid #d97706;
+}
+
+.financial-risk-card.risk-low {
+  background: #f0fdf4;
+  border: 1.5px solid #dcfce7;
+  border-left: 6px solid #16a34a;
+}
+
+.fin-risk-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.fin-risk-content {
+  flex: 1;
+}
+
+.fin-risk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.fin-risk-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.financial-risk-card.risk-high .fin-risk-title { color: #991b1b; }
+.financial-risk-card.risk-moderate .fin-risk-title { color: #92400e; }
+.financial-risk-card.risk-low .fin-risk-title { color: #166534; }
+
+.fin-cost-badge {
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.financial-risk-card.risk-high .fin-cost-badge {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.financial-risk-card.risk-moderate .fin-cost-badge {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.financial-risk-card.risk-low .fin-cost-badge {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.fin-risk-desc {
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* 3. Virtual ARG Feed in Scientific Drawer */
+.varg-jury-card {
+  margin-top: 1.25rem;
+  border-top: 2px dashed #cbd5e1;
+  padding-top: 1.25rem;
+}
+
+.varg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.varg-header h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.varg-badge {
+  background: #0284c7;
+  color: #ffffff;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.varg-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.btn-varg-toggle {
+  background: #0f172a;
+  color: #f8fafc;
+  border: none;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-varg-toggle:hover {
+  background: #334155;
+}
+
+.varg-link {
+  font-size: 0.84rem;
+  color: #0284c7;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.varg-link:hover {
+  text-decoration: underline;
+}
+
+.varg-json-container {
+  margin-top: 0.75rem;
+  background: #0f172a;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  overflow: hidden;
+}
+
+.varg-json-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  font-size: 0.78rem;
+  font-family: monospace;
+  color: #94a3b8;
+}
+
+.btn-copy {
+  background: #334155;
+  color: #f8fafc;
+  border: none;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.btn-copy:hover {
+  background: #475569;
+}
+
+.varg-code {
+  margin: 0;
+  padding: 0.85rem;
+  color: #38bdf8;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  max-height: 280px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+

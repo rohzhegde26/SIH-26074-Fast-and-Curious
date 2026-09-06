@@ -91,3 +91,104 @@ CROP_STAGE_ACTIONS = {
         ),
     },
 }
+
+
+@dataclass(frozen=True)
+class FinancialRisk:
+    risk_level: str  # "LOW", "MODERATE_WARNING", "HIGH_FINANCIAL_LOSS"
+    cost_estimate_inr: int
+    impact_title_en: str
+    impact_title_kn: str
+    impact_desc_en: str
+    impact_desc_kn: str
+
+
+def compute_financial_risk(crop: str, stage: str, expected_mm: float, likely_max_mm: float) -> FinancialRisk:
+    """Calculates phenology-weighted economic cost-of-error in INR."""
+    norm_stage = stage.lower()
+
+    if norm_stage in {"harvest", "ripening"}:
+        if likely_max_mm >= 5.0:
+            return FinancialRisk(
+                risk_level="HIGH_FINANCIAL_LOSS",
+                cost_estimate_inr=6500,
+                impact_title_en="Crop Spoilage & Grain Rot Alert",
+                impact_title_kn="ಧಾನ್ಯ ಕೊಳೆಯುವಿಕೆ ಮತ್ತು ಬೆಳೆ ನಷ್ಟದ ಎಚ್ಚರಿಕೆ",
+                impact_desc_en="Severe threat of earhead sprouting and grain rotting (₹5,000–₹8,000/acre loss). Expedite harvesting or cover cut stacks immediately.",
+                impact_desc_kn="ತೆನೆ ಮೊಳಕೆಯೊಡೆಯುವ ಮತ್ತು ಧಾನ್ಯ ಕೊಳೆಯುವ ತೀವ್ರ ಅಪಾಯ (ಎಕರೆಗೆ ₹5,000-₹8,000 ನಷ್ಟ). ತಕ್ಷಣ ಕೊಯ್ಲು ಮಾಡಿ ಅಥವಾ ಕಟಾವು ಮಾಡಿದ ಬೆಳೆಯನ್ನು ತಾಡಪಾಲಿನಿಂದ ಮುಚ್ಚಿ.",
+            )
+        return FinancialRisk(
+            risk_level="LOW",
+            cost_estimate_inr=0,
+            impact_title_en="Favorable Harvest Window",
+            impact_title_kn="ಕೊಯ್ಲಿಗೆ ಸೂಕ್ತ ಒಣ ವಾತಾವರಣ",
+            impact_desc_en="Dry window ideal for harvesting and solar drying. Minimum moisture damage risk.",
+            impact_desc_kn="ಕೊಯ್ಲು ಮತ್ತು ಒಣಗಿಸಲು ಸೂಕ್ತವಾದ ಒಣ ಹವೆ. ತೇವಾಂಶ ಹಾನಿಯ ಅಪಾಯವಿಲ್ಲ.",
+        )
+
+    if norm_stage in {"vegetative", "tillering", "grand_growth"}:
+        if likely_max_mm >= 5.0:
+            return FinancialRisk(
+                risk_level="MODERATE_WARNING",
+                cost_estimate_inr=1800,
+                impact_title_en="Fertilizer Leaching & Runoff Risk",
+                impact_title_kn="ರಸಗೊಬ್ಬರ ಕೊಚ್ಚಿಹೋಗುವ ಅಪಾಯ",
+                impact_desc_en="Urea and top-dressing fertilizer will leach into runoff (₹1,500–₹2,000/acre waste). Withhold application until rainfall ceases.",
+                impact_desc_kn="ಯೂರಿಯಾ ಮೇಲುಗೊಬ್ಬರ ಮಳೆ ನೀರಿನಲ್ಲಿ ಕೊಚ್ಚಿಹೋಗುವ ಸಾಧ್ಯತೆ (ಎಕರೆಗೆ ₹1,500-₹2,000 ವ್ಯರ್ಥ). ಮಳೆ ನಿಲ್ಲುವವರೆಗೆ ಗೊಬ್ಬರ ಹಾಕಬೇಡಿ.",
+            )
+        return FinancialRisk(
+            risk_level="LOW",
+            cost_estimate_inr=0,
+            impact_title_en="Safe Field Operations Window",
+            impact_title_kn="ಸುರಕ್ಷಿತ ಕೃಷಿ ಚಟುವಟಿಕೆಗಳ ಸಮಯ",
+            impact_desc_en="Low leaching risk. Safe for nutrient management and weeding.",
+            impact_desc_kn="ಗೊಬ್ಬರ ಕೊಚ್ಚಿಹೋಗುವ ಅಪಾಯವಿಲ್ಲ. ಪೋಷಕಾಂಶ ನಿರ್ವಹಣೆ ಮತ್ತು ಕಳೆ ತೆಗೆಯಲು ಸೂಕ್ತ.",
+        )
+
+    if norm_stage in {"flowering"}:
+        if likely_max_mm >= 10.0:
+            return FinancialRisk(
+                risk_level="MODERATE_WARNING",
+                cost_estimate_inr=1400,
+                impact_title_en="Pesticide Wash-off & Pollen Disruption",
+                impact_title_kn="ಕೀಟನಾಶಕ ಕೊಚ್ಚಿಹೋಗುವಿಕೆ ಮತ್ತು ಪರಾಗಸ್ಪರ್ಶ ಹಾನಿ",
+                impact_desc_en="Foliar spray wash-off (₹1,200–₹1,500/acre chemical waste) and floral damage. Delay pesticide/fungicide spraying.",
+                impact_desc_kn="ಸಿಂಪಡಿಸಿದ ಕೀಟನಾಶಕ ಕೊಚ್ಚಿಹೋಗುವ ಮತ್ತು ಹೂವಿನ ಪರಾಗ ನಷ್ಟದ ಅಪಾಯ (ಎಕರೆಗೆ ₹1,200-₹1,500 ನಷ್ಟ). ಸಿಂಪಡಣೆ ಮುಂದೂಡಿ.",
+            )
+        return FinancialRisk(
+            risk_level="LOW",
+            cost_estimate_inr=0,
+            impact_title_en="Optimal Pollination Environment",
+            impact_title_kn="ಉತ್ತಮ ಪರಾಗಸ್ಪರ್ಶ ವಾತಾವರಣ",
+            impact_desc_en="Stable conditions. Ideal for pollination and scheduled foliar feeding.",
+            impact_desc_kn="ಸ್ಥಿರ ವಾತಾವರಣ. ಪರಾಗಸ್ಪರ್ಶ ಮತ್ತು ಪೋಷಕಾಂಶ ಸಿಂಪಡಣೆಗೆ ಅನುಕೂಲಕರ.",
+        )
+
+    # Sowing / Germination
+    if likely_max_mm >= 35.0:
+        return FinancialRisk(
+            risk_level="HIGH_FINANCIAL_LOSS",
+            cost_estimate_inr=2500,
+            impact_title_en="Seed Runoff & Seedling Burial Risk",
+            impact_title_kn="ಬೀಜ ಕೊಚ್ಚಿಹೋಗುವ ಮತ್ತು ಮಣ್ಣು ಮುಚ್ಚುವ ಅಪಾಯ",
+            impact_desc_en="Intense runoff will wash away broadcast seeds or bury germinating seedlings (₹2,000–₹3,000/acre resowing cost). Delay sowing.",
+            impact_desc_kn="ಭಾರಿ ಮಳೆಯಿಂದ ಬಿತ್ತಿದ ಬೀಜ ಕೊಚ್ಚಿಹೋಗುವ ಅಥವಾ ಕೊಳೆಯುವ ಅಪಾಯ (ಮರುಬಿತ್ತನೆಗೆ ₹2,000-₹3,000 ಖರ್ಚು). ಬಿತ್ತನೆ ತಕ್ಷಣ ಮುಂದೂಡಿ.",
+        )
+    if likely_max_mm >= 5.0:
+        return FinancialRisk(
+            risk_level="LOW",
+            cost_estimate_inr=0,
+            impact_title_en="Beneficial Sowing Moisture",
+            impact_title_kn="ಬಿತ್ತನೆಗೆ ಅನುಕೂಲಕರ ಮಣ್ಣಿನ ತೇವಾಂಶ",
+            impact_desc_en="Excellent natural soil moisture for seed imbibition. Proceed with planned sowing.",
+            impact_desc_kn="ಬೀಜ ಮೊಳಕೆಯೊಡೆಯಲು ಉತ್ತಮ ನೈಸರ್ಗಿಕ ತೇವಾಂಶ. ಬಿತ್ತನೆ ಕಾರ್ಯವನ್ನು ಮುಂದುವರಿಸಿ.",
+        )
+    return FinancialRisk(
+        risk_level="LOW",
+        cost_estimate_inr=0,
+        impact_title_en="Marginal Soil Moisture",
+        impact_title_kn="ಸಾಧಾರಣ ಮಣ್ಣಿನ ತೇವಾಂಶ",
+        impact_desc_en="Ensure protective pre-sowing irrigation before dry seeding.",
+        impact_desc_kn="ಬಿತ್ತನೆಗೆ ಮುನ್ನ ಅಗತ್ಯವಿದ್ದರೆ ಹದವಾದ ನೀರಾವರಿ ಒದಗಿಸಿ.",
+    )
+

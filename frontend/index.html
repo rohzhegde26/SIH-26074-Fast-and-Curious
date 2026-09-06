@@ -110,6 +110,37 @@
         </div>
       </section>
 
+      <!-- KMF Nandini Dairy Ground-Truth Loop -->
+      <section class="card nandini-card" id="nandini-section" aria-label="Dairy Secretary Ground-Truth Validation">
+        <div class="nandini-header">
+          <div class="nandini-brand">
+            <span class="nandini-icon">🥛</span>
+            <div>
+              <h3>KMF Nandini Dairy Ground-Truth Loop / ಹಾಲು ಡೈರಿ ಮಳೆ ದೃಢೀಕರಣ</h3>
+              <p class="nandini-sub" id="nandini-panchayat-tag">Village Dairy Secretary 2-Tap Sensor Network (ಹಾಲು ಉತ್ಪಾದಕರ ಸಹಕಾರ ಸಂಘ)</p>
+            </div>
+          </div>
+          <div class="nandini-stats-badge" id="nandini-stats-badge">
+            <span class="nandini-stat-dot"></span>
+            <span id="nandini-stat-text">Validation Network: Active (18 Dairies)</span>
+          </div>
+        </div>
+        <div class="nandini-body">
+          <p class="nandini-prompt" id="nandini-prompt-text">
+            ಕಳೆದ 12 ಗಂಟೆಗಳಲ್ಲಿ ಈ ಗ್ರಾಮ ಪಂಚಾಯತಿಯಲ್ಲಿ ಮಳೆ ಬಿದ್ದಿದೆಯೇ? (Did it rain in the last 12 hours?)
+          </p>
+          <div class="nandini-btn-group">
+            <button id="btn-nandini-yes" class="btn-nandini btn-nandini-yes" aria-label="Confirm rain fell">
+              <span>🟢 ಹೌದು (Yes, Rained)</span>
+            </button>
+            <button id="btn-nandini-no" class="btn-nandini btn-nandini-no" aria-label="Confirm no rain">
+              <span>🔴 ಇಲ್ಲ (No Rain)</span>
+            </button>
+          </div>
+          <div id="nandini-feedback-alert" class="nandini-alert hidden" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+
       <!-- Localized Panchayat Details & Uncertainty -->
       <section id="forecast-details" class="forecast-section" aria-live="polite"></section>
 
@@ -155,8 +186,35 @@
               <strong>Technical Defense:</strong> Soft penalty λ<sub>cons</sub> · L<sub>cons</sub> was deliberately chosen over hard projection layers to prevent gradient division-by-zero instability across zero-inflated dry-season regimes.
             </p>
           </div>
+
+          <!-- Virtual ARG Jury Card -->
+          <div class="jury-card varg-jury-card">
+            <div class="varg-header">
+              <h4>📡 Virtual Automated Rain Gauge (ARG) Feed — IMD Standard Schema</h4>
+              <span class="varg-badge">HEADLESS API READY</span>
+            </div>
+            <p class="jury-desc">
+              For 232 unmonitored Panchayats in Mandya lacking physical IMD hardware, our 5× downscaling engine emits synthetic, physically-conserved daily ARG observations in exact compliance with IMD/AWS JSON data schemas:
+            </p>
+            <div class="varg-controls">
+              <button id="btn-view-varg" class="btn-varg-toggle">
+                <span>📡 Inspect Live Virtual ARG Payload for Selected GP</span>
+              </button>
+              <a id="varg-api-link" href="/api/v1/virtual-arg/215504" target="_blank" class="varg-link">
+                Open Endpoint ↗
+              </a>
+            </div>
+            <div id="varg-json-viewer" class="varg-json-container hidden">
+              <div class="varg-json-toolbar">
+                <span id="varg-station-title">Station: VARG_KA_MAN_215504</span>
+                <button id="btn-copy-varg" class="btn-copy">📋 Copy JSON</button>
+              </div>
+              <pre id="varg-json-code" class="varg-code"><code>Loading...</code></pre>
+            </div>
+          </div>
         </div>
       </section>
+
 
       <!-- Government Prototype Notice -->
       <footer class="integration-footer">

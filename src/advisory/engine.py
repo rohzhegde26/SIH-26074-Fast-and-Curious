@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .rules import Advice, CROP_STAGE_ACTIONS, DRY, HEAVY, LIGHT, MODERATE, STAGE_PREFIX
+from .rules import (
+    Advice,
+    CROP_STAGE_ACTIONS,
+    DRY,
+    HEAVY,
+    LIGHT,
+    MODERATE,
+    STAGE_PREFIX,
+    FinancialRisk,
+    compute_financial_risk,
+)
 
 VALID_CROPS = {"ragi", "paddy", "sugarcane"}
 VALID_STAGES = {
@@ -16,6 +26,8 @@ class Advisory:
     stage: str
     action_en: str
     action_kn: str
+    financial_risk: FinancialRisk | None = None
+
 
 
 def rainfall_band(expected_mm: float) -> Advice:
@@ -50,4 +62,12 @@ def build_advisory(crop: str, stage: str, expected_mm: float, likely_max_mm: flo
         notes_en.append("Protect harvested produce and drying areas from rain.")
         notes_kn.append("ಕೊಯ್ಲು ಮಾಡಿದ ಬೆಳೆ ಮತ್ತು ಒಣಗಿಸುವ ಸ್ಥಳಗಳನ್ನು ಮಳೆಯಿಂದ ರಕ್ಷಿಸಿ.")
 
-    return Advisory(stage=stage.title(), action_en=prefix_en + " ".join(notes_en), action_kn=prefix_kn + " ".join(notes_kn))
+    fin_risk = compute_financial_risk(crop, stage, expected_mm, likely_max_mm)
+
+    return Advisory(
+        stage=stage.title(),
+        action_en=prefix_en + " ".join(notes_en),
+        action_kn=prefix_kn + " ".join(notes_kn),
+        financial_risk=fin_risk,
+    )
+

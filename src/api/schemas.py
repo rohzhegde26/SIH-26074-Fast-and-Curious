@@ -10,10 +10,20 @@ class Rainfall(BaseModel):
     empirical_coverage: str = "90% calibrated (test 2023)"
 
 
+class FinancialRiskSchema(BaseModel):
+    risk_level: str
+    cost_estimate_inr: int
+    impact_title_en: str
+    impact_title_kn: str
+    impact_desc_en: str
+    impact_desc_kn: str
+
+
 class CropAdvisory(BaseModel):
     stage: str
     action_en: str
     action_kn: str
+    financial_risk: FinancialRiskSchema | None = None
 
 
 class AdvisorySet(BaseModel):
@@ -37,3 +47,54 @@ class IntegrationMockResponse(BaseModel):
     status: str
     contract: str
     sample_fields: list[str]
+
+
+class VirtualARGUncertainty(BaseModel):
+    lower_bound_mm: float
+    upper_bound_mm: float
+    confidence: str = "90% CQR empirical"
+
+
+class VirtualARGResponse(BaseModel):
+    station_id: str
+    station_name: str
+    lgd_code: str
+    district: str = "MANDYA"
+    state: str = "KARNATAKA"
+    latitude: float
+    longitude: float
+    elevation_m: float
+    observation_datetime_utc: str
+    observation_datetime_ist: str
+    rainfall_24h_mm: float
+    uncertainty_range_90pct: VirtualARGUncertainty
+    qc_status: str = "VALIDATED_MASS_CONSERVED"
+    data_type: str = "SYNTHETIC_DOWNSCALED_FEATURE_STREAM"
+    provenance: str = "SIH26074_vARG_Unet5x_GLO30"
+
+
+class NandiniValidationRequest(BaseModel):
+    lgd_code: str
+    panchayat_name: str
+    rained_bool: bool
+    observer_role: str = "DAIRY_SECRETARY"
+    milk_center_id: str | None = None
+    observation_period: str = "LAST_12_HOURS"
+
+
+class NandiniValidationResponse(BaseModel):
+    status: str
+    message: str
+    validation_id: str
+    lgd_code: str
+    recorded_at_utc: str
+    recalibration_flagged: bool
+
+
+class NandiniStatsResponse(BaseModel):
+    total_validations: int
+    rain_reported_count: int
+    no_rain_reported_count: int
+    model_agreement_rate_pct: float
+    active_dairy_centers: int
+

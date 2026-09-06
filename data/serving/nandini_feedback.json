@@ -1,0 +1,222 @@
+[
+  {
+    "validation_id": "4c14d8c6",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_KA_MAN_0412",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T05:30:00Z",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "a1d1b48c",
+    "lgd_code": "215524",
+    "panchayat_name": "KADAHALLI",
+    "rained_bool": true,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_KA_MAN_0418",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T05:35:12Z",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "36c61b27",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:02:15.977095+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "4d79298b",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:03:32.392601+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "bf8d7077",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": true,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:08:59.394855+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "14aba95b",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:14.584947+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "290d7592",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:15.782802+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "d604667f",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:16.452924+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "eaab07dd",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:16.616934+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "997f121f",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:16.756235+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "97cb0608",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:16.904696+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "0d3f7dc8",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:17.053586+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "cdc98d52",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:17.194435+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "2a085fc1",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:17.349984+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "1121c840",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:17.500724+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "19a3b75b",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:17.639611+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "5265c224",
+    "lgd_code": "219208",
+    "panchayat_name": "ALAMBADI KAVAL",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2192",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:09:17.780278+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "5875ae8a",
+    "lgd_code": "219382",
+    "panchayat_name": "KALINGANAHALLI",
+    "rained_bool": true,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2193",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:10:22.381258+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "4b262350",
+    "lgd_code": "219382",
+    "panchayat_name": "KALINGANAHALLI",
+    "rained_bool": true,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2193",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:10:23.121741+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "88b2890c",
+    "lgd_code": "219382",
+    "panchayat_name": "KALINGANAHALLI",
+    "rained_bool": true,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2193",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-06T07:10:23.624682+00:00",
+    "recalibration_flagged": false
+  }
+]
