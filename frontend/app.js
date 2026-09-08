@@ -111,6 +111,12 @@ let initialViewBox = null;
 let selectPanchayat = null;
 let activeAudio = null;
 
+// Leaflet GIS Layer State
+let leafletMap = null;
+let leafletGeoJsonLayer = null;
+let leafletLayers = new Map(); // lgdCode -> L.Path
+let currentMapLayer = "rainfall"; // 'rainfall' | 'risk' | 'spread'
+
 // TopoJSON Arc Decoder
 function decodeArc(topology, index) {
   const points = [];
@@ -126,6 +132,51 @@ function decodeArc(topology, index) {
     ]);
   }
   return index < 0 ? points.reverse() : points;
+}
+
+function decodeRing(topology, ring) {
+  const points = [];
+  ring.forEach((arcIdx, i) => {
+    const arcPoints = decodeArc(topology, arcIdx);
+    const slicePoints = i === 0 ? arcPoints : arcPoints.slice(1);
+    slicePoints.forEach(p => points.push(p));
+  });
+  if (points.length > 0) {
+    const first = points[0];
+    const last = points[points.length - 1];
+    if (first[0] !== last[0] || first[1] !== last[1]) {
+      points.push([first[0], first[1]]);
+    }
+  }
+  return points;
+}
+
+function topoToGeoJSON(topology) {
+  const collection = Object.values(topology.objects).find(obj => obj.type === "GeometryCollection");
+  if (!collection) return { type: "FeatureCollection", features: [] };
+  const features = [];
+  collection.geometries.forEach(geom => {
+    const code = String(geom.properties?.gpcode || geom.properties?.lgd_code || "").trim();
+    if (!code) return;
+    let coordinates;
+    if (geom.type === "Polygon") {
+      coordinates = geom.arcs.map(ring => decodeRing(topology, ring));
+    } else if (geom.type === "MultiPolygon") {
+      coordinates = geom.arcs.map(poly => poly.map(ring => decodeRing(topology, ring)));
+    } else {
+      return;
+    }
+    features.push({
+      type: "Feature",
+      id: code,
+      properties: { ...geom.properties, code },
+      geometry: {
+        type: geom.type,
+        coordinates: coordinates
+      }
+    });
+  });
+  return { type: "FeatureCollection", features };
 }
 
 function pathStringFor(topology, rings) {
@@ -276,8 +327,9 @@ function switchView(viewName) {
           slot.appendChild(mapCard);
         }
       }
-      const svg = document.querySelector("#map");
-      if (svg && initialViewBox) applyViewBox(svg, initialViewBox);
+      if (leafletMap) {
+        setTimeout(() => leafletMap.invalidateSize(), 150);
+      }
     } else {
       missionPanel.classList.remove("hidden");
       missionPanel.classList.add("active");
@@ -289,8 +341,9 @@ function switchView(viewName) {
       if (mapCard && missionLeft && !missionLeft.contains(mapCard)) {
         missionLeft.appendChild(mapCard);
       }
-      const svg = document.querySelector("#map");
-      if (svg && initialViewBox) applyViewBox(svg, initialViewBox);
+      if (leafletMap) {
+        setTimeout(() => leafletMap.invalidateSize(), 150);
+      }
       loadVirtualArgPayload();
     }
   }
@@ -314,6 +367,9 @@ function setupModeSwitcher() {
         const missionLeft = document.querySelector(".mission-left-col");
         if (mapCard && missionLeft && !missionLeft.contains(mapCard)) missionLeft.appendChild(mapCard);
       }
+    }
+    if (leafletMap) {
+      setTimeout(() => leafletMap.invalidateSize(), 150);
     }
   });
 
@@ -347,6 +403,24 @@ let activeCrop = "ragi"; // 'ragi' | 'paddy' | 'sugarcane'
 function renderForecastDetails(record) {
   if (!record) return;
   selectedLgdCode = String(record.lgd_code);
+
+  // Synchronize Leaflet map layer selection styling
+  if (leafletLayers.size > 0) {
+    leafletLayers.forEach((layer, code) => {
+      const isSelected = String(code) === String(record.lgd_code);
+      layer.setStyle(getFeatureStyle(layer.feature, isSelected));
+      const el = layer.getElement ? layer.getElement() : null;
+      if (el) {
+        el.classList.toggle("selected-gp-highlight", isSelected);
+      }
+      if (isSelected) {
+        layer.bringToFront();
+        if (leafletMap && layer.getBounds && !leafletMap.getBounds().contains(layer.getBounds().getCenter())) {
+          leafletMap.panTo(layer.getBounds().getCenter(), { animate: true });
+        }
+      }
+    });
+  }
 
   // Highlight selected map polygon cleanly without SVG filter corruption
   mapPaths.forEach((path, code) => {
@@ -897,113 +971,277 @@ function broadcastToWhatsApp(record) {
 }
 
 // -------------------------------------------------------------
-// Interactive Choropleth Map Renderer (Mission Control)
+// Interactive GIS Leaflet Choropleth Map Renderer (Option A)
 // -------------------------------------------------------------
+function getLayerColor(record, layerType) {
+  if (!record) return "#cbd5e1";
+  const exp = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
+  const lMin = record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0;
+  const lMax = record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0;
+
+  if (layerType === "risk") {
+    const risk = getFinancialRisk(currentCropStage, exp, lMax, "en");
+    if (risk.level === "risk-high") return "#ef4444";
+    if (risk.level === "risk-moderate") return "#f59e0b";
+    return "#10b981";
+  }
+
+  if (layerType === "spread") {
+    const spread = Math.max(0, lMax - lMin);
+    if (spread > 30.0) return "#f87171";
+    if (spread > 15.0) return "#fb923c";
+    if (spread > 5.0)  return "#fde047";
+    return "#a7f3d0";
+  }
+
+  // Default 'rainfall'
+  return getRainColor(exp);
+}
+
+function getFeatureStyle(feature, isSelected = false) {
+  const code = String(feature?.id || feature?.properties?.code || "");
+  const record = currentRecords.find(r => String(r.lgd_code) === code);
+
+  if (isSelected) {
+    const highlightColor = getLayerColor(record, currentMapLayer);
+    return {
+      fillColor: highlightColor,
+      fillOpacity: 0.95,
+      weight: 3.5,
+      color: "#000000", // Solid black border for selected GP
+      dashArray: "",
+      className: "selected-gp-highlight"
+    };
+  }
+
+  // Rest of the Gram Panchayats go subdued grey
+  return {
+    fillColor: "#cbd5e1", // Subdued neutral grey
+    fillOpacity: 0.55,
+    weight: 1.0,
+    color: "#94a3b8", // Soft boundary border
+    dashArray: "",
+    className: "inactive-gp-polygon"
+  };
+}
+
+function formatTooltipContent(record, feature) {
+  const pName = record?.panchayat_name || feature.properties?.gpname || `GP ${feature.id}`;
+  const taluk = feature.properties?.sdtname || "Mandya";
+  const exp = record?.rainfall_mm?.expected ?? record?.expected_mm ?? 0.0;
+  const lMin = record?.rainfall_mm?.likely_min ?? record?.likely_min_mm ?? 0.0;
+  const lMax = record?.rainfall_mm?.likely_max ?? record?.likely_max_mm ?? 0.0;
+  const spread = Math.max(0, lMax - lMin);
+
+  if (currentMapLayer === "risk") {
+    const risk = getFinancialRisk(currentCropStage, exp, lMax, currentLanguage);
+    return `<strong>${pName}</strong> (${taluk})<br/>${risk.icon} ${risk.title}<br/><span style="color:#f59e0b;font-weight:600;">${risk.cost}</span>`;
+  }
+  if (currentMapLayer === "spread") {
+    const badge = spread > 15 ? "⚠️ High Spread" : "✅ Tight Spread";
+    return `<strong>${pName}</strong> (${taluk})<br/>Uncertainty Spread: <strong>±${spread.toFixed(1)} mm</strong><br/><span style="color:#94a3b8;">${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm (${badge})</span>`;
+  }
+  // Rainfall default
+  return `<strong>${pName}</strong> (${taluk})<br/>Expected Rain: <strong>${exp.toFixed(1)} mm</strong><br/><span style="color:#94a3b8;">Likely: ${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm</span>`;
+}
+
+function updateMapLegend(layerType) {
+  const legend = document.querySelector("#map-legend");
+  if (!legend) return;
+
+  if (layerType === "risk") {
+    legend.innerHTML = `
+      <span class="legend-title">Advisory Risk:</span>
+      <div class="legend-item"><span class="legend-swatch" style="background:#10b981;"></span> Safe / Low</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#f59e0b;"></span> Advisory Alert</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ef4444;"></span> Severe Spoilage</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#cbd5e1;border:1px solid #94a3b8;"></span> Other GPs (Grey)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected (Black)</div>
+    `;
+  } else if (layerType === "spread") {
+    legend.innerHTML = `
+      <span class="legend-title">Uncertainty Spread:</span>
+      <div class="legend-item"><span class="legend-swatch" style="background:#a7f3d0;"></span> &lt; 5 mm (Tight)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#fde047;"></span> 5–15 mm</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#fb923c;"></span> 15–30 mm</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#f87171;"></span> &gt; 30 mm (High)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#cbd5e1;border:1px solid #94a3b8;"></span> Other GPs (Grey)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected (Black)</div>
+    `;
+  } else {
+    legend.innerHTML = `
+      <span class="legend-title">Precipitation:</span>
+      <div class="legend-item"><span class="legend-swatch band-dry"></span> &lt; 2.5 mm (Dry)</div>
+      <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5–15.5 mm (Light)</div>
+      <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5–64.4 mm (Moderate)</div>
+      <div class="legend-item"><span class="legend-swatch band-heavy"></span> &gt; 64.5 mm (Heavy)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#cbd5e1;border:1px solid #94a3b8;"></span> Other GPs (Grey)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected (Black)</div>
+    `;
+  }
+}
+
+function setupMapLayerSelector() {
+  const buttons = document.querySelectorAll(".btn-map-layer");
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const layer = btn.dataset.layer;
+      if (!layer || layer === currentMapLayer) return;
+      currentMapLayer = layer;
+      buttons.forEach(b => b.classList.toggle("active", b === btn));
+      updateMapLegend(layer);
+      // Re-style all features
+      leafletLayers.forEach((layerObj, code) => {
+        const isSelected = String(code) === String(selectedLgdCode);
+        layerObj.setStyle(getFeatureStyle(layerObj.feature, isSelected));
+        const el = layerObj.getElement ? layerObj.getElement() : null;
+        if (el) {
+          el.classList.toggle("selected-gp-highlight", isSelected);
+        }
+        if (isSelected) layerObj.bringToFront();
+      });
+    });
+  });
+}
+
 async function renderMap(records) {
   const status = document.querySelector("#map-status");
-  const svg = document.querySelector("#map");
+  const mapElem = document.querySelector("#leaflet-map");
+  const mapContainer = document.querySelector("#map-container");
   const tooltip = document.querySelector("#map-tooltip");
 
-  if (!svg) return;
+  if (!mapElem) return;
+
+  if (typeof L === "undefined") {
+    if (status) status.textContent = "Leaflet GIS library loading or offline fallback. Search is operational.";
+    return;
+  }
+
+  function positionTooltip(e) {
+    if (!tooltip || !mapContainer) return;
+    const rect = mapContainer.getBoundingClientRect();
+    const clientX = e.originalEvent ? e.originalEvent.clientX : 0;
+    const clientY = e.originalEvent ? e.originalEvent.clientY : 0;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    const tooltipWidth = 240;
+    if (x + tooltipWidth + 20 > rect.width) {
+      tooltip.style.left = `${Math.max(10, x - tooltipWidth - 15)}px`;
+    } else {
+      tooltip.style.left = `${x + 15}px`;
+    }
+
+    if (y - 55 < 10) {
+      tooltip.style.top = `${y + 20}px`;
+    } else {
+      tooltip.style.top = `${y - 50}px`;
+    }
+  }
+
+  if (mapContainer && tooltip) {
+    mapContainer.addEventListener("mouseleave", () => {
+      tooltip.classList.add("hidden");
+    });
+  }
 
   try {
+    if (!leafletMap) {
+      leafletMap = L.map("leaflet-map", {
+        center: [12.52, 76.89],
+        zoom: 10,
+        minZoom: 8,
+        maxZoom: 16,
+        zoomControl: true,
+        attributionControl: true
+      });
+
+      // OpenStreetMap Free Tile Basemap (No API key, No watermarks)
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }).addTo(leafletMap);
+
+      leafletMap.on("zoomstart movestart dragstart", () => {
+        if (tooltip) tooltip.classList.add("hidden");
+      });
+    }
+
     const res = await fetch("/mandya_simplified.topojson");
     if (!res.ok) throw new Error("Could not load TopoJSON map boundary");
     const topology = await res.json();
 
-    const collection = Object.values(topology.objects).find(obj => obj.type === "GeometryCollection");
-    if (!collection || !topology.transform) throw new Error("Invalid TopoJSON structure");
+    const geojsonData = topoToGeoJSON(topology);
+    if (!geojsonData.features.length) throw new Error("No valid GeoJSON features decoded");
 
-    const rainLookup = new Map(records.map(r => [String(r.lgd_code), r.rainfall_mm?.expected ?? r.expected_mm ?? 0.0]));
-    const nameLookup = new Map(records.map(r => [String(r.lgd_code), r.panchayat_name]));
+    if (leafletGeoJsonLayer) {
+      leafletMap.removeLayer(leafletGeoJsonLayer);
+    }
+    leafletLayers.clear();
 
-    // Filter only genuine Gram Panchayats with valid LGD/GP codes (excludes corrupted index 0)
-    const geometries = collection.geometries.filter(g => 
-      (g.type === "Polygon" || g.type === "MultiPolygon") &&
-      Boolean(String(g.properties.gpcode || g.properties.lgd_code || "").trim())
-    );
-    const allArcs = geometries.flatMap(g => (g.type === "Polygon" ? g.arcs : g.arcs.flat()));
-    const points = allArcs.flatMap(ring => ring.flatMap(idx => decodeArc(topology, idx)));
+    leafletGeoJsonLayer = L.geoJSON(geojsonData, {
+      style: (feature) => getFeatureStyle(feature, String(feature.id) === String(selectedLgdCode)),
+      onEachFeature: (feature, layer) => {
+        const code = String(feature.id);
+        leafletLayers.set(code, layer);
+        const record = records.find(r => String(r.lgd_code) === code);
 
-    const xs = points.map(p => p[0]);
-    const ys = points.map(p => p[1]);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-
-    const pad = 0.02;
-    const width = (maxX - minX) * (1 + pad * 2);
-    const height = (maxY - minY) * (1 + pad * 2);
-    const viewBoxX = minX - (maxX - minX) * pad;
-    const viewBoxY = -maxY - (maxY - minY) * pad;
-
-    initialViewBox = { x: viewBoxX, y: viewBoxY, width, height };
-    applyViewBox(svg, initialViewBox);
-
-    svg.replaceChildren();
-    mapPaths = new Map();
-
-    geometries.forEach(geometry => {
-      const code = String(geometry.properties.gpcode || geometry.properties.lgd_code || "").trim();
-      if (!code) return;
-
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("d", pathStringFor(topology, geometry.type === "Polygon" ? geometry.arcs : geometry.arcs.flat()));
-
-      const expectedMm = rainLookup.get(code) || 0.0;
-      const pName = nameLookup.get(code) || geometry.properties.gpname || `GP ${code}`;
-      path.style.fill = getRainColor(expectedMm);
-      path.dataset.lgdCode = code;
-
-      path.setAttribute("tabindex", "0");
-      path.setAttribute("role", "button");
-      path.setAttribute("aria-label", `${pName}: ${expectedMm.toFixed(1)} mm`);
-
-      const triggerSelect = () => {
-        if (!code) return;
-        const match = records.find(r => String(r.lgd_code) === code);
-        if (match) {
-          if (selectPanchayat) {
-            selectPanchayat(match);
-          } else {
-            selectedLgdCode = String(code);
-            renderForecastDetails(match);
+        layer.on({
+          mouseover: (e) => {
+            const l = e.target;
+            const rec = records.find(r => String(r.lgd_code) === code);
+            if (tooltip) {
+              tooltip.innerHTML = formatTooltipContent(rec, feature);
+              tooltip.classList.remove("hidden");
+              positionTooltip(e);
+            }
+            if (String(code) !== String(selectedLgdCode)) {
+              l.setStyle({
+                fillColor: getLayerColor(rec, currentMapLayer),
+                fillOpacity: 0.88,
+                weight: 2.2,
+                color: "#1e293b",
+                dashArray: ""
+              });
+            }
+          },
+          mousemove: (e) => {
+            positionTooltip(e);
+          },
+          mouseout: (e) => {
+            const l = e.target;
+            if (tooltip) {
+              tooltip.classList.add("hidden");
+            }
+            if (String(code) !== String(selectedLgdCode)) {
+              l.setStyle(getFeatureStyle(l.feature, false));
+              const el = l.getElement ? l.getElement() : null;
+              if (el) el.classList.remove("selected-gp-highlight");
+            }
+          },
+          click: () => {
+            if (tooltip) {
+              tooltip.classList.add("hidden");
+            }
+            if (record) {
+              if (selectPanchayat) {
+                selectPanchayat(record);
+              } else {
+                selectedLgdCode = String(code);
+                renderForecastDetails(record);
+              }
+            }
           }
-        }
-      };
-
-      path.addEventListener("click", triggerSelect);
-      path.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          triggerSelect();
-        }
-      });
-
-      if (tooltip) {
-        path.addEventListener("mouseenter", () => {
-          tooltip.textContent = `${pName}: ${expectedMm.toFixed(1)} mm`;
-          tooltip.classList.remove("hidden");
-        });
-
-        path.addEventListener("mousemove", e => {
-          const rect = svg.getBoundingClientRect();
-          tooltip.style.left = `${e.clientX - rect.left + 10}px`;
-          tooltip.style.top = `${e.clientY - rect.top - 25}px`;
-        });
-
-        path.addEventListener("mouseleave", () => {
-          tooltip.classList.add("hidden");
         });
       }
+    }).addTo(leafletMap);
 
-      svg.append(path);
-      mapPaths.set(code, path);
-    });
+    // Initial fit bounds to district
+    leafletMap.fitBounds(leafletGeoJsonLayer.getBounds(), { padding: [15, 15] });
+    setTimeout(() => leafletMap.invalidateSize(), 150);
 
     if (status) {
-      status.textContent = `${geometries.length} Mandya panchayats loaded with 5× downscaled choropleth.`;
+      status.textContent = `${geojsonData.features.length} Mandya panchayats loaded with 5× downscaled GIS choropleth.`;
     }
   } catch (err) {
     if (status) status.textContent = "Map boundary rendering fallback. Search is operational.";
@@ -1011,29 +1249,10 @@ async function renderMap(records) {
   }
 }
 
-function applyViewBox(svg, vb) {
-  svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.width / currentZoom} ${vb.height / currentZoom}`);
-}
-
 function setupMapControls() {
-  const svg = document.querySelector("#map");
-  document.querySelector("#zoom-in")?.addEventListener("click", () => {
-    if (currentZoom < 3.5) {
-      currentZoom += 0.35;
-      if (initialViewBox && svg) applyViewBox(svg, initialViewBox);
-    }
-  });
-
-  document.querySelector("#zoom-out")?.addEventListener("click", () => {
-    if (currentZoom > 0.8) {
-      currentZoom -= 0.35;
-      if (initialViewBox && svg) applyViewBox(svg, initialViewBox);
-    }
-  });
-
-  document.querySelector("#zoom-reset")?.addEventListener("click", () => {
-    currentZoom = 1.0;
-    if (initialViewBox && svg) applyViewBox(svg, initialViewBox);
+  setupMapLayerSelector();
+  window.addEventListener("resize", () => {
+    if (leafletMap) leafletMap.invalidateSize();
   });
 }
 
@@ -1264,6 +1483,9 @@ function setupMapModal() {
     if (mapCard && modalMapMount && !modalMapMount.contains(mapCard)) {
       modalMapMount.appendChild(mapCard);
     }
+    if (leafletMap) {
+      setTimeout(() => leafletMap.invalidateSize(), 150);
+    }
   };
 
   closeBtn.onclick = () => {
@@ -1273,6 +1495,9 @@ function setupMapModal() {
     const mapCard = document.querySelector("#main-map-card");
     if (mapCard && missionLeft && !missionLeft.contains(mapCard)) {
       missionLeft.appendChild(mapCard);
+    }
+    if (leafletMap) {
+      setTimeout(() => leafletMap.invalidateSize(), 150);
     }
   };
 

@@ -1490,6 +1490,101 @@ body {
   overflow: hidden;
 }
 
+.leaflet-map-view {
+  width: 100%;
+  height: 100%;
+  background: #e2e8f0;
+  z-index: 1;
+}
+
+.map-layer-selector {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-map-layer {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.32rem 0.7rem;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  user-select: none;
+}
+
+.btn-map-layer:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.btn-map-layer.active {
+  background: #0b6e4f;
+  color: #ffffff;
+  border-color: #0b6e4f;
+  box-shadow: 0 2px 8px rgba(11, 110, 79, 0.25);
+}
+
+.leaflet-tooltip-custom {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid #334155 !important;
+  color: #ffffff !important;
+  font-family: inherit !important;
+  font-size: 0.85rem !important;
+  padding: 0.45rem 0.75rem !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+.leaflet-tooltip-custom::before {
+  border-top-color: rgba(15, 23, 42, 0.95) !important;
+}
+
+/* Leaflet Polygon Interactive Transitions & Animations */
+.leaflet-interactive {
+  transition: fill 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              fill-opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              stroke-width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  outline: none;
+}
+
+/* Inactive Panchayats: Muted Grey Backdrop */
+path.inactive-gp-polygon {
+  cursor: pointer;
+}
+
+/* Highlighted Selected Panchayat: Solid Black Border & Pulse Glow */
+path.selected-gp-highlight,
+.leaflet-interactive.selected-gp-highlight {
+  stroke: #000000 !important;
+  stroke-width: 3.5px !important;
+  stroke-linejoin: round !important;
+  stroke-linecap: round !important;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.55));
+  animation: gp-focus-pulse 2.2s ease-in-out infinite alternate;
+  z-index: 1000;
+}
+
+@keyframes gp-focus-pulse {
+  0% {
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+    stroke-width: 3.5px;
+  }
+  100% {
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.8));
+    stroke-width: 4.2px;
+  }
+}
+
 #map {
   width: 100%;
   height: 100%;
@@ -1521,16 +1616,24 @@ body {
 
 .map-tooltip {
   position: absolute;
-  background: rgba(15, 23, 42, 0.94);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid #334155;
   color: #ffffff;
-  padding: 0.45rem 0.75rem;
-  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
   font-size: 0.85rem;
-  font-weight: 600;
+  line-height: 1.45;
   pointer-events: none;
-  white-space: nowrap;
-  box-shadow: var(--shadow-md);
-  z-index: 10;
+  white-space: normal;
+  max-width: 280px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  transition: opacity 0.15s ease;
+}
+
+.map-tooltip.hidden {
+  display: none !important;
+  opacity: 0;
 }
 
 /* Legend */
@@ -1825,11 +1928,22 @@ body {
 
 .modal-map-box {
   width: 100%;
-  height: 380px;
+  height: auto;
+  min-height: 380px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: var(--radius-sm);
   overflow: hidden;
+}
+
+.modal-map-box .map-card {
+  padding: 0.5rem;
+  border: none;
+  box-shadow: none;
+}
+
+.modal-map-box .map-container {
+  height: 360px;
 }
 
 .modal-legend {

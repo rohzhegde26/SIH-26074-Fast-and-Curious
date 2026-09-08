@@ -8,7 +8,8 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
-    <link rel="stylesheet" href="/styles.css?v=17">
+    <link rel="stylesheet" href="/leaflet/leaflet.css">
+    <link rel="stylesheet" href="/styles.css?v=20">
     <title>Mandya Agro-Weather — Dual-Mode Downscaling Cockpit (SIH 26074)</title>
   </head>
   <body data-view="mission-control" data-operator-role="dairy">
@@ -186,22 +187,22 @@
               <div class="card map-card" id="main-map-card" aria-label="Mandya 234-Panchayat Choropleth">
                 <div class="card-header">
                   <div>
-                    <h3 class="card-title">Mandya Panchayat Choropleth Map</h3>
-                    <p class="card-sub" id="map-status">Click any panchayat polygon to inspect localized downscaled forecast</p>
+                    <h3 class="card-title">Mandya Panchayat Interactive GIS Map</h3>
+                    <p class="card-sub" id="map-status">Click any panchayat to inspect localized downscaled forecast</p>
                   </div>
-                  <div class="map-controls">
-                    <button id="zoom-in" class="btn-ctrl" title="Zoom In (+)" aria-label="Zoom in">+</button>
-                    <button id="zoom-out" class="btn-ctrl" title="Zoom Out (-)" aria-label="Zoom out">−</button>
-                    <button id="zoom-reset" class="btn-ctrl" title="Reset View (0)" aria-label="Reset zoom">⟲</button>
+                  <div class="map-layer-selector" role="radiogroup" aria-label="Map display layer">
+                    <button type="button" class="btn-map-layer active" data-layer="rainfall">🌧️ Rain (mm)</button>
+                    <button type="button" class="btn-map-layer" data-layer="risk">⚠️ Advisory Risk</button>
+                    <button type="button" class="btn-map-layer" data-layer="spread">📊 Uncertainty</button>
                   </div>
                 </div>
 
-                <div class="map-container" id="map-container" style="background: #f8fafc !important;">
-                  <svg id="map" role="img" aria-label="Mandya panchayat rainfall map" preserveAspectRatio="xMidYMid meet" style="background: #f8fafc !important;"></svg>
+                <div class="map-container" id="map-container">
+                  <div id="leaflet-map" class="leaflet-map-view"></div>
                   <div id="map-tooltip" class="map-tooltip hidden"></div>
                 </div>
 
-                <div class="choropleth-legend" aria-label="Rainfall intensity legend">
+                <div class="choropleth-legend" id="map-legend" aria-label="Rainfall intensity legend">
                   <span class="legend-title">Precipitation:</span>
                   <div class="legend-item"><span class="legend-swatch band-dry"></span> &lt; 2.5 mm (Dry)</div>
                   <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5–15.5 mm (Light)</div>
@@ -356,7 +357,9 @@
       </footer>
     </main>
 
+    <!-- Leaflet GIS Library (Cached locally for offline PWA) -->
+    <script src="/leaflet/leaflet.js"></script>
     <!-- App Engine JavaScript -->
-    <script type="module" src="/app.js?v=15"></script>
+    <script type="module" src="/app.js?v=18"></script>
   </body>
 </html>
