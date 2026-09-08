@@ -2015,3 +2015,299 @@ path.selected-gp-highlight,
   transform: translateX(-50%) translateY(0);
   opacity: 1;
 }
+
+/* ==========================================================================
+   Adaptive Intra-Panchayat Micro-Climate Variance & Exclave Inspector
+   ========================================================================== */
+.spatial-variance-card {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid #fde68a;
+  padding: 1rem 1.15rem;
+  margin: 0.85rem 0;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.08);
+  transition: all 0.2s ease;
+}
+
+.spatial-variance-card.exclave-mode {
+  border-color: #f59e0b;
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+  border-left: 5px solid #d97706;
+}
+
+.spatial-variance-card.variance-mode {
+  border-color: #bae6fd;
+  background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%);
+  border-left: 5px solid #0284c7;
+}
+
+.variance-alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.variance-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.variance-alert-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.variance-alert-title {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: #92400e;
+  line-height: 1.3;
+}
+
+.spatial-variance-card.variance-mode .variance-alert-title {
+  color: #0369a1;
+}
+
+.variance-alert-desc {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.82rem;
+  color: #78350f;
+  line-height: 1.45;
+}
+
+.spatial-variance-card.variance-mode .variance-alert-desc {
+  color: #075985;
+}
+
+.variance-delta-badge {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.spatial-variance-card.variance-mode .variance-delta-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #7dd3fc;
+}
+
+/* Parcel Selector Tabs */
+.parcel-selector-wrap {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #fcd34d;
+}
+
+.parcel-selector-title {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+
+.parcel-tabs-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-parcel-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.btn-parcel-tab:hover {
+  border-color: #f59e0b;
+  background: #fefce8;
+  transform: translateY(-1px);
+}
+
+.btn-parcel-tab.active {
+  background: #fef3c7;
+  border-color: #d97706;
+  color: #78350f;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.2);
+}
+
+.parcel-tab-icon {
+  font-size: 0.95rem;
+}
+
+.parcel-tab-val {
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.btn-parcel-tab.active .parcel-tab-val {
+  background: #fde68a;
+  color: #78350f;
+}
+
+/* Constituent 5km Grid Inspector */
+.constituent-cells-details {
+  margin-top: 0.85rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.65rem;
+}
+
+.constituent-cells-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.25rem 0;
+}
+
+.constituent-summary-badge {
+  font-size: 0.74rem;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: #475569;
+}
+
+.constituent-cells-table-wrap {
+  margin-top: 0.6rem;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+}
+
+.constituent-cells-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.constituent-cells-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid #cbd5e1;
+  white-space: nowrap;
+}
+
+.constituent-cells-table td {
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.constituent-cells-table tr:last-child td {
+  border-bottom: none;
+}
+
+.bearing-badge {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cell-coords-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.leach-pill {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.risk-tag-high {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.risk-tag-mod {
+  background: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fcd34d;
+}
+
+.risk-tag-low {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #86efac;
+}
+
+/* Mission Control Spatial Variance Readout */
+.mission-inspection-strip {
+  margin-top: 0.85rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mission-inspection-strip.has-exclaves {
+  background: #fffbeb;
+  border-color: #f59e0b;
+}
+
+.mission-inspection-text {
+  color: #1e293b;
+  line-height: 1.45;
+  flex: 1;
+}
+
+.mission-inspection-btn {
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  background: #0b6e4f;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.mission-inspection-btn:hover {
+  background: #085039;
+  transform: translateY(-1px);
+}

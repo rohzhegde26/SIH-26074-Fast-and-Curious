@@ -110,6 +110,7 @@ let currentZoom = 1.0;
 let initialViewBox = null;
 let selectPanchayat = null;
 let activeAudio = null;
+let activeParcelMap = new Map(); // lgdCode -> parcelId
 
 // Leaflet GIS Layer State
 let leafletMap = null;
@@ -434,9 +435,20 @@ function renderForecastDetails(record) {
   const container = document.querySelector("#forecast-details");
   if (!container) return;
 
-  const exp = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
-  const lMin = record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0;
-  const lMax = record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0;
+  const spVar = record.spatial_variance;
+  let activeParcel = null;
+  if (spVar && spVar.parcels && spVar.parcels.length > 1) {
+    const selectedParcelId = activeParcelMap.get(String(record.lgd_code));
+    if (selectedParcelId) {
+      activeParcel = spVar.parcels.find(p => p.parcel_id === selectedParcelId) || spVar.parcels[0];
+    } else {
+      activeParcel = spVar.parcels[0];
+    }
+  }
+
+  const exp = activeParcel ? activeParcel.expected_mm : (record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0);
+  const lMin = activeParcel ? activeParcel.likely_min_mm : (record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0);
+  const lMax = activeParcel ? activeParcel.likely_max_mm : (record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0);
   const isRainRisk = lMax > 5.0 || exp >= 2.5;
 
   // Crop advisories text
@@ -460,11 +472,15 @@ function renderForecastDetails(record) {
   const roleTagText = roleLabels[currentRole] || "🥛 Dairy";
 
   // ZONE 1: HERO VERDICT (Always visible, presentation scale)
+  const parcelSuffix = activeParcel
+    ? `<span style="font-size:0.85rem; font-weight:700; color:#b45309; margin-left:0.35rem;">(${currentLanguage === 'kn' ? activeParcel.name_kn : activeParcel.name_en})</span>`
+    : "";
+
   const heroHtml = `
     <div class="village-hero-header">
       <div class="village-name-block">
         <span class="village-pin">📍</span>
-        <h2 class="village-title">${record.panchayat_name}</h2>
+        <h2 class="village-title">${record.panchayat_name} ${parcelSuffix}</h2>
         <span class="village-role-tag">${roleTagText}</span>
       </div>
       <div class="village-rain-block">
@@ -504,6 +520,112 @@ function renderForecastDetails(record) {
       <span id="voice-btn-text">${currentLanguage === "kn" ? "ಕನ್ನಡ ಧ್ವನಿಯಲ್ಲಿ ಕೇಳಿ (Listen Audio)" : "Listen Voice Advisory (ಕನ್ನಡ)"}</span>
     </button>
   `;
+
+  // ADAPTIVE SPATIAL VARIANCE & EXCLAVE INSPECTOR CARD
+  let spatialVarianceHtml = "";
+  if (spVar && (spVar.has_exclaves || spVar.is_high_variance)) {
+    const deltaMm = spVar.spatial_variance_mm;
+    const isExclave = spVar.has_exclaves;
+    const alertTitle = currentLanguage === "kn"
+      ? (isExclave ? "⚠️ ಭೌಗೋಳಿಕ ಪ್ರತ್ಯೇಕ ಭಾಗಗಳ ಎಚ್ಚರಿಕೆ (Exclave Alert)" : "⚠️ ಸ್ಥಳೀಯ ಮಳೆ ವ್ಯತ್ಯಾಸ ಎಚ್ಚರಿಕೆ (Intra-GP Variance)")
+      : (isExclave ? "⚠️ Geographic Exclave Alert (Disconnected Parcels)" : "⚠️ Intra-Panchayat Micro-Climate Variance");
+
+    const alertDesc = currentLanguage === "kn"
+      ? (isExclave 
+          ? `ಈ ಪಂಚಾಯಿತಿ ${spVar.exclave_count} ಪ್ರತ್ಯೇಕ ಭಾಗಗಳನ್ನು ಹೊಂದಿದ್ದು (${spVar.max_exclave_span_km} ಕಿ.ಮೀ ಅಂತರ), ಮಳೆ ${deltaMm.toFixed(1)} ಮಿ.ಮೀ ವ್ಯತ್ಯಾಸವಿದೆ. ನಿಖರ ಹವಾಮಾನಕ್ಕಾಗಿ ಕೆಳಗಿನ ಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ:` 
+          : `ಪಂಚಾಯಿತಿಯ ವಿವಿಧ ಭಾಗಗಳಲ್ಲಿ ಮಳೆ ${deltaMm.toFixed(1)} ಮಿ.ಮೀ ವ್ಯತ್ಯಾಸವಿದೆ (${spVar.min_mm.toFixed(1)}–${spVar.max_mm.toFixed(1)} ಮಿ.ಮೀ).`)
+      : (isExclave 
+          ? `This Panchayat contains ${spVar.exclave_count} disconnected exclaves (${spVar.max_exclave_span_km} km span) with ${deltaMm.toFixed(1)} mm rainfall difference. Select your local parcel below:` 
+          : `Rainfall varies by ${deltaMm.toFixed(1)} mm across constituent 5km cells (${spVar.min_mm.toFixed(1)}–${spVar.max_mm.toFixed(1)} mm).`);
+
+    let parcelTabsHtml = "";
+    if (spVar.parcels && spVar.parcels.length > 1) {
+      parcelTabsHtml = `
+        <div class="parcel-selector-wrap" role="tablist" aria-label="Select Panchayat Parcel">
+          <span class="parcel-selector-title">${currentLanguage === "kn" ? "📍 ನಿಮ್ಮ ಗ್ರಾಮ/ಭಾಗ ಆಯ್ಕೆಮಾಡಿ:" : "📍 Select Village Parcel:"}</span>
+          <div class="parcel-tabs-row">
+            ${spVar.parcels.map((p, idx) => {
+              const isSelected = activeParcel ? (activeParcel.parcel_id === p.parcel_id) : (idx === 0);
+              const pName = currentLanguage === "kn" ? p.name_kn : p.name_en;
+              return `
+                <button type="button" 
+                        class="btn-parcel-tab ${isSelected ? 'active' : ''}" 
+                        data-parcel-id="${p.parcel_id}" 
+                        data-lgd="${record.lgd_code}"
+                        role="tab" 
+                        aria-selected="${isSelected}">
+                  <span class="parcel-tab-icon">${idx === 0 ? "⭐" : "📍"}</span>
+                  <span class="parcel-tab-name">${pName}</span>
+                  <span class="parcel-tab-val">${p.expected_mm.toFixed(1)} mm <small>(${p.area_share_pct}%)</small></span>
+                </button>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    let cellsInspectorHtml = "";
+    if (spVar.constituent_cells && spVar.constituent_cells.length > 1) {
+      const showExpanded = (currentRole === "rsk" || currentRole === "gp" || currentView === "mission-control");
+      cellsInspectorHtml = `
+        <details class="constituent-cells-details" ${showExpanded ? "open" : ""}>
+          <summary class="constituent-cells-summary">
+            <span>🔬 ${currentLanguage === "kn" ? `5×5 ಕಿ.ಮೀ ಉಪ-ಗ್ರಿಡ್ ಪರಿಶೀಲಕ (${spVar.cell_count} ಗ್ರಿಡ್ ಕೋಶಗಳು)` : `5×5 km Constituent Grid Inspector (${spVar.cell_count} Cells)`}</span>
+            <span class="constituent-summary-badge">${currentLanguage === "kn" ? `ವ್ಯತ್ಯಾಸ: ${deltaMm.toFixed(1)} mm` : `Spread: Δ ${deltaMm.toFixed(1)} mm`}</span>
+          </summary>
+          <div class="constituent-cells-table-wrap">
+            <table class="constituent-cells-table">
+              <thead>
+                <tr>
+                  <th>${currentLanguage === "kn" ? "ದಿಕ್ಕು / ವಲಯ" : "Bearing"}</th>
+                  <th>${currentLanguage === "kn" ? "ಸ್ಥಳ (ಅಕ್ಷಾಂಶ/ರೇಖಾಂಶ)" : "Location (Lat/Lon)"}</th>
+                  <th>${currentLanguage === "kn" ? "ಮಳೆ (ಮಿ.ಮೀ)" : "Rainfall"}</th>
+                  <th>${currentLanguage === "kn" ? "ವಿಸ್ತೀರ್ಣ ಪಾಲು" : "Area Share"}</th>
+                  <th>${currentLanguage === "kn" ? "ಕೊಚ್ಚಿಹೋಗುವ ಅಪಾಯ" : "Leaching Risk"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${spVar.constituent_cells.map(c => {
+                  const dir = currentLanguage === "kn" ? c.cardinal_dir_kn : c.cardinal_dir_en;
+                  const leachClass = c.leach_risk === "High" ? "risk-tag-high" : (c.leach_risk === "Moderate" ? "risk-tag-mod" : "risk-tag-low");
+                  const leachLabel = currentLanguage === "kn" 
+                    ? (c.leach_risk === "High" ? "ಹೆಚ್ಚು (ತಡೆಹಿಡಿಯಿರಿ)" : (c.leach_risk === "Moderate" ? "ಮಧ್ಯಮ" : "ಕಡಿಮೆ (ಸುರಕ್ಷಿತ)"))
+                    : c.leach_risk;
+                  return `
+                    <tr>
+                      <td><span class="bearing-badge">🧭 ${dir}</span></td>
+                      <td class="cell-coords-mono">${c.lat.toFixed(3)}°N, ${c.lon.toFixed(3)}°E</td>
+                      <td class="cell-rain-val"><strong>${c.rainfall_mm.toFixed(1)}</strong> mm</td>
+                      <td>${c.weight_pct.toFixed(1)}%</td>
+                      <td><span class="leach-pill ${leachClass}">${leachLabel}</span></td>
+                    </tr>
+                  `;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      `;
+    }
+
+    spatialVarianceHtml = `
+      <div class="spatial-variance-card ${isExclave ? "exclave-mode" : "variance-mode"}" role="region" aria-label="Micro-Climate Variance Card">
+        <div class="variance-alert-header">
+          <div class="variance-title-row">
+            <span class="variance-alert-icon">⚠️</span>
+            <div>
+              <h4 class="variance-alert-title">${alertTitle}</h4>
+              <p class="variance-alert-desc">${alertDesc}</p>
+            </div>
+          </div>
+          <span class="variance-delta-badge">Δ ${deltaMm.toFixed(1)} mm</span>
+        </div>
+        ${parcelTabsHtml}
+        ${cellsInspectorHtml}
+      </div>
+    `;
+  }
 
   // DESKTOP FULL-SCREEN GRIDS (Visible only on desktop screens >= 1025px)
   const desktopCropGridHtml = `
@@ -751,6 +873,7 @@ function renderForecastDetails(record) {
   container.innerHTML = `
     <article class="forecast-card-streamlined">
       ${heroHtml}
+      ${spatialVarianceHtml}
       ${desktopCropGridHtml}
       ${desktopOpsGridHtml}
       ${desktopTechGridHtml}
@@ -760,6 +883,18 @@ function renderForecastDetails(record) {
       </div>
     </article>
   `;
+
+  // Parcel Selector Tab Handlers
+  container.querySelectorAll(".btn-parcel-tab").forEach(tab => {
+    tab.onclick = () => {
+      const pId = tab.dataset.parcelId;
+      const lgd = tab.dataset.lgd;
+      if (pId && lgd) {
+        activeParcelMap.set(String(lgd), pId);
+        renderForecastDetails(record);
+      }
+    };
+  });
 
   // Attach Event Handlers
   const voiceBtn = container.querySelector("#btn-voice");
@@ -1621,7 +1756,45 @@ async function loadData() {
       suggestionsBox.replaceChildren();
     }
     renderForecastDetails(record);
+    renderMissionInspectionStrip(record);
   };
+
+  function renderMissionInspectionStrip(record) {
+    const missionBar = document.querySelector("#mission-spatial-variance-bar");
+    if (!missionBar || !record) return;
+
+    const spVar = record.spatial_variance;
+    const expVal = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
+
+    if (spVar && spVar.has_exclaves) {
+      missionBar.className = "mission-inspection-strip has-exclaves";
+      const p1 = spVar.parcels[0];
+      const p2 = spVar.parcels[1];
+      missionBar.innerHTML = `
+        <div class="mission-inspection-text">
+          <strong>⚠️ MultiPolygon Exclave Detected:</strong> <strong>${record.panchayat_name}</strong> has ${spVar.exclave_count} disconnected parcels (${spVar.max_exclave_span_km} km span). 
+          Rainfall variance: <strong>${spVar.spatial_variance_mm.toFixed(1)} mm</strong> (${p1 ? p1.name_en + ': ' + p1.expected_mm.toFixed(1) + ' mm' : ''} vs ${p2 ? p2.name_en + ': ' + p2.expected_mm.toFixed(1) + ' mm' : ''}).
+        </div>
+        <button type="button" class="mission-inspection-btn" onclick="document.querySelector('#btn-mode-village').click()">Inspect Parcels in Cockpit 📱</button>
+      `;
+    } else if (spVar && spVar.is_high_variance) {
+      missionBar.className = "mission-inspection-strip has-exclaves";
+      missionBar.innerHTML = `
+        <div class="mission-inspection-text">
+          <strong>⚠️ Micro-Climate Variance:</strong> <strong>${record.panchayat_name}</strong> rainfall varies by <strong>${spVar.spatial_variance_mm.toFixed(1)} mm</strong> across constituent 5km cells (${spVar.min_mm.toFixed(1)}–${spVar.max_mm.toFixed(1)} mm).
+        </div>
+        <button type="button" class="mission-inspection-btn" onclick="document.querySelector('#btn-mode-village').click()">Inspect Cells in Cockpit 📱</button>
+      `;
+    } else {
+      missionBar.className = "mission-inspection-strip";
+      missionBar.innerHTML = `
+        <div class="mission-inspection-text">
+          <strong>Selected GP:</strong> <strong>${record.panchayat_name}</strong> (LGD: ${record.lgd_code}) • Expected Rain: <strong>${expVal.toFixed(1)} mm</strong> • Uniform 5km cell distribution (single parcel).
+        </div>
+        <button type="button" class="mission-inspection-btn" onclick="document.querySelector('#btn-mode-village').click()">View Advisory 📱</button>
+      `;
+    }
+  }
 
   function renderSuggestions(query) {
     if (!suggestionsBox) return;
@@ -1850,8 +2023,8 @@ async function loadData() {
   await renderMap(records);
 
   if (records.length) {
-    // Select Banavasi by default (safe window), or first record
-    const initial = records.find(r => String(r.lgd_code) === "215504") || records[0];
+    // Select Nalligere by default to immediately showcase Exclave & Cloudburst Variance
+    const initial = records.find(r => String(r.lgd_code) === "219388") || records[0];
     selectPanchayat(initial);
   }
 }
@@ -1866,7 +2039,9 @@ window.addEventListener("online", () => {
 });
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/service-worker.js").catch(console.error);
+  navigator.serviceWorker.register("/service-worker.js")
+    .then(reg => reg.update())
+    .catch(console.error);
 }
 
 setupModeSwitcher();

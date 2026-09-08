@@ -32,6 +32,40 @@ class AdvisorySet(BaseModel):
     sugarcane: CropAdvisory | None = None
 
 
+class ParcelDetailSchema(BaseModel):
+    parcel_id: str
+    name_en: str
+    name_kn: str
+    centroid: list[float]  # [lat, lon]
+    area_share_pct: float
+    expected_mm: float
+    likely_min_mm: float
+    likely_max_mm: float
+
+
+class ConstituentCellSchema(BaseModel):
+    cardinal_dir_en: str
+    cardinal_dir_kn: str
+    lat: float
+    lon: float
+    rainfall_mm: float
+    weight_pct: float
+    leach_risk: str
+
+
+class SpatialVarianceSchema(BaseModel):
+    has_exclaves: bool = False
+    exclave_count: int = 1
+    max_exclave_span_km: float = 0.0
+    is_high_variance: bool = False
+    spatial_variance_mm: float = 0.0
+    min_mm: float = 0.0
+    max_mm: float = 0.0
+    cell_count: int = 0
+    parcels: list[ParcelDetailSchema] = []
+    constituent_cells: list[ConstituentCellSchema] = []
+
+
 class ForecastResponse(BaseModel):
     lgd_code: str
     panchayat_name: str
@@ -41,6 +75,7 @@ class ForecastResponse(BaseModel):
     rainfall_mm: Rainfall
     advisory: AdvisorySet
     is_cached: bool = False
+    spatial_variance: SpatialVarianceSchema | None = None
 
 
 class IntegrationMockResponse(BaseModel):

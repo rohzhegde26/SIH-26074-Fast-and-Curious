@@ -108,6 +108,7 @@ def run_pipeline(
     agg_mean = aggregator.aggregate_grid(hr_mean, hr_lats, hr_lons)
     agg_lo = aggregator.aggregate_grid(hr_lo, hr_lats, hr_lons)
     agg_hi = aggregator.aggregate_grid(hr_hi, hr_lats, hr_lons)
+    agg_detailed = aggregator.aggregate_grid_detailed(hr_mean, hr_lo, hr_hi, hr_lats, hr_lons)
 
     # Read simplified map gpcodes to ensure exact 1-to-1 correspondence
     topology = json.loads(topojson_path.read_text(encoding="utf-8"))
@@ -158,6 +159,7 @@ def run_pipeline(
             "likely_max_mm": l_max,
             "ragi_stage": r_stage,
             "paddy_stage": p_stage,
+            "spatial_variance": agg_detailed.get(gpcode),
         }
         records.append(rec)
 

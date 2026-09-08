@@ -23,6 +23,7 @@ from src.api.schemas import (
     NandiniValidationRequest,
     NandiniValidationResponse,
     Rainfall,
+    SpatialVarianceSchema,
     VirtualARGResponse,
     VirtualARGUncertainty,
 )
@@ -116,6 +117,13 @@ def _response(record: dict) -> ForecastResponse:
     paddy = build_advisory("paddy", record.get("paddy_stage", "vegetative"), expected, likely_max)
     sugarcane = build_advisory("sugarcane", record.get("sugarcane_stage", "grand_growth"), expected, likely_max)
 
+    sp_var = None
+    if "spatial_variance" in record and record["spatial_variance"]:
+        try:
+            sp_var = SpatialVarianceSchema(**record["spatial_variance"])
+        except Exception:
+            sp_var = None
+
     return ForecastResponse(
         lgd_code=str(record["lgd_code"]),
         panchayat_name=record["panchayat_name"],
@@ -128,6 +136,7 @@ def _response(record: dict) -> ForecastResponse:
             paddy=_convert_advisory(paddy),
             sugarcane=_convert_advisory(sugarcane),
         ),
+        spatial_variance=sp_var,
     )
 
 

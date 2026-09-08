@@ -47,3 +47,19 @@ def test_multiple_panchayats_queryable():
 
 def test_unknown_panchayat_is_not_found():
     assert client.get("/api/forecast/99999999").status_code == 404
+
+
+def test_forecast_spatial_variance_exclave_payload():
+    # Test Nalligere (219388) has spatial_variance with parcels
+    res = client.get("/api/forecast/219388")
+    assert res.status_code == 200
+    data = res.json()
+    assert "spatial_variance" in data
+    var = data["spatial_variance"]
+    assert var is not None
+    assert var["has_exclaves"] is True
+    assert var["max_exclave_span_km"] > 25.0
+    assert len(var["parcels"]) >= 2
+    assert var["parcels"][0]["area_share_pct"] > 80.0
+    assert len(var["constituent_cells"]) >= 2
+    assert "cardinal_dir_kn" in var["constituent_cells"][0]

@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
     <link rel="stylesheet" href="/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/styles.css?v=20">
+    <link rel="stylesheet" href="/styles.css?v=23">
     <title>Mandya Agro-Weather — Dual-Mode Downscaling Cockpit (SIH 26074)</title>
   </head>
   <body data-view="mission-control" data-operator-role="dairy">
@@ -209,6 +209,13 @@
                   <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5–64.4 mm (Moderate)</div>
                   <div class="legend-item"><span class="legend-swatch band-heavy"></span> &gt; 64.5 mm (Heavy)</div>
                 </div>
+
+                <!-- Mission Control Active GP / Exclave Inspection Strip -->
+                <div id="mission-spatial-variance-bar" class="mission-inspection-strip">
+                  <div class="mission-inspection-text">
+                    <strong>Panchayat Inspection:</strong> Click any panchayat on the map to inspect localized downscaled forecast & exclave variance.
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -360,6 +367,6 @@
     <!-- Leaflet GIS Library (Cached locally for offline PWA) -->
     <script src="/leaflet/leaflet.js"></script>
     <!-- App Engine JavaScript -->
-    <script type="module" src="/app.js?v=18"></script>
+    <script type="module" src="/app.js?v=23"></script>
   </body>
 </html>

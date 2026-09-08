@@ -1,7 +1,7 @@
-<<<<<<< HEAD
 # -- Python --------------------------------------------------------------------
 __pycache__/
 *.py[cod]
+*$py.class
 *.pyo
 *.pyd
 .Python
@@ -38,6 +38,8 @@ desktop.ini
 # -- Large / Raw Data (do NOT commit raw satellite/IMD grids) ------------------
 data/raw/
 data/processed/
+*.zarr/
+*.zarr
 
 # -- Model Checkpoints (large binary files) ------------------------------------
 models/checkpoints/
@@ -57,35 +59,14 @@ logs/
 !.env.example
 secrets/
 
+# -- Temporary / Scratch files -------------------------------------------------
+scratch/
+*.tmp
+*.part
+
 # -- Generated OpenAPI spec (auto-regenerated on startup) ----------------------
 docs/openapi.json
 
 # -- Node (if any frontend tooling is added later) -----------------------------
 node_modules/
 .npm/
-=======
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Pytest / coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Environment / local configs
-.env
-.venv/
-env/
-venv/
-ENV/
-
-# Temporary / Scratch files
-scratch/
-*.tmp
-*.log
-*.part
-*.zarr/
-*.zarr
->>>>>>> ebd34414fe5ee871e894bd2b7adce691b32fa08f

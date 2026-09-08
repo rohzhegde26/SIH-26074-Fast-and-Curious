@@ -19,12 +19,13 @@ Critical Guardrails:
     - pyproj.Geod is used for rigorous ellipsoidal geodesic area audits.
 """
 
+import math
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 import geopandas as gpd
 import numpy as np
 import pyproj
-from shapely.geometry import Polygon, box
+from shapely.geometry import MultiPolygon, Polygon, box
 
 
 # Earth radius in meters (WGS84 authalic sphere)
@@ -49,6 +50,28 @@ def compute_geod_polygon_area_m2(polygon: Polygon) -> float:
     geod = pyproj.Geod(a=EARTH_RADIUS_M, b=EARTH_RADIUS_M)
     area, _ = geod.geometry_area_perimeter(polygon)
     return float(abs(area))
+
+
+def compute_cardinal_bearing(c_lat: float, c_lon: float, cent_lat: float, cent_lon: float) -> Tuple[str, str]:
+    """Compute 8-point compass bearing and Kannada translation relative to reference centroid."""
+    d_lat = c_lat - cent_lat
+    d_lon = c_lon - cent_lon
+    dist_km = math.hypot(d_lat, d_lon) * 111.0
+    if dist_km < 1.8:
+        return "Central", "ಕೇಂದ್ರ ಭಾಗ"
+    angle = (math.degrees(math.atan2(d_lon, d_lat)) + 360.0) % 360.0
+    sectors = [
+        ("North", "ಉತ್ತರ"),
+        ("North-East", "ಈಶಾನ್ಯ"),
+        ("East", "ಪೂರ್ವ"),
+        ("South-East", "ಆಗ್ನೇಯ"),
+        ("South", "ದಕ್ಷಿಣ"),
+        ("South-West", "ನೈಋತ್ಯ"),
+        ("West", "ಪಶ್ಚಿಮ"),
+        ("North-West", "ವಾಯುವ್ಯ"),
+    ]
+    idx = int((angle + 22.5) // 45.0) % 8
+    return sectors[idx]
 
 
 class ZonalAggregator:
@@ -114,13 +137,112 @@ class ZonalAggregator:
             total_weight = sum(weights) if weights else 1.0
             norm_weights = [w / total_weight for w in weights] if weights else []
 
+            # Centroid & cell directions relative to GP centroid
+            cent_lat = float(poly.centroid.y)
+            cent_lon = float(poly.centroid.x)
+            cell_directions = [
+                compute_cardinal_bearing(c_lat, c_lon, cent_lat, cent_lon)
+                for (c_lat, c_lon) in cell_coords
+            ]
+
+            # Multi-parcel exclave detection (disconnected clusters > 3.0 km apart)
+            parcels_data = []
+            has_exclaves = False
+            max_exclave_span_km = 0.0
+
+            if poly.geom_type == "MultiPolygon" and len(poly.geoms) > 1:
+                parts = list(poly.geoms)
+                clusters = []
+                for p in parts:
+                    assigned = False
+                    for c in clusters:
+                        if any(p.distance(other) < 0.035 for other in c):
+                            c.append(p)
+                            assigned = True
+                            break
+                    if not assigned:
+                        clusters.append([p])
+
+                if len(clusters) > 1:
+                    clusters.sort(key=lambda c: sum(p.area for p in c), reverse=True)
+                    main_c = clusters[0]
+                    main_area = sum(p.area for p in main_c)
+                    main_lat = float(sum(p.centroid.y * p.area for p in main_c) / main_area)
+                    main_lon = float(sum(p.centroid.x * p.area for p in main_c) / main_area)
+
+                    cluster_spans = []
+                    for c in clusters:
+                        c_area = sum(p.area for p in c)
+                        c_lat = float(sum(p.centroid.y * p.area for p in c) / c_area)
+                        c_lon = float(sum(p.centroid.x * p.area for p in c) / c_area)
+                        span = float(math.hypot(c_lat - main_lat, c_lon - main_lon) * 111.0)
+                        cluster_spans.append((c, c_area, c_lat, c_lon, span))
+
+                    max_span = max(s[4] for s in cluster_spans)
+                    if max_span >= 3.0:
+                        has_exclaves = True
+                        max_exclave_span_km = round(max_span, 1)
+
+                        total_poly_area = poly.area if poly.area > 0 else 1.0
+                        for i, (c, c_area, c_lat, c_lon, span) in enumerate(cluster_spans):
+                            area_pct = round((c_area / total_poly_area) * 100.0, 1)
+                            if i == 0:
+                                label_en = "Main Cluster"
+                                label_kn = "ಮುಖ್ಯ ಭಾಗ"
+                            else:
+                                b_en, b_kn = compute_cardinal_bearing(c_lat, c_lon, main_lat, main_lon)
+                                label_en = f"{b_en} Exclave ({span:.0f} km {b_en})"
+                                label_kn = f"{b_kn} ಪ್ರತ್ಯೇಕ ಭಾಗ ({span:.0f} ಕಿ.ಮೀ {b_kn})"
+
+                            c_union = c[0] if len(c) == 1 else MultiPolygon(c)
+                            c_bounds = c_union.bounds
+                            c_lon_min = np.floor(c_bounds[0] / self.hr_step) * self.hr_step
+                            c_lon_max = np.ceil(c_bounds[2] / self.hr_step) * self.hr_step
+                            c_lat_min = np.floor(c_bounds[1] / self.hr_step) * self.hr_step
+                            c_lat_max = np.ceil(c_bounds[3] / self.hr_step) * self.hr_step
+
+                            c_lons = np.arange(c_lon_min, c_lon_max + 1e-6, self.hr_step)
+                            c_lats = np.arange(c_lat_min, c_lat_max + 1e-6, self.hr_step)
+
+                            p_cell_coords = []
+                            p_weights = []
+                            for lat in c_lats:
+                                for lon in c_lons:
+                                    box_elem = box(lon, lat, lon + self.hr_step, lat + self.hr_step)
+                                    if c_union.intersects(box_elem):
+                                        c_inter = c_union.intersection(box_elem)
+                                        if not c_inter.is_empty:
+                                            c_area_m2 = compute_spherical_cell_area_m2(
+                                                lat + self.hr_step / 2.0, self.hr_step, self.hr_step
+                                            )
+                                            w = (c_inter.area / box_elem.area) * c_area_m2
+                                            p_cell_coords.append((float(lat + self.hr_step / 2.0), float(lon + self.hr_step / 2.0)))
+                                            p_weights.append(w)
+
+                            p_total_w = sum(p_weights) if p_weights else 1.0
+                            parcels_data.append({
+                                "parcel_id": f"{gpcode}_p{i}",
+                                "name_en": label_en,
+                                "name_kn": label_kn,
+                                "centroid": [round(c_lat, 4), round(c_lon, 4)],
+                                "area_share_pct": area_pct,
+                                "cell_coords": p_cell_coords,
+                                "weights": p_weights,
+                                "total_weight": p_total_w,
+                            })
+
             self.weights_cache[gpcode] = {
                 "gpname": row.get("gpname", ""),
+                "centroid": (cent_lat, cent_lon),
                 "cell_coords": cell_coords,
+                "cell_directions": cell_directions,
                 "weights": weights,
                 "normalized_weights": norm_weights,
                 "total_weight": total_weight,
                 "geod_area_m2": compute_geod_polygon_area_m2(poly),
+                "has_exclaves": has_exclaves,
+                "max_exclave_span_km": max_exclave_span_km,
+                "parcels": parcels_data,
             }
 
     def aggregate_constant(self, value: float = 1.0) -> Dict[str, float]:
@@ -174,6 +296,144 @@ class ZonalAggregator:
             results[gpcode] = float(weighted_sum / total_weight)
 
         return results
+
+    def aggregate_grid_detailed(
+        self,
+        hr_mean: Union[np.ndarray, "torch.Tensor"],
+        hr_lo: Union[np.ndarray, "torch.Tensor"],
+        hr_hi: Union[np.ndarray, "torch.Tensor"],
+        hr_lats: Union[np.ndarray, List[float]],
+        hr_lons: Union[np.ndarray, List[float]],
+    ) -> Dict[str, Dict]:
+        """
+        Aggregate high-resolution 0.05° grid rainfall with detailed intra-panchayat
+        variance analysis, constituent boundary cell dispersion, and disconnected exclave detection.
+        """
+        def _to_np(g):
+            if hasattr(g, "detach"):
+                g = g.detach().cpu().numpy()
+            if g.ndim == 3:
+                g = g[0]
+            elif g.ndim == 4:
+                g = g[0, 0]
+            return g
+
+        hr_mean = _to_np(hr_mean)
+        hr_lo = _to_np(hr_lo)
+        hr_hi = _to_np(hr_hi)
+
+        hr_lats = np.asarray(hr_lats, dtype=np.float32)
+        hr_lons = np.asarray(hr_lons, dtype=np.float32)
+
+        detailed_results = {}
+        for gpcode, data in self.weights_cache.items():
+            cell_coords = data["cell_coords"]
+            weights = data["weights"]
+            total_weight = data["total_weight"]
+            cell_dirs = data.get("cell_directions", [])
+            has_exclaves = data.get("has_exclaves", False)
+            max_span = data.get("max_exclave_span_km", 0.0)
+            parcels = data.get("parcels", [])
+
+            if not cell_coords or total_weight <= 0:
+                detailed_results[gpcode] = {
+                    "has_exclaves": False,
+                    "exclave_count": 0,
+                    "max_exclave_span_km": 0.0,
+                    "is_high_variance": False,
+                    "spatial_variance_mm": 0.0,
+                    "min_mm": 0.0,
+                    "max_mm": 0.0,
+                    "cell_count": 0,
+                    "parcels": [],
+                    "constituent_cells": [],
+                }
+                continue
+
+            constituent_cells = []
+            cell_vals = []
+            for (c_lat, c_lon), w, (b_en, b_kn) in zip(cell_coords, weights, cell_dirs):
+                r_idx = int(np.argmin(np.abs(hr_lats - c_lat)))
+                c_idx = int(np.argmin(np.abs(hr_lons - c_lon)))
+                pixel_val = round(float(hr_mean[r_idx, c_idx]), 1)
+                cell_vals.append(pixel_val)
+                w_pct = round((w / total_weight) * 100.0, 1)
+
+                if pixel_val >= 15.0:
+                    leach = "High"
+                elif pixel_val >= 5.0:
+                    leach = "Moderate"
+                else:
+                    leach = "Low"
+
+                constituent_cells.append({
+                    "cardinal_dir_en": b_en,
+                    "cardinal_dir_kn": b_kn,
+                    "lat": round(float(c_lat), 4),
+                    "lon": round(float(c_lon), 4),
+                    "rainfall_mm": pixel_val,
+                    "weight_pct": w_pct,
+                    "leach_risk": leach,
+                })
+
+            min_mm = min(cell_vals) if cell_vals else 0.0
+            max_mm = max(cell_vals) if cell_vals else 0.0
+            spatial_delta = round(max_mm - min_mm, 1)
+
+            parcel_results = []
+            if has_exclaves and parcels:
+                for p in parcels:
+                    p_cells = p["cell_coords"]
+                    p_weights = p["weights"]
+                    p_total_w = p["total_weight"]
+                    if not p_cells or p_total_w <= 0:
+                        continue
+
+                    p_weighted_mean = 0.0
+                    p_weighted_lo = 0.0
+                    p_weighted_hi = 0.0
+                    for (c_lat, c_lon), w in zip(p_cells, p_weights):
+                        r_idx = int(np.argmin(np.abs(hr_lats - c_lat)))
+                        c_idx = int(np.argmin(np.abs(hr_lons - c_lon)))
+                        p_weighted_mean += float(hr_mean[r_idx, c_idx]) * w
+                        p_weighted_lo += float(hr_lo[r_idx, c_idx]) * w
+                        p_weighted_hi += float(hr_hi[r_idx, c_idx]) * w
+
+                    p_mean = round(p_weighted_mean / p_total_w, 1)
+                    p_lo = round(p_weighted_lo / p_total_w, 1)
+                    p_hi = round(p_weighted_hi / p_total_w, 1)
+                    p_lo = min(p_lo, p_mean)
+                    p_hi = max(p_hi, p_mean)
+
+                    parcel_results.append({
+                        "parcel_id": p["parcel_id"],
+                        "name_en": p["name_en"],
+                        "name_kn": p["name_kn"],
+                        "centroid": p["centroid"],
+                        "area_share_pct": p["area_share_pct"],
+                        "expected_mm": p_mean,
+                        "likely_min_mm": p_lo,
+                        "likely_max_mm": p_hi,
+                    })
+
+            # High variance trigger: spread >= 4.0 mm with max >= 5.0 mm,
+            # or multi-parcel exclaves with difference >= 2.0 mm
+            is_high_var = (spatial_delta >= 4.0 and max_mm >= 5.0) or (has_exclaves and spatial_delta >= 2.0)
+
+            detailed_results[gpcode] = {
+                "has_exclaves": has_exclaves,
+                "exclave_count": len(parcel_results) if has_exclaves else 1,
+                "max_exclave_span_km": max_span,
+                "is_high_variance": bool(is_high_var),
+                "spatial_variance_mm": spatial_delta,
+                "min_mm": round(min_mm, 1),
+                "max_mm": round(max_mm, 1),
+                "cell_count": len(constituent_cells),
+                "parcels": parcel_results,
+                "constituent_cells": constituent_cells,
+            }
+
+        return detailed_results
 
     def validate_interior_cell_partition(self) -> Dict[str, Union[bool, int, float, List[Dict]]]:
         """

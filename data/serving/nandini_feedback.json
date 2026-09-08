@@ -669,5 +669,60 @@
     "observation_period": "LAST_12_HOURS",
     "recorded_at_utc": "2026-09-08T07:32:59.733352+00:00",
     "recalibration_flagged": true
+  },
+  {
+    "validation_id": "0e3d1ad0",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-08T10:25:14.352656+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "0e192daf",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-08T10:30:17.012940+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "12b4bd53",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-08T10:39:24.979764+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "812af4d1",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-08T10:40:16.598344+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "960d8741",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-08T10:46:42.538190+00:00",
+    "recalibration_flagged": false
   }
 ]

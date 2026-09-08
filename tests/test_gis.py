@@ -64,3 +64,39 @@ def test_holdout_buffer():
     district_geom = gdf_full.union_all() if hasattr(gdf_full, "union_all") else gdf_full.unary_union
     holdout_geom = gdf_holdout.geometry.iloc[0]
     assert holdout_geom.contains(district_geom), "Holdout buffer must contain the entire district"
+
+
+def test_zonal_aggregator_detailed_variance_and_exclaves():
+    import numpy as np
+    from src.data.zonal_aggregation import ZonalAggregator
+
+    agg = ZonalAggregator("data/processed/mandya_full.geojson")
+    hr_lats = np.linspace(10.90, 14.85, 80)
+    hr_lons = np.linspace(74.90, 78.85, 80)
+
+    # Realistic test grid with north-south gradient
+    grid_mean = np.zeros((80, 80), dtype=np.float32)
+    for i, lat in enumerate(hr_lats):
+        for j, lon in enumerate(hr_lons):
+            grid_mean[i, j] = max(0.0, (lat - 12.0) * 12.0 + (lon - 76.5) * 8.0)
+    grid_lo = np.maximum(0.0, grid_mean - 2.0)
+    grid_hi = grid_mean + 4.0
+
+    detailed = agg.aggregate_grid_detailed(grid_mean, grid_lo, grid_hi, hr_lats, hr_lons)
+    assert len(detailed) >= 234
+
+    # Test Nalligere (219388) exclave detection
+    nal = detailed.get("219388")
+    assert nal is not None
+    assert nal["has_exclaves"] is True
+    assert nal["max_exclave_span_km"] > 25.0
+    assert len(nal["parcels"]) >= 2
+    assert nal["parcels"][0]["area_share_pct"] > 80.0
+    assert "ಮುಖ್ಯ ಭಾಗ" in nal["parcels"][0]["name_kn"]
+    assert "South" in nal["parcels"][1]["name_en"]
+    assert nal["cell_count"] >= 2
+
+    # Verify weight percentage conservation in constituent cells
+    total_w_pct = sum(c["weight_pct"] for c in nal["constituent_cells"])
+    assert 99.0 <= total_w_pct <= 101.0
+
