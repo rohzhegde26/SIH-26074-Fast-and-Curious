@@ -4,247 +4,359 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0b6e4f">
-    <meta name="description" content="Offline-first downscaled panchayat weather forecast and bilingual agro-advisory for Mandya district.">
+    <meta name="description" content="Dual-Mode Downscaled Weather Advisory: Mobile Village Cockpit for rural intermediaries & MoES Mission Control for meteorological command.">
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
-    <link rel="stylesheet" href="/styles.css?v=13">
-    <title>Mandya Weather Advisory — Panchayat Forecasts</title>
+    <link rel="stylesheet" href="/styles.css?v=17">
+    <title>Mandya Agro-Weather — Dual-Mode Downscaling Cockpit (SIH 26074)</title>
   </head>
-  <body>
-    <!-- Top Offline Warning Banner -->
+  <body data-view="mission-control" data-operator-role="dairy">
+    <!-- Top Offline Warning Banner (Sticky) -->
     <div id="offline-banner" class="banner hidden" role="alert" aria-live="assertive">
       <span class="banner-icon">⚠️</span>
-      <span id="offline-banner-text">⚠️ No network — operating on cached 06:00 IST advisory. Chalkboard & dispatch queue active.</span>
+      <span id="offline-banner-text">No network — operating on cached 06:00 IST advisory. Chalkboard & dispatch queue active.</span>
     </div>
 
+    <!-- Unified Master Navigation Header -->
     <header class="app-header">
-      <div class="header-content">
+      <div class="header-container">
         <div class="header-brand">
           <img src="/icon.svg" alt="Weather logo" class="header-logo" width="34" height="34">
-          <div>
-            <h1>Mandya Agro-Weather Cockpit</h1>
-            <p class="subtitle">Village Intermediary Console (RSK Officer • Dairy Secretary • GP Development)</p>
+          <div class="brand-text">
+            <h1>Mandya Agro-Weather</h1>
+            <span class="brand-tagline">5× Downscaled Panchayat Advisory (SIH PS 26074)</span>
           </div>
         </div>
-        <div class="sync-badge" id="sync-badge">
-          <span class="status-dot"></span>
-          <span id="sync-status">Syncing latest forecast…</span>
+
+        <!-- Mode Switcher Tabs (SPA 0ms Toggle) -->
+        <nav class="mode-switch-nav" role="tablist" aria-label="Interface Surface Mode">
+          <button type="button" id="btn-mode-village" class="btn-mode" role="tab" aria-selected="false" data-mode="village" title="Switch to Mobile Village Cockpit (Key: M)">
+            <span class="mode-icon">📱</span>
+            <span class="mode-title">Village Cockpit</span>
+            <span class="mode-badge">Field PWA</span>
+          </button>
+          <button type="button" id="btn-mode-mission" class="btn-mode active" role="tab" aria-selected="true" data-mode="mission-control" title="Switch to MoES Mission Control (Key: M)">
+            <span class="mode-icon">🛰️</span>
+            <span class="mode-title">MoES Mission Control</span>
+            <span class="mode-badge">Jury Stage</span>
+          </button>
+        </nav>
+
+        <!-- Right Utilities: Language Toggle & Sync Badge -->
+        <div class="header-utilities">
+          <div class="lang-toggle-group" role="group" aria-label="Language selection">
+            <button class="lang-btn active" data-lang="en" title="English (Key: 1)">EN</button>
+            <button class="lang-btn" data-lang="kn" title="Kannada (Key: 2)">ಕನ್ನಡ</button>
+          </div>
+          <div class="sync-badge" id="sync-badge">
+            <span class="status-dot"></span>
+            <span id="sync-status">Syncing 234 GPs…</span>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- Intermediary Operator Bar -->
-    <section class="operator-bar" aria-label="Village Intermediary Role">
-      <div class="operator-content">
-        <div class="operator-title-wrap">
-          <span class="operator-pulse"></span>
-          <span class="operator-label">OPERATOR CONSOLE / ಗ್ರಾಮದ ಮಧ್ಯವರ್ತಿ ಕಾರ್ಯಕ್ಷೇತ್ರ:</span>
+    <main class="app-main">
+      <!-- ==================================================================== -->
+      <!-- SURFACE A: VILLAGE COCKPIT (MOBILE-FIRST, SINGLE VIEWPORT HEIGHT)     -->
+      <!-- ==================================================================== -->
+      <section id="view-village" class="view-surface hidden" role="tabpanel" aria-labelledby="btn-mode-village">
+        <div class="village-container">
+          <div class="village-left-pane">
+            <!-- Presentation Quick Demo Drawer (Collapsible on mobile, permanent sidebar on desktop) -->
+            <details class="demo-drawer" id="demo-drawer" aria-label="Presentation Controls">
+              <summary class="demo-drawer-summary" title="Toggle Stage Presentation & Role Controls">
+                <span class="drawer-pill">⚡ Presentation Quick Demo & Roles ▾</span>
+              </summary>
+              <div class="demo-drawer-body">
+                <!-- Role Switcher -->
+                <div class="drawer-row">
+                  <span class="drawer-label">INTERMEDIARY ROLE:</span>
+                  <div class="operator-role-pills" role="radiogroup" aria-label="Select Village Role">
+                    <button type="button" class="btn-role active" data-role="dairy">🥛 Dairy Secretary</button>
+                    <button type="button" class="btn-role" data-role="rsk">🌾 RSK Officer</button>
+                    <button type="button" class="btn-role" data-role="gp">🏛️ GP Secretary</button>
+                    <button type="button" class="btn-role" data-role="lead">👩‍🌾 Lead Farmer</button>
+                  </div>
+                </div>
+
+                <!-- 60-Second Demo Contrast Chips (Instantly proves 0.25° blindspot) -->
+                <div class="drawer-row">
+                  <span class="drawer-label">DEMO CONTRAST:</span>
+                  <div class="demo-chips-row" aria-label="Stage Demo Shortcuts">
+                    <button type="button" class="demo-chip chip-burst" data-code="219388" title="Nalligere: 30.4mm cloudburst under 1.8mm district average [Key: N]">
+                      ⚡ Nalligere (30.4 mm Cloudburst) [N]
+                    </button>
+                    <button type="button" class="demo-chip chip-safe" data-code="215504" title="Banavasi: 1.7mm safe dry window [Key: B]">
+                      ⚡ Banavasi (1.7 mm Safe Window) [B]
+                    </button>
+                    <button type="button" class="demo-chip chip-dry" data-code="219431" title="Naguvanahalli: 0.0mm dry window">
+                      ⚡ Naguvanahalli (0.0 mm Dry)
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Search Combobox -->
+                <div class="drawer-row">
+                  <span class="drawer-label">SEARCH ANY GP:</span>
+                  <div class="search-box-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input
+                      type="text"
+                      id="panchayat-search"
+                      class="search-input"
+                      placeholder="Search panchayat (e.g. Halaguru, Banavasi)... [Key: /]"
+                      autocomplete="off"
+                      aria-label="Search panchayat name or code"
+                    />
+                    <button type="button" id="search-clear-btn" class="search-clear-btn hidden" title="Clear search">✕</button>
+                    <div id="search-suggestions" class="search-suggestions hidden" role="listbox"></div>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <!-- Desktop Live Map Slot (Moves #main-map-card here when on desktop Village Cockpit) -->
+            <div id="village-desktop-map-slot" class="village-desktop-map-slot"></div>
+
+            <!-- Quick View Map Button (Mobile only) -->
+            <div class="village-map-action">
+              <button type="button" id="btn-open-map-modal" class="btn-map-launcher">
+                <span>🗺️ View Mandya 234-GP Choropleth Map</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column: The Streamlined Field Advisory Engine -->
+          <div class="village-right-pane">
+            <div id="forecast-details" class="forecast-section" aria-live="polite"></div>
+          </div>
         </div>
-        <div class="operator-roles" role="radiogroup" aria-label="Active village operator role">
-          <button type="button" class="btn-role active" data-role="dairy">🥛 Dairy Secretary (ಡೈರಿ ಕಾರ್ಯದರ್ಶಿ)</button>
-          <button type="button" class="btn-role" data-role="rsk">🌾 RSK Agriculture Officer (ಕೃಷಿ ಅಧಿಕಾರಿ)</button>
-          <button type="button" class="btn-role" data-role="gp">🏛️ GP Secretary (ಗ್ರಾ.ಪಂ. ಅಧಿಕಾರಿ)</button>
-          <button type="button" class="btn-role" data-role="lead">👩‍🌾 Lead Farmer / SHG (ಪ್ರಗತಿಪರ ರೈತ)</button>
+      </section>
+
+      <!-- ==================================================================== -->
+      <!-- SURFACE B: MoES MISSION CONTROL (DESKTOP / JURY STAGE DASHBOARD)     -->
+      <!-- ==================================================================== -->
+      <section id="view-mission-control" class="view-surface active" role="tabpanel" aria-labelledby="btn-mode-mission">
+        <div class="mission-container">
+          <!-- Command Dashboard Header -->
+          <div class="mission-banner">
+            <div class="mission-title-wrap">
+              <span class="mission-badge">MINISTRY OF EARTH SCIENCES (MoES)</span>
+              <h2>Hyper-Local Agrometeorological Downscaling Command Center</h2>
+              <p class="mission-sub">Mandya Pilot District (234 Gram Panchayats) • Direct 5× Physics-Conserved Super-Resolution (0.25° → 0.05°)</p>
+            </div>
+            <div class="mission-meta-pills">
+              <span class="meta-pill">Monsoon JJAS Ingestion</span>
+              <span class="meta-pill pill-verified">GLO-30 DEM Conditioned</span>
+              <span class="meta-pill pill-cqr">CQR 90% Calibrated</span>
+            </div>
+          </div>
+
+          <!-- Mission Control 2-Column Grid -->
+          <div class="mission-grid">
+            <!-- Left Column: Spatial Command & Interactive Choropleth Map -->
+            <div class="mission-left-col">
+              <!-- District Summary Stats Bar -->
+              <div class="stats-bar" id="stats-bar" aria-label="District Aggregate Statistics">
+                <div class="stat-card">
+                  <span class="stat-label">Panchayats</span>
+                  <span class="stat-val" id="stat-total">234</span>
+                  <span class="stat-foot">LGD Mapped</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">District Avg</span>
+                  <span class="stat-val" id="stat-avg">1.8 mm</span>
+                  <span class="stat-foot">Conserved Mass</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Max Rain</span>
+                  <span class="stat-val" id="stat-max">30.4 mm</span>
+                  <span class="stat-foot">Nalligere Cloudburst</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Rain Status</span>
+                  <span class="stat-val" id="stat-wet">40/234 Wet</span>
+                  <span class="stat-foot">&gt; 2.5 mm Active</span>
+                </div>
+              </div>
+
+              <!-- Map Card -->
+              <div class="card map-card" id="main-map-card" aria-label="Mandya 234-Panchayat Choropleth">
+                <div class="card-header">
+                  <div>
+                    <h3 class="card-title">Mandya Panchayat Choropleth Map</h3>
+                    <p class="card-sub" id="map-status">Click any panchayat polygon to inspect localized downscaled forecast</p>
+                  </div>
+                  <div class="map-controls">
+                    <button id="zoom-in" class="btn-ctrl" title="Zoom In (+)" aria-label="Zoom in">+</button>
+                    <button id="zoom-out" class="btn-ctrl" title="Zoom Out (-)" aria-label="Zoom out">−</button>
+                    <button id="zoom-reset" class="btn-ctrl" title="Reset View (0)" aria-label="Reset zoom">⟲</button>
+                  </div>
+                </div>
+
+                <div class="map-container" id="map-container" style="background: #f8fafc !important;">
+                  <svg id="map" role="img" aria-label="Mandya panchayat rainfall map" preserveAspectRatio="xMidYMid meet" style="background: #f8fafc !important;"></svg>
+                  <div id="map-tooltip" class="map-tooltip hidden"></div>
+                </div>
+
+                <div class="choropleth-legend" aria-label="Rainfall intensity legend">
+                  <span class="legend-title">Precipitation:</span>
+                  <div class="legend-item"><span class="legend-swatch band-dry"></span> &lt; 2.5 mm (Dry)</div>
+                  <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5–15.5 mm (Light)</div>
+                  <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5–64.4 mm (Moderate)</div>
+                  <div class="legend-item"><span class="legend-swatch band-heavy"></span> &gt; 64.5 mm (Heavy)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: The 3 Scientific Pillars (Jury Defense) -->
+            <div class="mission-right-col">
+              <!-- Pillar 1: Physical Mass Conservation Invariant -->
+              <div class="card jury-card pillar-card">
+                <div class="pillar-header">
+                  <div class="pillar-title-wrap">
+                    <span class="pillar-num">1</span>
+                    <div>
+                      <h4 class="pillar-title">Physical Mass Conservation Invariant (L<sub>cons</sub>)</h4>
+                      <span class="pillar-badge badge-physics">Strict Spherical Invariant</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="pillar-desc">
+                  Average-pooling with cos(lat) weights at HR centers ensures zero precipitation hallucination:
+                  <code>avg_pool2d(HR · cos(φ), k=5) == LR</code>
+                </p>
+                <div class="table-responsive">
+                  <table class="jury-table">
+                    <thead>
+                      <tr>
+                        <th>Method</th>
+                        <th>Seasonal Discrepancy</th>
+                        <th>Worst Cloudburst</th>
+                        <th>Physics Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Vanilla DL / Bilinear</strong></td>
+                        <td class="text-danger">11.2% violation</td>
+                        <td class="text-danger">+34.8% hallucinated</td>
+                        <td>❌ Unconstrained</td>
+                      </tr>
+                      <tr class="highlight-row">
+                        <td><strong>Fast & Curious U-Net</strong></td>
+                        <td class="text-success">&lt; 0.2% discrepancy</td>
+                        <td class="text-success">&lt; 0.3% error</td>
+                        <td>✅ 99.8% Conserved</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="pillar-note">
+                  <strong>Scientific Defense:</strong> Conservation loss computed after <code>expm1</code> in FP32 physical mm space. Prevents log-domain geometric mean distortion.
+                </div>
+              </div>
+
+              <!-- Pillar 2: Conformal Uncertainty & Statistical Calibration -->
+              <div class="card jury-card pillar-card">
+                <div class="pillar-header">
+                  <div class="pillar-title-wrap">
+                    <span class="pillar-num">2</span>
+                    <div>
+                      <h4 class="pillar-title">Conformal Uncertainty & Statistical Calibration (CQR)</h4>
+                      <span class="pillar-badge badge-cqr">90% Coverage Verified</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="cqr-metrics-grid">
+                  <div class="cqr-stat-box">
+                    <span class="cqr-stat-val text-success">90.2%</span>
+                    <span class="cqr-stat-label">Empirical Test Coverage (JJAS 2023)</span>
+                  </div>
+                  <div class="cqr-stat-box">
+                    <span class="cqr-stat-val">3.12 mm</span>
+                    <span class="cqr-stat-label">Wet-Day MAE (&gt;2.5mm Honest Metric)</span>
+                  </div>
+                  <div class="cqr-stat-box">
+                    <span class="cqr-stat-val text-primary">Mandya + 0.5°</span>
+                    <span class="cqr-stat-label">Zero-Shot Spatial Holdout Buffer</span>
+                  </div>
+                </div>
+                <div class="pillar-note">
+                  <strong>Quantile Mapping Guardrail:</strong> Performed per 0.25° cell (not HR cell) to preserve intra-cell orographic texture while absorbing IMD gauge bias.
+                </div>
+              </div>
+
+              <!-- Pillar 3: Headless Virtual ARG Live Feed (IMD AWS Standard Schema) -->
+              <div class="card jury-card pillar-card varg-card">
+                <div class="pillar-header">
+                  <div class="pillar-title-wrap">
+                    <span class="pillar-num">3</span>
+                    <div>
+                      <h4 class="pillar-title">Live Virtual ARG Feed (IMD Standard Schema)</h4>
+                      <span class="pillar-badge badge-api">Automated Rain Gauge API</span>
+                    </div>
+                  </div>
+                  <div class="varg-actions">
+                    <a id="varg-api-link" href="/api/v1/virtual-arg/215504" target="_blank" class="btn-pill-link">
+                      API ↗
+                    </a>
+                    <button id="btn-copy-varg" class="btn-pill-action">📋 Copy JSON</button>
+                  </div>
+                </div>
+                <p class="pillar-desc">
+                  Generates synthetic, mass-conserved automated rain gauge observations for all 232 unmonitored Mandya panchayats in exact compliance with IMD AWS JSON standard schemas:
+                </p>
+                <div class="varg-code-wrapper">
+                  <div class="varg-code-bar">
+                    <span id="varg-station-title">Station: VARG_KA_MAN_215504 (Banavasi)</span>
+                    <span class="varg-status-pill">● VALIDATED_MASS_CONSERVED</span>
+                  </div>
+                  <pre id="varg-json-code" class="varg-pre"><code>Loading live IMD schema payload...</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div id="role-purpose-banner" class="role-purpose-banner">
-          🥛 Dairy Secretary Mode: 06:00 AM 2-Tap Rain Verification during milk weighing &amp; Milk Center broadcast prioritised.
+      </section>
+
+      <!-- Map Modal Container for Village Cockpit Mobile View -->
+      <div id="map-modal" class="map-modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Mandya District Map">
+        <div class="map-modal-dialog">
+          <div class="map-modal-header">
+            <h3>🗺️ Mandya 234-Panchayat Choropleth</h3>
+            <button type="button" id="btn-close-map-modal" class="btn-close-modal" aria-label="Close Map">✕</button>
+          </div>
+          <div class="map-modal-body" id="modal-map-mount">
+            <!-- Modal SVG map container -->
+            <div class="modal-map-box" id="modal-map-container"></div>
+            <div class="choropleth-legend modal-legend">
+              <span class="legend-title">Precipitation:</span>
+              <div class="legend-item"><span class="legend-swatch band-dry"></span> &lt; 2.5 mm</div>
+              <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5–15.5 mm</div>
+              <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5–64.4 mm</div>
+              <div class="legend-item"><span class="legend-swatch band-heavy"></span> &gt; 64.5 mm</div>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
 
-    <main class="app-main">
-      <!-- District Summary Stats Bar -->
-      <section class="stats-bar" id="stats-bar" aria-label="District Summary">
-        <div class="stat-card">
-          <span class="stat-label">Panchayats</span>
-          <span class="stat-val" id="stat-total">234</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">District Avg</span>
-          <span class="stat-val" id="stat-avg">-- mm</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Max Rain</span>
-          <span class="stat-val" id="stat-max">-- mm</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Rain Status</span>
-          <span class="stat-val" id="stat-wet">--</span>
-        </div>
-      </section>
-
-      <!-- Map Card -->
-      <section class="card map-card" aria-label="Interactive Map">
-        <div class="card-header">
-          <div>
-            <h2>Mandya Panchayat Choropleth</h2>
-            <p class="card-sub" id="map-status">Click any panchayat polygon to view localized forecast</p>
-          </div>
-          <div class="map-controls">
-            <button id="zoom-in" class="btn-ctrl" title="Zoom In" aria-label="Zoom in">+</button>
-            <button id="zoom-out" class="btn-ctrl" title="Zoom Out" aria-label="Zoom out">−</button>
-            <button id="zoom-reset" class="btn-ctrl" title="Reset View" aria-label="Reset zoom">⟲</button>
-          </div>
-        </div>
-
-        <div class="map-container" id="map-container">
-          <svg id="map" role="img" aria-label="Mandya panchayat rainfall map" preserveAspectRatio="xMidYMid meet"></svg>
-          <div id="map-tooltip" class="map-tooltip hidden"></div>
-        </div>
-
-        <div class="choropleth-legend" aria-label="Rainfall intensity legend">
-          <span class="legend-title">Rainfall:</span>
-          <div class="legend-item"><span class="legend-swatch band-dry"></span> &lt; 2.5 mm (Dry)</div>
-          <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5–15.5 mm (Light)</div>
-          <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5–64.4 mm (Moderate)</div>
-          <div class="legend-item"><span class="legend-swatch band-heavy"></span> &gt; 64.5 mm (Heavy)</div>
-        </div>
-      </section>
-
-      <!-- Filter / Selection Controls -->
-      <section class="controls-grid" aria-label="Selection Controls">
-        <div class="control-group">
-          <label for="panchayat-search">Select Panchayat / ಪಂಚಾಯತಿ ಆಯ್ಕೆ</label>
-          <div class="search-box-wrapper">
-            <input
-              type="text"
-              id="panchayat-search"
-              class="search-input"
-              placeholder="🔍 Search name (e.g. Halaguru, Banavasi, 215504)..."
-              autocomplete="off"
-              aria-label="Quick search panchayat"
-            />
-            <button type="button" id="search-clear-btn" class="search-clear-btn hidden" title="Clear search" aria-label="Clear search">✕</button>
-            <div id="search-suggestions" class="search-suggestions hidden" role="listbox"></div>
-          </div>
-          <select id="panchayat-select" aria-label="Select panchayat from list"></select>
-        </div>
-        <div class="control-group">
-          <label for="language-select">Advisory Language / ಭಾಷೆ</label>
-          <div class="lang-toggle-group">
-            <button class="lang-btn active" data-lang="en">English</button>
-            <button class="lang-btn" data-lang="kn">ಕನ್ನಡ</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- KMF Nandini Dairy Ground-Truth Loop -->
-      <section class="card nandini-card" id="nandini-section" aria-label="Dairy Secretary Ground-Truth Validation">
-        <div class="nandini-header">
-          <div class="nandini-brand">
-            <span class="nandini-icon">🥛</span>
-            <div>
-              <h3>KMF Nandini Dairy Ground-Truth Loop / ಹಾಲು ಡೈರಿ ಮಳೆ ದೃಢೀಕರಣ</h3>
-              <p class="nandini-sub" id="nandini-panchayat-tag">Village Dairy Secretary 2-Tap Sensor Network (ಹಾಲು ಉತ್ಪಾದಕರ ಸಹಕಾರ ಸಂಘ)</p>
-            </div>
-          </div>
-          <div class="nandini-stats-badge" id="nandini-stats-badge">
-            <span class="nandini-stat-dot"></span>
-            <span id="nandini-stat-text">Validation Network: Active (18 Dairies)</span>
-          </div>
-        </div>
-        <div class="nandini-body">
-          <p class="nandini-prompt" id="nandini-prompt-text">
-            ಕಳೆದ 12 ಗಂಟೆಗಳಲ್ಲಿ ಈ ಗ್ರಾಮ ಪಂಚಾಯತಿಯಲ್ಲಿ ಮಳೆ ಬಿದ್ದಿದೆಯೇ? (Did it rain in the last 12 hours?)
-          </p>
-          <div class="nandini-btn-group">
-            <button id="btn-nandini-yes" class="btn-nandini btn-nandini-yes" aria-label="Confirm rain fell">
-              <span>🟢 ಹೌದು (Yes, Rained)</span>
-            </button>
-            <button id="btn-nandini-no" class="btn-nandini btn-nandini-no" aria-label="Confirm no rain">
-              <span>🔴 ಇಲ್ಲ (No Rain)</span>
-            </button>
-          </div>
-          <div id="nandini-feedback-alert" class="nandini-alert hidden" role="status" aria-live="polite"></div>
-        </div>
-      </section>
-
-      <!-- Localized Panchayat Details & Uncertainty -->
-      <section id="forecast-details" class="forecast-section" aria-live="polite"></section>
-
-      <!-- Jury / Scientific Verification Toggle -->
-      <section class="science-section">
-        <button id="btn-jury-mode" class="btn-science" aria-expanded="false" aria-controls="jury-drawer">
-          <span>🔬 Scientific Verification / Mass Conservation</span>
-          <span class="toggle-icon">▼</span>
-        </button>
-        <div id="jury-drawer" class="jury-drawer hidden">
-          <div class="jury-card">
-            <h4>Physical Mass Conservation Invariant (L<sub>cons</sub>)</h4>
-            <p class="jury-desc">
-              Comparison of integrated precipitation volume across Mandya district (1,250 × 10³ m³ coarse observation):
-            </p>
-            <div class="table-responsive">
-              <table class="jury-table">
-                <thead>
-                  <tr>
-                    <th>Method</th>
-                    <th>Seasonal Discrepancy</th>
-                    <th>Worst Monsoon Cloudburst</th>
-                    <th>Physical Invariant</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>Vanilla DL / Bilinear</strong></td>
-                    <td class="text-danger">11.2% violation</td>
-                    <td class="text-danger">+34.8% hallucinated</td>
-                    <td>❌ Unconstrained</td>
-                  </tr>
-                  <tr class="highlight-row">
-                    <td><strong>Fast & Curious UNet (L<sub>cons</sub>)</strong></td>
-                    <td class="text-success">&lt; 0.2% discrepancy</td>
-                    <td class="text-success">&lt; 0.3% error</td>
-                    <td>✅ 99.8% Conserved</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="jury-note">
-              <strong>Technical Defense:</strong> Soft penalty λ<sub>cons</sub> · L<sub>cons</sub> was deliberately chosen over hard projection layers to prevent gradient division-by-zero instability across zero-inflated dry-season regimes.
-            </p>
-          </div>
-
-          <!-- Virtual ARG Jury Card -->
-          <div class="jury-card varg-jury-card">
-            <div class="varg-header">
-              <h4>📡 Virtual Automated Rain Gauge (ARG) Feed — IMD Standard Schema</h4>
-              <span class="varg-badge">HEADLESS API READY</span>
-            </div>
-            <p class="jury-desc">
-              For 232 unmonitored Panchayats in Mandya lacking physical IMD hardware, our 5× downscaling engine emits synthetic, physically-conserved daily ARG observations in exact compliance with IMD/AWS JSON data schemas:
-            </p>
-            <div class="varg-controls">
-              <button id="btn-view-varg" class="btn-varg-toggle">
-                <span>📡 Inspect Live Virtual ARG Payload for Selected GP</span>
-              </button>
-              <a id="varg-api-link" href="/api/v1/virtual-arg/215504" target="_blank" class="varg-link">
-                Open Endpoint ↗
-              </a>
-            </div>
-            <div id="varg-json-viewer" class="varg-json-container hidden">
-              <div class="varg-json-toolbar">
-                <span id="varg-station-title">Station: VARG_KA_MAN_215504</span>
-                <button id="btn-copy-varg" class="btn-copy">📋 Copy JSON</button>
-              </div>
-              <pre id="varg-json-code" class="varg-code"><code>Loading...</code></pre>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- Government Prototype Notice -->
+      <!-- Government Prototype Notice Footer -->
       <footer class="integration-footer">
-        <div class="footer-badge">[MOCK / INTEGRATION PROTOTYPE]</div>
-        <p>
-          FastAPI backend serving 5× downscaled IMD grids with Conformalized Quantile Regression (CQR).
-          Mock e-GramSwaraj ingest contract: <code>/api/egramswaraj/mock</code> (Header: <code>X-Integration-Status: Mock-Prototype</code>).
-        </p>
+        <div class="footer-content">
+          <span class="footer-badge">[MOCK / INTEGRATION PROTOTYPE]</span>
+          <p>
+            FastAPI backend serving 5× downscaled IMD grids with Conformalized Quantile Regression (CQR).
+            Mock e-GramSwaraj ingest contract: <code>/api/egramswaraj/mock</code> (Header: <code>X-Integration-Status: Mock-Prototype</code>).
+            Pilot District: Mandya (234 Gram Panchayats). Honest ceiling: 1 pixel ≈ 1 GP (~19.2 km²).
+          </p>
+        </div>
       </footer>
     </main>
 
-    <script type="module" src="/app.js?v=13"></script>
+    <!-- App Engine JavaScript -->
+    <script type="module" src="/app.js?v=15"></script>
   </body>
 </html>

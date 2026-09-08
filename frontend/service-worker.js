@@ -1,4 +1,4 @@
-const CACHE = "mandya-pwa-v14";
+const CACHE = "mandya-pwa-v18";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
