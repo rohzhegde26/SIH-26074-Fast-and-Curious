@@ -1661,24 +1661,30 @@ path.selected-gp-highlight,
 
 .map-tooltip {
   position: absolute;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid #334155;
+  top: 14px;
+  right: 14px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1.5px solid #38bdf8;
   color: #ffffff;
-  padding: 0.5rem 0.8rem;
-  border-radius: 6px;
+  padding: 0.65rem 0.95rem;
+  border-radius: var(--radius-md);
   font-size: 0.85rem;
   line-height: 1.45;
   pointer-events: none;
   white-space: normal;
-  max-width: 280px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-  transition: opacity 0.15s ease;
+  min-width: 250px;
+  max-width: 320px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(56, 189, 248, 0.2);
+  backdrop-filter: blur(8px);
+  z-index: 1200;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(0);
 }
 
 .map-tooltip.hidden {
-  display: none !important;
   opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
 }
 
 /* Legend */

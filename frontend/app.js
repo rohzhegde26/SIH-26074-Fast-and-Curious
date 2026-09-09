@@ -1433,14 +1433,42 @@ function formatTooltipContent(record, feature) {
 
   if (currentMapLayer === "risk") {
     const risk = getFinancialRisk(currentCropStage, exp, lMax, currentLanguage);
-    return `<strong>${pName}</strong> (${taluk}) • <span style="color:#059669;font-weight:700;">${dayLabel}</span><br/>${risk.icon} ${risk.title}<br/><span style="color:#f59e0b;font-weight:600;">${risk.cost}</span>`;
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:4px;">
+        <strong style="font-size:0.92rem; color:#f8fafc;">${pName}</strong>
+        <span style="font-size:0.72rem; color:#38bdf8; font-weight:700;">${dayLabel}</span>
+      </div>
+      <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • LGD ${record?.lgd_code || feature.id}</div>
+      <div style="font-size:0.8rem; font-weight:600; color:#f8fafc; margin-bottom:2px;">${risk.icon} ${risk.title}</div>
+      <div style="font-size:0.76rem; color:#f59e0b; font-weight:700;">${risk.cost}</div>
+    `;
   }
   if (currentMapLayer === "spread") {
     const badge = spread > 15 ? "⚠️ High Spread" : "✅ Tight Spread";
-    return `<strong>${pName}</strong> (${taluk}) • <span style="color:#059669;font-weight:700;">${dayLabel}</span><br/>Uncertainty Spread: <strong>±${spread.toFixed(1)} mm</strong><br/><span style="color:#94a3b8;">${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm (${badge})</span>`;
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:4px;">
+        <strong style="font-size:0.92rem; color:#f8fafc;">${pName}</strong>
+        <span style="font-size:0.72rem; color:#38bdf8; font-weight:700;">${dayLabel}</span>
+      </div>
+      <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • ${badge}</div>
+      <div style="font-size:0.84rem; color:#f8fafc;">Spread: <strong style="color:#f59e0b;">±${spread.toFixed(1)} mm</strong></div>
+      <div style="font-size:0.76rem; color:#94a3b8;">Range: ${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm</div>
+    `;
   }
   // Rainfall default
-  return `<strong>${pName}</strong> (${taluk}) • <span style="color:#059669;font-weight:700;">${dayLabel}</span><br/>Expected Rain: <strong>${exp.toFixed(1)} mm</strong><br/><span style="color:#94a3b8;">Likely: ${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm</span>`;
+  const isRain = exp >= 2.5;
+  return `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:4px;">
+      <strong style="font-size:0.92rem; color:#f8fafc;">${pName}</strong>
+      <span style="font-size:0.72rem; color:#38bdf8; font-weight:700;">${dayLabel}</span>
+    </div>
+    <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • LGD ${record?.lgd_code || feature.id}</div>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-size:0.82rem; color:#cbd5e1;">Expected Rain:</span>
+      <span style="font-size:0.92rem; font-weight:800; color:${isRain ? '#38bdf8' : '#34d399'};">${exp.toFixed(1)} mm</span>
+    </div>
+    <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Likely: ${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm</div>
+  `;
 }
 
 function updateMapLegend(layerType) {
@@ -1515,26 +1543,9 @@ async function renderMap(records) {
     return;
   }
 
-  function positionTooltip(e) {
-    if (!tooltip || !mapContainer) return;
-    const rect = mapContainer.getBoundingClientRect();
-    const clientX = e.originalEvent ? e.originalEvent.clientX : 0;
-    const clientY = e.originalEvent ? e.originalEvent.clientY : 0;
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
-    const tooltipWidth = 240;
-    if (x + tooltipWidth + 20 > rect.width) {
-      tooltip.style.left = `${Math.max(10, x - tooltipWidth - 15)}px`;
-    } else {
-      tooltip.style.left = `${x + 15}px`;
-    }
-
-    if (y - 55 < 10) {
-      tooltip.style.top = `${y + 20}px`;
-    } else {
-      tooltip.style.top = `${y - 50}px`;
-    }
+  function positionTooltip() {
+    // HUD Card is styled fixed at top-right of map container (Option B)
+    // No dynamic cursor offset calculation needed; ensures zero cursor occlusion.
   }
 
   if (mapContainer && tooltip) {
@@ -1577,6 +1588,7 @@ async function renderMap(records) {
       leafletMap.removeLayer(leafletGeoJsonLayer);
     }
     leafletLayers.clear();
+    window.leafletLayers = leafletLayers;
 
     leafletGeoJsonLayer = L.geoJSON(geojsonData, {
       style: (feature) => getFeatureStyle(feature, String(feature.id) === String(selectedLgdCode)),
