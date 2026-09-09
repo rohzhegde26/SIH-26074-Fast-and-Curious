@@ -66,6 +66,24 @@ class SpatialVarianceSchema(BaseModel):
     constituent_cells: list[ConstituentCellSchema] = []
 
 
+class DailyForecastItem(BaseModel):
+    date: str
+    day_offset: int
+    day_label_en: str
+    day_label_kn: str
+    expected_mm: float
+    likely_min_mm: float
+    likely_max_mm: float
+    rainfall_band: str = "dry"
+    spray_window: str = "SAFE"
+    harvest_window: str = "SAFE"
+    irrigation_window: str = "IRRIGATE"
+    lookahead_warning_en: str | None = None
+    lookahead_warning_kn: str | None = None
+    advisory_summary_en: str = ""
+    advisory_summary_kn: str = ""
+
+
 class ForecastResponse(BaseModel):
     lgd_code: str
     panchayat_name: str
@@ -76,6 +94,7 @@ class ForecastResponse(BaseModel):
     advisory: AdvisorySet
     is_cached: bool = False
     spatial_variance: SpatialVarianceSchema | None = None
+    multi_day_forecast: list[DailyForecastItem] = []
 
 
 class IntegrationMockResponse(BaseModel):

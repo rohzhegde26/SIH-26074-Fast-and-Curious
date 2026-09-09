@@ -2311,3 +2311,246 @@ path.selected-gp-highlight,
   background: #085039;
   transform: translateY(-1px);
 }
+
+/* ========================================================================== */
+/* 7-DAY AGROMETEOROLOGICAL TIMELINE & 48H WASH-OFF SAFEGUARD               */
+/* ========================================================================== */
+
+.timeline-strip-wrapper {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.85rem;
+  margin-bottom: 0.85rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.timeline-strip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-title {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.timeline-subtitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.timeline-scroll-strip {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.timeline-scroll-strip::-webkit-scrollbar {
+  height: 4px;
+}
+
+.timeline-scroll-strip::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.timeline-day-pill {
+  flex: 0 0 88px;
+  scroll-snap-align: start;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.timeline-day-pill:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+.timeline-day-pill.active {
+  background: #ecfdf5;
+  border-color: #059669;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25);
+  transform: translateY(-2px);
+}
+
+.pill-day-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.15rem;
+  white-space: nowrap;
+}
+
+.timeline-day-pill.active .pill-day-label {
+  color: #065f46;
+  font-weight: 800;
+}
+
+.pill-weather-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  margin: 0.15rem 0;
+}
+
+.pill-rain-val {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.pill-rain-val small {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.pill-washoff-alert {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  width: 17px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* 48-Hour Leaching & Wash-off Hazard Card */
+.lookahead-hazard-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1.5px solid #f59e0b;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.85rem;
+  margin: 0.75rem 0;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.lookahead-hazard-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #92400e;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.hazard-icon {
+  font-size: 1rem;
+}
+
+.hazard-text {
+  color: #78350f;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Operational Windows Grid */
+.operational-windows-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
+  margin: 0.75rem 0;
+}
+
+.op-window-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.op-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.op-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.op-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.op-val {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.op-window-card.op-safe {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.op-window-card.op-safe .op-val {
+  color: #15803d;
+}
+
+.op-window-card.op-hold {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.op-window-card.op-hold .op-val {
+  color: #b91c1c;
+}
+
+.op-window-card.op-risky, .op-window-card.op-postpone {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.op-window-card.op-risky .op-val, .op-window-card.op-postpone .op-val {
+  color: #b45309;
+}
+

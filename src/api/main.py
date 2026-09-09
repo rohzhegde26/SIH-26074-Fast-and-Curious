@@ -11,11 +11,12 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.advisory.engine import build_advisory
+from src.advisory.engine import build_advisory, build_7day_forecast
 from src.api.forecast_repository import get_forecast, list_forecasts
 from src.api.schemas import (
     AdvisorySet,
     CropAdvisory,
+    DailyForecastItem,
     FinancialRiskSchema,
     ForecastResponse,
     IntegrationMockResponse,
@@ -124,6 +125,9 @@ def _response(record: dict) -> ForecastResponse:
         except Exception:
             sp_var = None
 
+    raw_multi = build_7day_forecast(record)
+    multi_days = [DailyForecastItem(**item) for item in raw_multi]
+
     return ForecastResponse(
         lgd_code=str(record["lgd_code"]),
         panchayat_name=record["panchayat_name"],
@@ -137,6 +141,7 @@ def _response(record: dict) -> ForecastResponse:
             sugarcane=_convert_advisory(sugarcane),
         ),
         spatial_variance=sp_var,
+        multi_day_forecast=multi_days,
     )
 
 

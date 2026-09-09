@@ -103,6 +103,7 @@ let currentRecords = [];
 let selectedLgdCode = null;
 let currentLanguage = "en";
 let currentCropStage = "vegetative";
+let currentSelectedDayIndex = 0; // 0 = Today, 1 = Tomorrow, ..., 6 = Day 6
 let currentView = "village"; // 'village' | 'mission-control'
 let currentRole = "dairy";
 let mapPaths = new Map();
@@ -446,10 +447,16 @@ function renderForecastDetails(record) {
     }
   }
 
-  const exp = activeParcel ? activeParcel.expected_mm : (record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0);
-  const lMin = activeParcel ? activeParcel.likely_min_mm : (record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0);
-  const lMax = activeParcel ? activeParcel.likely_max_mm : (record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0);
+  const mdf = (record.multi_day_forecast && record.multi_day_forecast.length > 0)
+    ? record.multi_day_forecast
+    : null;
+  const activeDay = (mdf && mdf[currentSelectedDayIndex]) ? mdf[currentSelectedDayIndex] : (mdf ? mdf[0] : null);
+
+  const exp = activeParcel ? activeParcel.expected_mm : (activeDay ? activeDay.expected_mm : (record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0));
+  const lMin = activeParcel ? activeParcel.likely_min_mm : (activeDay ? activeDay.likely_min_mm : (record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0));
+  const lMax = activeParcel ? activeParcel.likely_max_mm : (activeDay ? activeDay.likely_max_mm : (record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0));
   const isRainRisk = lMax > 5.0 || exp >= 2.5;
+  const hasLookaheadAlert = Boolean(activeDay && activeDay.lookahead_warning_en);
 
   // Crop advisories text
   const ragiAdv = currentLanguage === "kn"
@@ -476,11 +483,110 @@ function renderForecastDetails(record) {
     ? `<span style="font-size:0.85rem; font-weight:700; color:#b45309; margin-left:0.35rem;">(${currentLanguage === 'kn' ? activeParcel.name_kn : activeParcel.name_en})</span>`
     : "";
 
+  let timelineHtml = "";
+  if (mdf && mdf.length > 0) {
+    timelineHtml = `
+      <div class="timeline-strip-wrapper">
+        <div class="timeline-strip-header">
+          <span class="timeline-title">📅 ${currentLanguage === "kn" ? "೭ ದಿನಗಳ ಕೃಷಿ-ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ" : "7-Day Agro-Weather Forecast"}</span>
+          <span class="timeline-subtitle">${currentLanguage === "kn" ? "ದಿನವನ್ನು ಟ್ಯಾಪ್ ಮಾಡಿ" : "Tap any day to inspect"}</span>
+        </div>
+        <div class="timeline-scroll-strip" role="tablist" aria-label="7-Day Agro Forecast">
+          ${mdf.map((day, idx) => {
+            const isDayActive = idx === currentSelectedDayIndex;
+            const dayLabel = currentLanguage === "kn" ? day.day_label_kn : day.day_label_en;
+            const bandIcon = day.rainfall_band === "dry" ? "☀️" : (day.rainfall_band === "light" ? "🌦️" : (day.rainfall_band === "moderate" ? "🌧️" : "⛈️"));
+            const washoffChip = day.lookahead_warning_en ? `<span class="pill-washoff-alert" title="Leaching risk tomorrow">⚠️</span>` : "";
+            return `
+              <button type="button" 
+                      class="timeline-day-pill ${isDayActive ? 'active' : ''}" 
+                      data-day-idx="${idx}"
+                      role="tab"
+                      aria-selected="${isDayActive}">
+                <span class="pill-day-label">${dayLabel}</span>
+                <span class="pill-weather-icon">${bandIcon}</span>
+                <span class="pill-rain-val">${day.expected_mm.toFixed(1)} <small>mm</small></span>
+                ${washoffChip}
+              </button>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  let lookaheadHazardHtml = "";
+  if (hasLookaheadAlert) {
+    lookaheadHazardHtml = `
+      <div class="lookahead-hazard-card">
+        <div class="lookahead-hazard-header">
+          <span class="hazard-icon">⚠️</span>
+          <span>${currentLanguage === "kn" ? "48 ಗಂಟೆಗಳ ರಸಗೊಬ್ಬರ ಕೊಚ್ಚಿಹೋಗುವ ಎಚ್ಚರಿಕೆ" : "48-Hour Chemical Wash-off & Leaching Hazard"}</span>
+        </div>
+        <p class="hazard-text">
+          ${currentLanguage === "kn" ? activeDay.lookahead_warning_kn : activeDay.lookahead_warning_en}
+        </p>
+      </div>
+    `;
+  }
+
+  let opWindowsHtml = "";
+  if (activeDay) {
+    const spraySafe = activeDay.spray_window === "SAFE";
+    const sprayHold = activeDay.spray_window === "HOLD";
+    const sprayClass = spraySafe ? "op-safe" : (sprayHold ? "op-hold" : "op-risky");
+    const sprayText = spraySafe
+      ? (currentLanguage === "kn" ? "🟢 ಸೂಕ್ತ ದಿನ (Safe)" : "🟢 Safe Window")
+      : (sprayHold ? (currentLanguage === "kn" ? "🚨 ನಿಲ್ಲಿಸಿ (Hold)" : "🚨 Hold Spray") : (currentLanguage === "kn" ? "🟡 ಎಚ್ಚರಿಕೆ" : "🟡 Risky"));
+
+    const harvestSafe = activeDay.harvest_window === "SAFE";
+    const harvestClass = harvestSafe ? "op-safe" : "op-hold";
+    const harvestText = harvestSafe
+      ? (currentLanguage === "kn" ? "🟢 ಸೂಕ್ತ ದಿನ (Safe)" : "🟢 Safe Window")
+      : (currentLanguage === "kn" ? "🚨 ಬೇಡ (Hold)" : "🚨 Hold Harvest");
+
+    const irrClass = activeDay.irrigation_window === "IRRIGATE" ? "op-safe" : (activeDay.irrigation_window === "POSTPONE" ? "op-postpone" : "op-hold");
+    const irrText = activeDay.irrigation_window === "IRRIGATE"
+      ? (currentLanguage === "kn" ? "🚿 ನೀರುಣಿಸಿ" : "🚿 Irrigate")
+      : (activeDay.irrigation_window === "POSTPONE" ? (currentLanguage === "kn" ? "⏸️ ಮುಂದೂಡಿ" : "⏸️ Postpone") : (currentLanguage === "kn" ? "🌊 ಬಸಿದುಹೋಗಲು ಬಿಡಿ" : "🌊 Drain Fields"));
+
+    opWindowsHtml = `
+      <div class="operational-windows-grid">
+        <div class="op-window-card ${sprayClass}">
+          <span class="op-icon">🚜</span>
+          <div class="op-info">
+            <span class="op-label">${currentLanguage === "kn" ? "ಸಿಂಪರಣೆ (Spray 48h)" : "Spray (48h)"}</span>
+            <span class="op-val">${sprayText}</span>
+          </div>
+        </div>
+        <div class="op-window-card ${harvestClass}">
+          <span class="op-icon">🌾</span>
+          <div class="op-info">
+            <span class="op-label">${currentLanguage === "kn" ? "ಕೊಯ್ಲು (Harvest 72h)" : "Harvest (72h)"}</span>
+            <span class="op-val">${harvestText}</span>
+          </div>
+        </div>
+        <div class="op-window-card ${irrClass}">
+          <span class="op-icon">💧</span>
+          <div class="op-info">
+            <span class="op-label">${currentLanguage === "kn" ? "ನೀರಾವರಿ (Irrigation)" : "Irrigation"}</span>
+            <span class="op-val">${irrText}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const selectedDayLabel = activeDay
+    ? (currentLanguage === "kn" ? activeDay.day_label_kn : activeDay.day_label_en)
+    : "";
+
   const heroHtml = `
+    ${timelineHtml}
     <div class="village-hero-header">
       <div class="village-name-block">
         <span class="village-pin">📍</span>
-        <h2 class="village-title">${record.panchayat_name} ${parcelSuffix}</h2>
+        <h2 class="village-title">${record.panchayat_name} ${parcelSuffix} ${selectedDayLabel ? `<small style="font-size:0.85rem; font-weight:700; color:#059669;">[${selectedDayLabel}]</small>` : ''}</h2>
         <span class="village-role-tag">${roleTagText}</span>
       </div>
       <div class="village-rain-block">
@@ -490,15 +596,17 @@ function renderForecastDetails(record) {
     </div>
 
     <!-- Unified Decision Verdict Card -->
-    <div class="hero-verdict-card ${isRainRisk ? "verdict-hold" : "verdict-safe"}" role="region" aria-label="Field Action Verdict">
+    <div class="hero-verdict-card ${isRainRisk || hasLookaheadAlert ? "verdict-hold" : "verdict-safe"}" role="region" aria-label="Field Action Verdict">
       <div class="verdict-badge-row">
-        <span class="verdict-pill ${isRainRisk ? "badge-hold" : "badge-safe"}">
+        <span class="verdict-pill ${isRainRisk || hasLookaheadAlert ? "badge-hold" : "badge-safe"}">
           ${isRainRisk 
             ? (currentLanguage === "kn" ? "🚨 ಕೂಲಿ & ಗೊಬ್ಬರ ಬೇಡ (HOLD)" : "🚨 HOLD LABOUR & UREA") 
-            : (currentLanguage === "kn" ? "🟢 ಕೆಲಸಕ್ಕೆ ಸೂಕ್ತ ದಿನ (SAFE)" : "🟢 SAFE TO WORK TODAY")}
+            : (hasLookaheadAlert
+                ? (currentLanguage === "kn" ? "⚠️ ನಾಳೆ ಮಳೆ - ಗೊಬ್ಬರ ಬೇಡ (HOLD)" : "⚠️ RAIN TOMORROW - HOLD UREA")
+                : (currentLanguage === "kn" ? "🟢 ಕೆಲಸಕ್ಕೆ ಸೂಕ್ತ ದಿನ (SAFE)" : "🟢 SAFE TO WORK TODAY"))}
         </span>
-        <span class="verdict-save-badge ${isRainRisk ? "" : "badge-save-zero"}">
-          ${isRainRisk 
+        <span class="verdict-save-badge ${isRainRisk || hasLookaheadAlert ? "" : "badge-save-zero"}">
+          ${isRainRisk || hasLookaheadAlert 
             ? (currentLanguage === "kn" ? "₹2,600 ಉಳಿತಾಯ" : "SAVE ₹2,600 / acre") 
             : (currentLanguage === "kn" ? "₹0 ನಷ್ಟ ಅಪಾಯ" : "₹0 Loss Risk")}
         </span>
@@ -508,11 +616,18 @@ function renderForecastDetails(record) {
           ? (currentLanguage === "kn" 
               ? "ತೀವ್ರ ಮಳೆ ಮುನ್ಸೂಚನೆ. ರಸಗೊಬ್ಬರ ಕೊಚ್ಚಿಹೋಗುವುದು ಮತ್ತು ಕೂಲಿ ಹಣ ವ್ಯರ್ಥವಾಗುವುದನ್ನು ತಕ್ಷಣ ತಪ್ಪಿಸಿ." 
               : "Heavy rain risk expected. Withholding urea top-dressing and field labour saves ₹1,800 fertilizer leaching + ₹800 wages.") 
-          : (currentLanguage === "kn" 
-              ? "ಒಣ ಹವೆ ಮತ್ತು ಅನುಕೂಲಕರ ಹವಾಮಾನ. ಕಳೆ ಕೀಳಲು ಮತ್ತು ರಸಗೊಬ್ಬರ ಸಿಂಪಡಿಸಲು ಧೈರ್ಯವಾಗಿ ಕೂಲಿ ಕರೆಯಬಹುದು." 
-              : "Dry and favorable weather window. Safe to contract agricultural labour for spraying, weeding, and nutrient management.")}
+          : (hasLookaheadAlert
+              ? (currentLanguage === "kn"
+                  ? activeDay.lookahead_warning_kn
+                  : activeDay.lookahead_warning_en)
+              : (currentLanguage === "kn" 
+                  ? "ಒಣ ಹವೆ ಮತ್ತು ಅನುಕೂಲಕರ ಹವಾಮಾನ. ಕಳೆ ಕೀಳಲು ಮತ್ತು ರಸಗೊಬ್ಬರ ಸಿಂಪಡಿಸಲು ಧೈರ್ಯವಾಗಿ ಕೂಲಿ ಕರೆಯಬಹುದು." 
+                  : "Dry and favorable weather window. Safe to contract agricultural labour for spraying, weeding, and nutrient management."))}
       </p>
     </div>
+
+    ${lookaheadHazardHtml}
+    ${opWindowsHtml}
 
     <!-- Big Spoken Voice Button (56px tall) -->
     <button id="btn-voice" class="btn-hero-audio" aria-label="Listen to voice advisory">
@@ -884,6 +999,24 @@ function renderForecastDetails(record) {
     </article>
   `;
 
+  // 7-Day Agromet Timeline Day-Pill Handlers
+  container.querySelectorAll(".timeline-day-pill").forEach(pill => {
+    pill.onclick = (e) => {
+      e.stopPropagation();
+      const idx = parseInt(pill.dataset.dayIdx, 10);
+      if (!isNaN(idx) && idx !== currentSelectedDayIndex) {
+        currentSelectedDayIndex = idx;
+        renderForecastDetails(record);
+        if (leafletLayers) {
+          leafletLayers.forEach((layerObj, code) => {
+            const isSelected = String(code) === String(selectedLgdCode);
+            layerObj.setStyle(getFeatureStyle(layerObj.feature, isSelected));
+          });
+        }
+      }
+    };
+  });
+
   // Parcel Selector Tab Handlers
   container.querySelectorAll(".btn-parcel-tab").forEach(tab => {
     tab.onclick = () => {
@@ -962,6 +1095,14 @@ function resolveAudioFile(crop, stage, record) {
 }
 
 function playVoiceAdvisory(record) {
+  const mdf = record.multi_day_forecast;
+  const activeDay = (mdf && mdf[currentSelectedDayIndex]) ? mdf[currentSelectedDayIndex] : null;
+
+  if (activeDay && (activeDay.lookahead_warning_en || currentSelectedDayIndex > 0)) {
+    playFallbackSynthesis(record);
+    return;
+  }
+
   const btnText = document.querySelector("#voice-btn-text");
   if (activeAudio) {
     activeAudio.pause();
@@ -988,8 +1129,14 @@ function playFallbackSynthesis(record) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
 
-  const exp = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
-  const lMax = record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0;
+  const mdf = record.multi_day_forecast;
+  const activeDay = (mdf && mdf[currentSelectedDayIndex]) ? mdf[currentSelectedDayIndex] : null;
+
+  const exp = activeDay ? activeDay.expected_mm : (record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0);
+  const lMax = activeDay ? activeDay.likely_max_mm : (record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0);
+  const dayName = activeDay
+    ? (currentLanguage === "kn" ? activeDay.day_label_kn : activeDay.day_label_en)
+    : (currentLanguage === "kn" ? "ಇಂದು" : "Today");
   const voices = window.speechSynthesis.getVoices();
 
   let textToSpeak = "";
@@ -999,21 +1146,25 @@ function playFallbackSynthesis(record) {
     voiceToUse = voices.find(
       v => v.localService && (v.lang.toLowerCase().includes("kn") || v.lang.toLowerCase().includes("kan"))
     );
-    if (lMax > 10.0) {
-      textToSpeak = `ಇಂದು ${record.panchayat_name}ದಲ್ಲಿ ಸಾಧಾರಣ ಮಳೆ ನಿರೀಕ್ಷೆ ಇದೆ. ಸಂಜೆ ಜೋರು ಮಳೆ ಸಾಧ್ಯತೆ ಇರುವುದರಿಂದ ರಾಗಿ ಬೆಳೆಗೆ ಗೊಬ್ಬರ ಹಾಕಬೇಡಿ.`;
+    if (activeDay && activeDay.lookahead_warning_kn) {
+      textToSpeak = activeDay.lookahead_warning_kn;
+    } else if (lMax > 10.0) {
+      textToSpeak = `${dayName} ${record.panchayat_name}ದಲ್ಲಿ ಸಾಧಾರಣ ಮಳೆ ನಿರೀಕ್ಷೆ ಇದೆ. ಸಂಜೆ ಜೋರು ಮಳೆ ಸಾಧ್ಯತೆ ಇರುವುದರಿಂದ ರಾಗಿ ಬೆಳೆಗೆ ಗೊಬ್ಬರ ಹಾಕಬೇಡಿ.`;
     } else if (exp >= 2.5) {
-      textToSpeak = `ಇಂದು ${record.panchayat_name}ದಲ್ಲಿ ಹಗುರ ಮಳೆ ಬರಬಹುದು. ಕೃಷಿ ಕೆಲಸಗಳನ್ನು ಮುಂದುವರಿಸಬಹುದು.`;
+      textToSpeak = `${dayName} ${record.panchayat_name}ದಲ್ಲಿ ಹಗುರ ಮಳೆ ಬರಬಹುದು. ಕೃಷಿ ಕೆಲಸಗಳನ್ನು ಮುಂದುವರಿಸಬಹುದು.`;
     } else {
-      textToSpeak = `ಇಂದು ${record.panchayat_name}ದಲ್ಲಿ ಒಣ ಹವೆ ಇರುತ್ತದೆ. ಅಗತ್ಯವಿದ್ದರೆ ನೀರಾವರಿ ಒದಗಿಸಬಹುದು.`;
+      textToSpeak = `${dayName} ${record.panchayat_name}ದಲ್ಲಿ ಒಣ ಹವೆ ಇರುತ್ತದೆ. ಅಗತ್ಯವಿದ್ದರೆ ನೀರಾವರಿ ಒದಗಿಸಬಹುದು.`;
     }
   } else {
     voiceToUse = voices.find(v => v.lang.toLowerCase().includes("en")) || null;
-    if (lMax > 10.0) {
-      textToSpeak = `Moderate rain expected in ${record.panchayat_name}. Heavy burst likely by evening. Please postpone fertilizer application.`;
+    if (activeDay && activeDay.lookahead_warning_en) {
+      textToSpeak = activeDay.lookahead_warning_en;
+    } else if (lMax > 10.0) {
+      textToSpeak = `Moderate rain expected ${dayName} in ${record.panchayat_name}. Heavy burst likely by evening. Please postpone fertilizer application.`;
     } else if (exp >= 2.5) {
-      textToSpeak = `Light rain expected in ${record.panchayat_name}. Field operations can safely proceed.`;
+      textToSpeak = `Light rain expected ${dayName} in ${record.panchayat_name}. Field operations can safely proceed.`;
     } else {
-      textToSpeak = `Dry weather expected in ${record.panchayat_name}. Normal irrigation can continue.`;
+      textToSpeak = `Dry weather expected ${dayName} in ${record.panchayat_name}. Normal irrigation can continue.`;
     }
   }
 
@@ -1039,18 +1190,28 @@ function playFallbackSynthesis(record) {
 // WhatsApp Community Broadcaster (0% Risk Universal Link & Offline Queue)
 // -------------------------------------------------------------
 function broadcastToWhatsApp(record) {
-  const exp = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
-  const lMin = record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0;
-  const lMax = record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0;
+  const mdf = record.multi_day_forecast;
+  const activeDay = (mdf && mdf[currentSelectedDayIndex]) ? mdf[currentSelectedDayIndex] : null;
+
+  const exp = activeDay ? activeDay.expected_mm : (record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0);
+  const lMin = activeDay ? activeDay.likely_min_mm : (record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0);
+  const lMax = activeDay ? activeDay.likely_max_mm : (record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0);
   const intensity = getIntensityLabel(exp);
+  const dateStr = activeDay ? activeDay.date : record.forecast_date;
+  const dayTag = activeDay ? (currentLanguage === "kn" ? ` (${activeDay.day_label_kn})` : ` (${activeDay.day_label_en})`) : "";
 
   let message = "";
   if (currentLanguage === "kn") {
-    const alertLine = lMax > 10.0 ? "⚠️ ಎಚ್ಚರಿಕೆ: ಸಂಜೆ ಜೋರು ಮಳೆ ಸಾಧ್ಯತೆ ಇದೆ!" : "✅ ಸಾಮಾನ್ಯ ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ";
-    const econLine = lMax > 10.0 ? "\n💰 ಸಲಹೆ: ಗೊಬ್ಬರ ವ್ಯರ್ಥವಾಗುವುದನ್ನು ತಪ್ಪಿಸಿ (ಎಕರೆಗೆ ~₹700-1200 ಉಳಿತಾಯ)." : "";
+    let alertLine = lMax > 10.0 ? "⚠️ ಎಚ್ಚರಿಕೆ: ಸಂಜೆ ಜೋರು ಮಳೆ ಸಾಧ್ಯತೆ ಇದೆ!" : "✅ ಸಾಮಾನ್ಯ ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ";
+    if (activeDay && activeDay.lookahead_warning_kn) {
+      alertLine = `🚨 *48 ಗಂಟೆಗಳ ಎಚ್ಚರಿಕೆ:* ${activeDay.lookahead_warning_kn}`;
+    }
+    const econLine = (lMax > 10.0 || (activeDay && activeDay.lookahead_warning_kn))
+      ? "\n💰 ಸಲಹೆ: ಗೊಬ್ಬರ ವ್ಯರ್ಥವಾಗುವುದನ್ನು ತಪ್ಪಿಸಿ (ಎಕರೆಗೆ ~₹1,800 ಯೂರಿಯಾ + ₹800 ಕೂಲಿ ಉಳಿತಾಯ)."
+      : "";
     message =
       `🌾 *ಗ್ರಾಮ ಪಂಚಾಯತ್: ${record.panchayat_name}* (ಮಂಡ್ಯ ಜಿಲ್ಲೆ)\n` +
-      `📅 ದಿನಾಂಕ: ${record.forecast_date}\n\n` +
+      `📅 ದಿನಾಂಕ: ${dateStr}${dayTag}\n\n` +
       `🌧️ *ಮಳೆ ಮುನ್ಸೂಚನೆ:* ${intensity.label} (${exp.toFixed(1)} mm)\n` +
       `📊 *ಸಂಭಾವ್ಯ ವ್ಯಾಪ್ತಿ:* ${lMin.toFixed(1)} mm – ${lMax.toFixed(1)} mm\n` +
       `${alertLine}\n\n` +
@@ -1059,11 +1220,16 @@ function broadcastToWhatsApp(record) {
       `${econLine}\n` +
       `🔗 *ಮಂಡ್ಯ ಕೃಷಿ ಹವಾಮಾನ ಸೇವೆ*`;
   } else {
-    const alertLine = lMax > 10.0 ? "⚠️ Alert: Evening heavy rainfall burst likely!" : "✅ Normal agricultural conditions";
-    const econLine = lMax > 10.0 ? "\n💰 Input Notice: Postponing fertilizer protects ~₹700–1,200/acre." : "";
+    let alertLine = lMax > 10.0 ? "⚠️ Alert: Evening heavy rainfall burst likely!" : "✅ Normal agricultural conditions";
+    if (activeDay && activeDay.lookahead_warning_en) {
+      alertLine = `🚨 *48-Hour Leaching Hazard:* ${activeDay.lookahead_warning_en}`;
+    }
+    const econLine = (lMax > 10.0 || (activeDay && activeDay.lookahead_warning_en))
+      ? "\n💰 Input Notice: Withholding fertilizer saves ~₹1,800 urea leaching + ₹800 wages."
+      : "";
     message =
       `🌾 *Gram Panchayat: ${record.panchayat_name}* (Mandya District)\n` +
-      `📅 Date: ${record.forecast_date}\n\n` +
+      `📅 Date: ${dateStr}${dayTag}\n\n` +
       `🌧️ *Rainfall Forecast:* ${intensity.label} (${exp.toFixed(1)} mm)\n` +
       `📊 *CQR 90% Likely Range:* ${lMin.toFixed(1)} mm – ${lMax.toFixed(1)} mm\n` +
       `${alertLine}\n\n` +
@@ -1110,9 +1276,12 @@ function broadcastToWhatsApp(record) {
 // -------------------------------------------------------------
 function getLayerColor(record, layerType) {
   if (!record) return "#cbd5e1";
-  const exp = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
-  const lMin = record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0;
-  const lMax = record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0;
+  const mdf = record.multi_day_forecast;
+  const activeDay = (mdf && mdf[currentSelectedDayIndex]) ? mdf[currentSelectedDayIndex] : null;
+
+  const exp = activeDay ? activeDay.expected_mm : (record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0);
+  const lMin = activeDay ? activeDay.likely_min_mm : (record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0);
+  const lMax = activeDay ? activeDay.likely_max_mm : (record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0);
 
   if (layerType === "risk") {
     const risk = getFinancialRisk(currentCropStage, exp, lMax, "en");
@@ -1163,21 +1332,25 @@ function getFeatureStyle(feature, isSelected = false) {
 function formatTooltipContent(record, feature) {
   const pName = record?.panchayat_name || feature.properties?.gpname || `GP ${feature.id}`;
   const taluk = feature.properties?.sdtname || "Mandya";
-  const exp = record?.rainfall_mm?.expected ?? record?.expected_mm ?? 0.0;
-  const lMin = record?.rainfall_mm?.likely_min ?? record?.likely_min_mm ?? 0.0;
-  const lMax = record?.rainfall_mm?.likely_max ?? record?.likely_max_mm ?? 0.0;
+  const mdf = record?.multi_day_forecast;
+  const activeDay = (mdf && mdf[currentSelectedDayIndex]) ? mdf[currentSelectedDayIndex] : null;
+
+  const exp = activeDay ? activeDay.expected_mm : (record?.rainfall_mm?.expected ?? record?.expected_mm ?? 0.0);
+  const lMin = activeDay ? activeDay.likely_min_mm : (record?.rainfall_mm?.likely_min ?? record?.likely_min_mm ?? 0.0);
+  const lMax = activeDay ? activeDay.likely_max_mm : (record?.rainfall_mm?.likely_max ?? record?.likely_max_mm ?? 0.0);
+  const dayLabel = activeDay ? (currentLanguage === "kn" ? activeDay.day_label_kn : activeDay.day_label_en) : "Today";
   const spread = Math.max(0, lMax - lMin);
 
   if (currentMapLayer === "risk") {
     const risk = getFinancialRisk(currentCropStage, exp, lMax, currentLanguage);
-    return `<strong>${pName}</strong> (${taluk})<br/>${risk.icon} ${risk.title}<br/><span style="color:#f59e0b;font-weight:600;">${risk.cost}</span>`;
+    return `<strong>${pName}</strong> (${taluk}) • <span style="color:#059669;font-weight:700;">${dayLabel}</span><br/>${risk.icon} ${risk.title}<br/><span style="color:#f59e0b;font-weight:600;">${risk.cost}</span>`;
   }
   if (currentMapLayer === "spread") {
     const badge = spread > 15 ? "⚠️ High Spread" : "✅ Tight Spread";
-    return `<strong>${pName}</strong> (${taluk})<br/>Uncertainty Spread: <strong>±${spread.toFixed(1)} mm</strong><br/><span style="color:#94a3b8;">${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm (${badge})</span>`;
+    return `<strong>${pName}</strong> (${taluk}) • <span style="color:#059669;font-weight:700;">${dayLabel}</span><br/>Uncertainty Spread: <strong>±${spread.toFixed(1)} mm</strong><br/><span style="color:#94a3b8;">${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm (${badge})</span>`;
   }
   // Rainfall default
-  return `<strong>${pName}</strong> (${taluk})<br/>Expected Rain: <strong>${exp.toFixed(1)} mm</strong><br/><span style="color:#94a3b8;">Likely: ${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm</span>`;
+  return `<strong>${pName}</strong> (${taluk}) • <span style="color:#059669;font-weight:700;">${dayLabel}</span><br/>Expected Rain: <strong>${exp.toFixed(1)} mm</strong><br/><span style="color:#94a3b8;">Likely: ${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm</span>`;
 }
 
 function updateMapLegend(layerType) {
@@ -1716,6 +1889,7 @@ async function loadData() {
   }
 
   currentRecords = records;
+  window.currentRecords = records;
   const isOffline = isCachedMode || !navigator.onLine;
 
   // Status and Offline Banner
@@ -1747,6 +1921,7 @@ async function loadData() {
   selectPanchayat = function(record) {
     if (!record) return;
     selectedLgdCode = record.lgd_code;
+    currentSelectedDayIndex = 0;
     if (searchInput) {
       searchInput.value = record.panchayat_name;
       if (clearBtn) clearBtn.classList.remove("hidden");
@@ -1758,6 +1933,7 @@ async function loadData() {
     renderForecastDetails(record);
     renderMissionInspectionStrip(record);
   };
+  window.selectPanchayat = selectPanchayat;
 
   function renderMissionInspectionStrip(record) {
     const missionBar = document.querySelector("#mission-spatial-variance-bar");

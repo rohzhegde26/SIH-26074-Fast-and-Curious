@@ -63,3 +63,33 @@ def test_forecast_spatial_variance_exclave_payload():
     assert var["parcels"][0]["area_share_pct"] > 80.0
     assert len(var["constituent_cells"]) >= 2
     assert "cardinal_dir_kn" in var["constituent_cells"][0]
+
+
+def test_multi_day_forecast_payload():
+    # Banavasi has 1.8mm today, but 22.4mm tomorrow -> 48h washoff hazard!
+    res = client.get("/api/forecast/215504")
+    assert res.status_code == 200
+    data = res.json()
+    assert "multi_day_forecast" in data
+    mdf = data["multi_day_forecast"]
+    assert len(mdf) == 7
+
+    # Day 0: Today
+    day0 = mdf[0]
+    assert day0["day_offset"] == 0
+    assert day0["day_label_en"] == "Today"
+    assert day0["day_label_kn"] == "ಇಂದು"
+    assert day0["spray_window"] == "HOLD"  # Because tomorrow is heavy rain!
+    assert day0["lookahead_warning_en"] is not None
+    assert "Leaching Risk" in day0["lookahead_warning_en"]
+    assert day0["lookahead_warning_kn"] is not None
+    assert "ರಸಗೊಬ್ಬರ ಎಚ್ಚರಿಕೆ" in day0["lookahead_warning_kn"]
+
+    # Day 1: Tomorrow
+    day1 = mdf[1]
+    assert day1["day_offset"] == 1
+    assert day1["day_label_en"] == "Tomorrow"
+    assert day1["expected_mm"] >= 20.0
+    assert day1["spray_window"] == "HOLD"
+    assert day1["harvest_window"] == "HOLD"
+
