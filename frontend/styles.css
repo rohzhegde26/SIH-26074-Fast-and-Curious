@@ -595,8 +595,13 @@ body {
   border-radius: var(--radius-md);
   border: 1px solid #334155;
   color: #f8fafc;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.demo-drawer:not([open]) {
+  overflow: hidden;
 }
 
 .demo-drawer-summary {
@@ -731,6 +736,7 @@ body {
   border: 1px solid #475569;
   border-radius: var(--radius-sm);
   padding: 0 0.65rem;
+  z-index: 1200;
 }
 
 .search-icon {
@@ -765,32 +771,71 @@ body {
 
 .search-suggestions {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: #1e293b;
-  border: 1px solid #475569;
+  background: #0f172a;
+  border: 1.5px solid #38bdf8;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  z-index: 1100;
-  max-height: 200px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(56, 189, 248, 0.2);
+  z-index: 1400;
+  max-height: 220px;
   overflow-y: auto;
+  backdrop-filter: blur(8px);
 }
 
 .suggestion-item {
-  padding: 0.45rem 0.65rem;
+  padding: 0.55rem 0.75rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  border-bottom: 1px solid #334155;
-  font-size: 0.8rem;
+  border-bottom: 1px solid #1e293b;
+  font-size: 0.82rem;
   color: #f1f5f9;
+  transition: all 0.12s ease;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
 }
 
 .suggestion-item:hover, .suggestion-item.active {
   background: #38bdf8;
   color: #0f172a;
+  font-weight: 700;
+}
+
+.suggestion-name {
+  font-weight: 700;
+}
+
+.suggestion-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.suggestion-item:hover .suggestion-meta,
+.suggestion-item.active .suggestion-meta {
+  color: #0f172a;
+}
+
+.suggestion-badge {
+  background: #334155;
+  color: #38bdf8;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+  font-size: 0.7rem;
+}
+
+.suggestion-item:hover .suggestion-badge,
+.suggestion-item.active .suggestion-badge {
+  background: #0f172a;
+  color: #38bdf8;
 }
 
 /* ==========================================================================
@@ -2552,5 +2597,118 @@ path.selected-gp-highlight,
 
 .op-window-card.op-risky .op-val, .op-window-card.op-postpone .op-val {
   color: #b45309;
+}
+
+/* ==========================================================================
+   Mission Control Inspection Strip & Variance HUD
+   ========================================================================== */
+.mission-inspection-strip {
+  margin-top: 0.75rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.mission-inspection-strip.has-exclaves {
+  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+  border-color: #f59e0b;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+}
+
+.mission-inspection-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.mission-inspection-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.mission-inspection-gp-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.mission-delta-chip {
+  background: #f59e0b;
+  color: #0f172a;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.mission-parcel-chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.mission-parcel-chip {
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.55rem;
+  font-size: 0.76rem;
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.mission-parcel-chip strong {
+  color: #f8fafc;
+}
+
+.mission-parcel-chip.chip-high-risk {
+  border-color: #f43f5e;
+  background: rgba(244, 63, 94, 0.18);
+  color: #fecdd3;
+}
+
+.mission-parcel-chip.chip-safe {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.18);
+  color: #a7f3d0;
+}
+
+.mission-inspection-btn {
+  background: #38bdf8;
+  color: #0f172a;
+  border: none;
+  font-weight: 800;
+  font-size: 0.84rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.mission-inspection-btn:hover {
+  background: #7dd3fc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
 }
 

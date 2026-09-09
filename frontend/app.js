@@ -447,14 +447,39 @@ function renderForecastDetails(record) {
     }
   }
 
+  // Multi-day forecast day resolution
   const mdf = (record.multi_day_forecast && record.multi_day_forecast.length > 0)
     ? record.multi_day_forecast
     : null;
   const activeDay = (mdf && mdf[currentSelectedDayIndex]) ? mdf[currentSelectedDayIndex] : (mdf ? mdf[0] : null);
+  const baselineDay0Exp = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
+  const selectedDayExp = activeDay ? activeDay.expected_mm : baselineDay0Exp;
 
-  const exp = activeParcel ? activeParcel.expected_mm : (activeDay ? activeDay.expected_mm : (record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0));
-  const lMin = activeParcel ? activeParcel.likely_min_mm : (activeDay ? activeDay.likely_min_mm : (record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0));
-  const lMax = activeParcel ? activeParcel.likely_max_mm : (activeDay ? activeDay.likely_max_mm : (record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0));
+  // Day-to-baseline scaling ratio (for exclave parcels)
+  const dayRatio = (baselineDay0Exp > 0.1)
+    ? (selectedDayExp / baselineDay0Exp)
+    : (selectedDayExp > 0 ? selectedDayExp : 1.0);
+
+  // If a specific exclave parcel is active:
+  // On Day 0 ("Today"), show its exact baseline exclave rain.
+  // On subsequent forecast days (Tomorrow, Day 2..6), scale parcel rain by the day's meteorological trajectory.
+  let exp = selectedDayExp;
+  let lMin = activeDay ? activeDay.likely_min_mm : (record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0);
+  let lMax = activeDay ? activeDay.likely_max_mm : (record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0);
+
+  if (activeParcel) {
+    if (currentSelectedDayIndex === 0) {
+      exp = activeParcel.expected_mm;
+      lMin = activeParcel.likely_min_mm;
+      lMax = activeParcel.likely_max_mm;
+    } else {
+      // Scaled parcel micro-climate for future forecast days
+      exp = +(activeParcel.expected_mm * dayRatio).toFixed(1);
+      lMin = +(activeParcel.likely_min_mm * dayRatio).toFixed(1);
+      lMax = +(activeParcel.likely_max_mm * dayRatio).toFixed(1);
+    }
+  }
+
   const isRainRisk = lMax > 5.0 || exp >= 2.5;
   const hasLookaheadAlert = Boolean(activeDay && activeDay.lookahead_warning_en);
 
@@ -662,6 +687,9 @@ function renderForecastDetails(record) {
             ${spVar.parcels.map((p, idx) => {
               const isSelected = activeParcel ? (activeParcel.parcel_id === p.parcel_id) : (idx === 0);
               const pName = currentLanguage === "kn" ? p.name_kn : p.name_en;
+              const pRain = currentSelectedDayIndex === 0
+                ? p.expected_mm
+                : +(p.expected_mm * dayRatio).toFixed(1);
               return `
                 <button type="button" 
                         class="btn-parcel-tab ${isSelected ? 'active' : ''}" 
@@ -671,7 +699,7 @@ function renderForecastDetails(record) {
                         aria-selected="${isSelected}">
                   <span class="parcel-tab-icon">${idx === 0 ? "⭐" : "📍"}</span>
                   <span class="parcel-tab-name">${pName}</span>
-                  <span class="parcel-tab-val">${p.expected_mm.toFixed(1)} mm <small>(${p.area_share_pct}%)</small></span>
+                  <span class="parcel-tab-val">${pRain.toFixed(1)} mm <small>(${p.area_share_pct}%)</small></span>
                 </button>
               `;
             }).join("")}
@@ -1935,6 +1963,31 @@ async function loadData() {
   };
   window.selectPanchayat = selectPanchayat;
 
+  window.inspectCockpitForRecord = function(lgdCode, parcelId) {
+    const rec = records.find(r => String(r.lgd_code) === String(lgdCode));
+    if (rec) {
+      if (parcelId) {
+        activeParcelMap.set(String(lgdCode), parcelId);
+      }
+      selectPanchayat(rec);
+    }
+    switchView("village");
+    setTimeout(() => {
+      const exclaveCard = document.querySelector(".spatial-variance-card");
+      if (exclaveCard) {
+        exclaveCard.scrollIntoView({ behavior: "smooth", block: "center" });
+        exclaveCard.style.transition = "box-shadow 0.4s ease";
+        exclaveCard.style.boxShadow = "0 0 0 3px #f59e0b, 0 8px 24px rgba(245, 158, 11, 0.35)";
+        setTimeout(() => {
+          exclaveCard.style.boxShadow = "";
+        }, 1800);
+      } else {
+        const forecastEl = document.querySelector("#forecast-details");
+        if (forecastEl) forecastEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 120);
+  };
+
   function renderMissionInspectionStrip(record) {
     const missionBar = document.querySelector("#mission-spatial-variance-bar");
     if (!missionBar || !record) return;
@@ -1944,30 +1997,68 @@ async function loadData() {
 
     if (spVar && spVar.has_exclaves) {
       missionBar.className = "mission-inspection-strip has-exclaves";
-      const p1 = spVar.parcels[0];
-      const p2 = spVar.parcels[1];
+      const highestRiskParcel = (spVar.parcels || []).reduce((maxP, p) => (p.expected_mm > (maxP?.expected_mm || 0) ? p : maxP), spVar.parcels[0]);
+      
+      const chipsHtml = (spVar.parcels || []).map(p => {
+        const isHigh = p.expected_mm >= 15.0;
+        const isSafe = p.expected_mm < 2.5;
+        const chipClass = isHigh ? "chip-high-risk" : (isSafe ? "chip-safe" : "");
+        const icon = isHigh ? "⚡" : (isSafe ? "🟢" : "🌦️");
+        return `<span class="mission-parcel-chip ${chipClass}">
+          ${icon} <span>${p.name_en}:</span> <strong>${p.expected_mm.toFixed(1)} mm</strong>
+        </span>`;
+      }).join("");
+
       missionBar.innerHTML = `
-        <div class="mission-inspection-text">
-          <strong>⚠️ MultiPolygon Exclave Detected:</strong> <strong>${record.panchayat_name}</strong> has ${spVar.exclave_count} disconnected parcels (${spVar.max_exclave_span_km} km span). 
-          Rainfall variance: <strong>${spVar.spatial_variance_mm.toFixed(1)} mm</strong> (${p1 ? p1.name_en + ': ' + p1.expected_mm.toFixed(1) + ' mm' : ''} vs ${p2 ? p2.name_en + ': ' + p2.expected_mm.toFixed(1) + ' mm' : ''}).
+        <div class="mission-inspection-left">
+          <div class="mission-inspection-title-row">
+            <span class="mission-inspection-gp-name">📍 ${record.panchayat_name}</span>
+            <span class="mission-delta-chip">⚡ Δ ${spVar.spatial_variance_mm.toFixed(1)} mm Exclave Variance</span>
+            <span style="font-size:0.75rem; color:#94a3b8;">(${spVar.exclave_count} parcels across ${spVar.max_exclave_span_km} km)</span>
+          </div>
+          <div class="mission-parcel-chips">
+            ${chipsHtml}
+          </div>
         </div>
-        <button type="button" class="mission-inspection-btn" onclick="document.querySelector('#btn-mode-village').click()">Inspect Parcels in Cockpit 📱</button>
+        <button type="button" class="mission-inspection-btn" onclick="window.inspectCockpitForRecord('${record.lgd_code}', '${highestRiskParcel?.parcel_id || ''}')">
+          <span>Inspect Exclaves 📱</span>
+        </button>
       `;
     } else if (spVar && spVar.is_high_variance) {
       missionBar.className = "mission-inspection-strip has-exclaves";
       missionBar.innerHTML = `
-        <div class="mission-inspection-text">
-          <strong>⚠️ Micro-Climate Variance:</strong> <strong>${record.panchayat_name}</strong> rainfall varies by <strong>${spVar.spatial_variance_mm.toFixed(1)} mm</strong> across constituent 5km cells (${spVar.min_mm.toFixed(1)}–${spVar.max_mm.toFixed(1)} mm).
+        <div class="mission-inspection-left">
+          <div class="mission-inspection-title-row">
+            <span class="mission-inspection-gp-name">📍 ${record.panchayat_name}</span>
+            <span class="mission-delta-chip">⚠️ Δ ${spVar.spatial_variance_mm.toFixed(1)} mm Micro-Climate Spread</span>
+          </div>
+          <div class="mission-parcel-chips">
+            <span class="mission-parcel-chip chip-safe">🟢 Min Cell: <strong>${spVar.min_mm.toFixed(1)} mm</strong></span>
+            <span class="mission-parcel-chip chip-high-risk">⚡ Max Cell: <strong>${spVar.max_mm.toFixed(1)} mm</strong></span>
+            <span style="font-size:0.75rem; color:#94a3b8;">(${spVar.cell_count || 4} constituent 5km cells)</span>
+          </div>
         </div>
-        <button type="button" class="mission-inspection-btn" onclick="document.querySelector('#btn-mode-village').click()">Inspect Cells in Cockpit 📱</button>
+        <button type="button" class="mission-inspection-btn" onclick="window.inspectCockpitForRecord('${record.lgd_code}')">
+          <span>Inspect Cells 📱</span>
+        </button>
       `;
     } else {
       missionBar.className = "mission-inspection-strip";
+      const isDry = expVal < 2.5;
       missionBar.innerHTML = `
-        <div class="mission-inspection-text">
-          <strong>Selected GP:</strong> <strong>${record.panchayat_name}</strong> (LGD: ${record.lgd_code}) • Expected Rain: <strong>${expVal.toFixed(1)} mm</strong> • Uniform 5km cell distribution (single parcel).
+        <div class="mission-inspection-left">
+          <div class="mission-inspection-title-row">
+            <span class="mission-inspection-gp-name">📍 ${record.panchayat_name}</span>
+            <span style="font-size:0.78rem; color:#94a3b8;">(LGD: ${record.lgd_code})</span>
+            <span class="mission-parcel-chip ${isDry ? 'chip-safe' : 'chip-high-risk'}">
+              ${isDry ? '☀️' : '🌧️'} Expected: <strong>${expVal.toFixed(1)} mm</strong>
+            </span>
+          </div>
+          <span style="font-size:0.76rem; color:#94a3b8;">Uniform 5km downscaling distribution across single contiguous parcel.</span>
         </div>
-        <button type="button" class="mission-inspection-btn" onclick="document.querySelector('#btn-mode-village').click()">View Advisory 📱</button>
+        <button type="button" class="mission-inspection-btn" onclick="window.inspectCockpitForRecord('${record.lgd_code}')">
+          <span>View Cockpit 📱</span>
+        </button>
       `;
     }
   }
