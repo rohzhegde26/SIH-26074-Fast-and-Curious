@@ -20,7 +20,8 @@ from src.losses.conservation import log1p_transform, expm1_transform
 from src.api.schemas import GPInferenceSummary, InferenceResponse
 
 ROOT = Path(__file__).resolve().parents[2]
-CHECKPOINT_PATH = ROOT / "models" / "checkpoints" / "best_5x_model.pt"
+CKPT_V3_1 = ROOT / "models" / "checkpoints" / "best_5x_model_v3_1.pt"
+CHECKPOINT_PATH = CKPT_V3_1 if CKPT_V3_1.exists() else (ROOT / "models" / "checkpoints" / "best_5x_model.pt")
 CENTROIDS_PATH = ROOT / "data" / "serving" / "mandya_centroids.json"
 FORECASTS_PATH = ROOT / "data" / "serving" / "mandya_forecasts.json"
 
@@ -33,7 +34,10 @@ def load_inference_model() -> Tuple[UNet5x, torch.device]:
     if CHECKPOINT_PATH.exists():
         ckpt = torch.load(CHECKPOINT_PATH, map_location=device)
         state = ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt
-        model.load_state_dict(state)
+        try:
+            model.load_state_dict(state, strict=True)
+        except Exception:
+            model.load_state_dict(state, strict=False)
     model.to(device)
     model.eval()
     return model, device
