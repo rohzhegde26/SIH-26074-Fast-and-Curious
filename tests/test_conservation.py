@@ -11,6 +11,7 @@ from src.losses.conservation import (
     coarsen_hr_to_lr_numpy,
     coarsen_hr_to_lr_torch,
     conservation_loss_grid,
+    conserve_hr,
 )
 from src.data.zonal_aggregation import ZonalAggregator, compute_spherical_cell_area_m2
 
@@ -142,3 +143,34 @@ def test_log_domain_composite_loss_physical_conservation():
     rel_error = torch.mean(torch.abs(pred_lr_coarsened - lr_true_phys) / lr_true_phys).item()
     assert rel_error < 1e-3, f"Physical conservation relative error too high: {rel_error:.6f} >= 1e-3"
     assert metrics["loss_conservation"].item() < 0.05
+
+
+def test_conserve_hr_deadlock_and_fp16_safety():
+    """
+    Assert that conserve_hr resolves the dry->wet deadlock without NaNs or infs,
+    conserving 100% of mass even when raw predictions in a wet block are 0.0mm.
+    """
+    # 1. Deadlock Test: 10mm coarse, 0mm prediction in FP16
+    p_zero_fp16 = torch.zeros(1, 1, 80, 80, dtype=torch.float16)
+    c_wet_fp16 = torch.full((1, 1, 16, 16), 10.0, dtype=torch.float16)
+
+    out_fp16 = conserve_hr(p_zero_fp16, c_wet_fp16)
+    assert not torch.isnan(out_fp16).any(), "NaN detected in FP16 deadlock recovery"
+    assert not torch.isinf(out_fp16).any(), "Inf detected in FP16 deadlock recovery"
+    assert np.isclose(out_fp16.float().mean().item(), 10.0, atol=1e-2), (
+        f"Expected 10.0mm conserved mean, got {out_fp16.float().mean().item()}"
+    )
+
+    # 2. Dry patch floor: 0mm coarse, small noise prediction
+    p_noise = torch.full((1, 1, 80, 80), 0.005, dtype=torch.float32)
+    c_dry = torch.zeros(1, 1, 16, 16, dtype=torch.float32)
+    out_dry = conserve_hr(p_noise, c_dry)
+    assert torch.equal(out_dry, torch.zeros_like(out_dry)), "Dry coarse input did not produce clean zero field"
+
+    # 3. NumPy compatibility check
+    p_np = np.zeros((80, 80), dtype=np.float32)
+    c_np = np.full((16, 16), 15.0, dtype=np.float32)
+    out_np = conserve_hr(p_np, c_np)
+    assert isinstance(out_np, np.ndarray), "Expected numpy array output"
+    assert np.isclose(out_np.mean(), 15.0, atol=1e-3), f"NumPy conserve_hr mean {out_np.mean()} != 15.0"
+

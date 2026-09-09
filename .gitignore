@@ -36,7 +36,10 @@ Thumbs.db
 desktop.ini
 
 # -- Large / Raw Data (do NOT commit raw satellite/IMD grids) ------------------
-data/raw/
+data/raw/*
+!data/raw/dem/
+data/raw/dem/*
+!data/raw/dem/provenance.json
 data/processed/
 *.zarr/
 *.zarr
@@ -70,3 +73,4 @@ docs/openapi.json
 # -- Node (if any frontend tooling is added later) -----------------------------
 node_modules/
 .npm/
+.omo/

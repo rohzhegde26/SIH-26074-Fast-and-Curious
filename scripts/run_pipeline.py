@@ -74,23 +74,46 @@ def run_pipeline(
     lr_slice = ds.rainfall.isel(time=time_idx, lat=slice(18, 34), lon=slice(34, 50)).values.astype(np.float32)
     lr_slice = np.nan_to_num(np.maximum(lr_slice, 0.0))
 
+    v3_1_path = ROOT / "models" / "checkpoints" / "best_5x_model_v3_1.pt"
+    if checkpoint_path == (ROOT / "models" / "checkpoints" / "best_5x_model.pt") and v3_1_path.exists():
+        checkpoint_path = v3_1_path
+
     # 2. Load trained UNet5x checkpoint and setup MC-Dropout for CQR uncertainty
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Model checkpoint not found: {checkpoint_path}")
 
+    print(f"[*] Loading checkpoint: {checkpoint_path.name}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
     base_model = UNet5x(in_channels=1, out_channels=1, base_channels=32).to(device)
-    base_model.load_state_dict(ckpt["model_state_dict"])
+    base_model.load_pretrained(ckpt, device=device)
     base_model.eval()
 
     mc_model = MCDropoutWrapper(base_model, p=0.1).to(device)
+
+    # Build 5-channel terrain features for Mandya domain if DEM is present
+    terrain_tensor = None
+    dem_path = ROOT / "data" / "raw" / "dem" / "glo30_terrain.nc"
+    if dem_path.exists():
+        try:
+            from src.data.terrain_features import build_terrain_tensor_5ch
+            dem_ds = xr.open_dataset(dem_path)
+            elev_p = dem_ds["elevation"].values[:80, :80]
+            slope_p = dem_ds["slope"].values[:80, :80]
+            aspect_p = dem_ds["aspect"].values[:80, :80]
+            month_num = int(actual_date_str.split("-")[1])
+            t_5ch = build_terrain_tensor_5ch(elev_p, slope_p, aspect_p, center_lat_deg=12.52, month=month_num)
+            terrain_tensor = t_5ch.unsqueeze(0).to(device)
+        except Exception as e:
+            print(f"[!] Warning: Terrain extraction fallback: {e}")
 
     # 3. Model forward pass (log1p transform as used in training)
     x_tensor = torch.from_numpy(lr_slice).unsqueeze(0).unsqueeze(0).to(device)
     x_log = torch.log1p(x_tensor)
 
-    mean_pred, q_lo, q_hi = mc_model.predict_with_uncertainty(x_log, n_passes=n_mc_passes)
+    mean_pred, q_lo, q_hi = mc_model.predict_with_uncertainty(
+        x_log, terrain_hr=terrain_tensor, n_passes=n_mc_passes
+    )
 
     # Apply conformal quantile bounds (clip-at-zero)
     int_lo = torch.clamp(q_lo - q_hat, min=0.0)
@@ -148,9 +171,11 @@ def run_pipeline(
         l_min = min(l_min, exp)
         l_max = max(l_max, exp)
 
+        taluk_name = str(row.get("sdtname", row.get("blkname", ""))).strip()
         rec = {
             "lgd_code": gpcode,
             "panchayat_name": str(row.get("gpname", "")).strip() or f"GP-{gpcode}",
+            "taluk": taluk_name,
             "district": district.upper(),
             "forecast_date": actual_date_str,
             "timestamp_utc": dt_utc,

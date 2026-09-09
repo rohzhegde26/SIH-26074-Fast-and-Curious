@@ -16,7 +16,8 @@ Key Architectural Principles:
        - Activation memory under FP16/AMP for batch 16 is < 2.5 GB.
 """
 
-from typing import Optional, Tuple
+from pathlib import Path
+from typing import Optional, Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -91,9 +92,12 @@ class UNet5x(nn.Module):
         base_channels: int = 32,
         scale_factor: int = 5,
         num_groups: int = 8,
+        terrain_channels: int = 5,
+        use_residual: bool = False,
     ):
         super().__init__()
         self.scale_factor = scale_factor
+        self.use_residual = use_residual
         c1 = base_channels       # 32
         c2 = base_channels * 2   # 64
         c3 = base_channels * 4   # 128
@@ -112,10 +116,26 @@ class UNet5x(nn.Module):
         self.up1 = UpBlock(c3, c2, c2, num_groups=num_groups)  # 8x8 -> 16x16 (128 + 64 -> 64)
         self.up0 = UpBlock(c2, c1, c1, num_groups=num_groups)  # 16x16 -> 16x16 (64 + 32 -> 32)
 
+        # High-Resolution Terrain Projection Adapter (5ch -> 8ch)
+        self.terrain_proj = nn.Sequential(
+            nn.Conv2d(terrain_channels, 8, kernel_size=1, bias=False),
+            nn.GroupNorm(num_groups=4, num_channels=8),
+            nn.LeakyReLU(0.2, inplace=True),
+        )
+        # Stable warm-start initialization (prevents gradient explosion and breaks zero deadlock)
+        nn.init.normal_(self.terrain_proj[0].weight, mean=0.0, std=0.02)
+        nn.init.constant_(self.terrain_proj[1].weight, 0.1)
+        nn.init.zeros_(self.terrain_proj[1].bias)
+
+        # Learnable gating and coupling parameters
+        self.alpha = nn.Parameter(torch.zeros(c1))   # Channel-wise linear gate
+        self.gamma = nn.Parameter(torch.zeros(c1))   # Feature-level FiLM gate
+        self.beta = nn.Parameter(torch.tensor(0.0))  # Physical orographic coupling scalar
+
         # 5x Super-Resolution Upscaling Head (16x16 -> 80x80)
-        # Using kernel=5 conv block matching the physical 5x grid scale
+        # 32 base feature channels + 8 terrain projection channels = 40 channels (40 % 8 == 0)
         self.refine_5x = nn.Sequential(
-            nn.Conv2d(c1, c1, kernel_size=5, padding=2, bias=False),
+            nn.Conv2d(c1 + 8, c1, kernel_size=5, padding=2, bias=False),
             nn.GroupNorm(num_groups=num_groups, num_channels=c1),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(c1, out_channels, kernel_size=1),
@@ -126,22 +146,40 @@ class UNet5x(nn.Module):
         pool = nn.MaxPool2d(kernel_size=2, stride=2)
         return pool, conv
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Encoder
-        x0 = self.in_conv(x)       # [B, 32, 16, 16]
-        x1_down = self.down1(x0)   # [B, 32, 8, 8]
-        x1 = self.down1_conv(x1_down)  # [B, 64, 8, 8]
+    def encode_decode(self, x: torch.Tensor, dropout: Optional[nn.Module] = None) -> torch.Tensor:
+        """Executes encoder-decoder backbone with optional dropout injection."""
+        x0 = self.in_conv(x)
+        if dropout is not None:
+            x0 = dropout(x0)
 
-        x2_down = self.down2(x1)   # [B, 64, 4, 4]
-        x2 = self.down2_conv(x2_down)  # [B, 128, 4, 4]
+        x1_down = self.down1(x0)
+        x1 = self.down1_conv(x1_down)
+        if dropout is not None:
+            x1 = dropout(x1)
 
-        # Bottleneck
-        bn = self.bottleneck(x2)   # [B, 256, 4, 4]
+        x2_down = self.down2(x1)
+        x2 = self.down2_conv(x2_down)
+        if dropout is not None:
+            x2 = dropout(x2)
 
-        # Decoder
-        d2 = self.up2(bn, x2)      # [B, 128, 8, 8]
-        d1 = self.up1(d2, x1)      # [B, 64, 16, 16]
-        d0 = self.up0(d1, x0)      # [B, 32, 16, 16]
+        bn = self.bottleneck(x2)
+        if dropout is not None:
+            bn = dropout(bn)
+
+        d2 = self.up2(bn, x2)
+        d1 = self.up1(d2, x1)
+        d0 = self.up0(d1, x0)
+        return d0
+
+    def forward_with_dropout(
+        self,
+        x: torch.Tensor,
+        terrain_hr: Optional[torch.Tensor] = None,
+        dropout: Optional[nn.Module] = None,
+    ) -> torch.Tensor:
+        """Single source of truth for both standard and Monte Carlo forward passes."""
+        b = x.shape[0]
+        d0 = self.encode_decode(x, dropout=dropout)
 
         # 5x Upscaling: 16x16 -> 80x80
         out_5x = F.interpolate(
@@ -151,8 +189,86 @@ class UNet5x(nn.Module):
             align_corners=False,
         )  # [B, 32, 80, 80]
 
-        hr_pred = self.refine_5x(out_5x)  # [B, out_channels, 80, 80]
+        if terrain_hr is None:
+            terrain_hr = torch.zeros(b, 5, 80, 80, dtype=x.dtype, device=x.device)
+
+        terrain_feat = self.terrain_proj(terrain_hr)  # [B, 8, 80, 80]
+
+        # Orographic wind-aware modulation via FiLM gating + alpha
+        if terrain_hr.shape[1] >= 5:
+            w_orog_norm = terrain_hr[:, 4:5, :, :]
+            gated_out_5x = out_5x * (
+                1.0
+                + self.alpha.view(1, -1, 1, 1) * w_orog_norm
+                + torch.tanh(self.gamma.view(1, -1, 1, 1) * w_orog_norm)
+            )
+        else:
+            w_orog_norm = torch.zeros(b, 1, 80, 80, dtype=x.dtype, device=x.device)
+            gated_out_5x = out_5x
+
+        fused = torch.cat([gated_out_5x, terrain_feat], dim=1)  # [B, 40, 80, 80]
+        hr_pred = self.refine_5x(fused)  # [B, out_channels, 80, 80]
+
+        if self.use_residual:
+            base = F.interpolate(
+                x,
+                scale_factor=self.scale_factor,
+                mode="bilinear",
+                align_corners=False,
+            )
+            # Direct physical orographic coupling with dry floor (+0.5 mm)
+            phys_mod = self.beta * w_orog_norm * (torch.clamp(base, min=0.0) + 0.5)
+            return base + hr_pred + phys_mod
         return hr_pred
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        terrain_hr: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        return self.forward_with_dropout(x, terrain_hr=terrain_hr, dropout=None)
+
+    def load_pretrained(
+        self,
+        checkpoint_or_path: Union[str, Path, dict],
+        device: Optional[torch.device] = None,
+    ) -> "UNet5x":
+        """
+        Loads pre-trained checkpoint with automatic zero-init surgery for new terrain weights.
+        Guarantees step-0 numerical equivalence (zero divergence).
+        """
+        if isinstance(checkpoint_or_path, (str, Path)):
+            ckpt = torch.load(checkpoint_or_path, map_location=device or "cpu")
+        else:
+            ckpt = checkpoint_or_path
+
+        state_dict = ckpt.get("model_state_dict", ckpt)
+        target_dict = self.state_dict()
+
+        # Check if refine_5x conv in checkpoint has 32 channels vs our 40 channels
+        for key in list(state_dict.keys()):
+            if "refine_5x.0.weight" in key:
+                old_w = state_dict[key]
+                if old_w.shape[1] == 32 and target_dict[key].shape[1] == 40:
+                    new_w = target_dict[key].clone()
+                    new_w[:, :32, :, :] = old_w
+                    new_w[:, 32:, :, :] = 0.0  # Zero-init new terrain channels for exact parity
+                    state_dict[key] = new_w
+
+        # Initialize terrain_proj with stable small normal weights if not in checkpoint
+        if "terrain_proj.0.weight" in target_dict and "terrain_proj.0.weight" not in state_dict:
+            nn.init.normal_(self.terrain_proj[0].weight, mean=0.0, std=0.02)
+            nn.init.constant_(self.terrain_proj[1].weight, 0.1)
+            nn.init.zeros_(self.terrain_proj[1].bias)
+        if "alpha" in target_dict and "alpha" not in state_dict:
+            nn.init.zeros_(self.alpha)
+        if "gamma" in target_dict and "gamma" not in state_dict:
+            nn.init.zeros_(self.gamma)
+        if "beta" in target_dict and "beta" not in state_dict:
+            nn.init.zeros_(self.beta)
+
+        self.load_state_dict(state_dict, strict=False)
+        return self
 
 
 if __name__ == "__main__":

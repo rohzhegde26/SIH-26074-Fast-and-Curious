@@ -8,11 +8,15 @@ Supports:
 3. Log1p pre-transform for numeric stability with expm1 inversion.
 """
 
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
+import xarray as xr
 import zarr
+
+from src.data.terrain_features import build_terrain_tensor_5ch
 
 
 class MonsoonPatchDataset(Dataset):
@@ -52,6 +56,14 @@ class MonsoonPatchDataset(Dataset):
         self.lats = self.root["center_lats"][:]
         self.lons = self.root["center_lons"][:]
         self.dates = self.root["dates"][:]
+
+        self.dem_path = Path("data/raw/dem/glo30_terrain.nc")
+        self.dem_ds = None
+        if self.dem_path.exists():
+            try:
+                self.dem_ds = xr.open_dataset(self.dem_path)
+            except Exception:
+                self.dem_ds = None
 
         # Determine indices for split
         if indices is not None:
@@ -102,14 +114,50 @@ class MonsoonPatchDataset(Dataset):
         lr_tensor = torch.from_numpy(lr_val).unsqueeze(0)
         hr_tensor = torch.from_numpy(hr_val).unsqueeze(0)
 
+        c_lat = float(self.lats[real_idx])
+        c_lon = float(self.lons[real_idx])
+        date_str = str(self.dates[real_idx])
+        month = int(date_str.split("-")[1]) if "-" in date_str else 7
+
+        # Extract or construct 5-channel HR terrain tensor [5, 80, 80]
+        terrain_extracted = False
+        if self.dem_ds is not None:
+            try:
+                sub = self.dem_ds.sel(
+                    lat=slice(c_lat - 1.975, c_lat + 2.025),
+                    lon=slice(c_lon - 1.975, c_lon + 2.025),
+                )
+                if sub.sizes.get("lat", 0) >= 80 and sub.sizes.get("lon", 0) >= 80:
+                    elev_patch = sub["elevation"].values[:80, :80]
+                    slope_patch = sub["slope"].values[:80, :80]
+                    aspect_patch = sub["aspect"].values[:80, :80]
+                    terrain_hr = build_terrain_tensor_5ch(
+                        elev_patch, slope_patch, aspect_patch, center_lat_deg=c_lat, month=month
+                    )
+                    terrain_extracted = True
+            except Exception:
+                terrain_extracted = False
+
+        if not terrain_extracted:
+            x = np.linspace(-2.0, 2.0, 80)
+            y = np.linspace(-2.0, 2.0, 80)
+            xx, yy = np.meshgrid(x, y)
+            elev_syn = 600.0 + 300.0 * np.exp(-(xx**2 + yy**2) / 2.0)
+            slope_syn = np.clip(np.sqrt(xx**2 + yy**2) * 5.0, 0.0, 30.0)
+            aspect_syn = (np.degrees(np.arctan2(yy, xx)) + 360.0) % 360.0
+            terrain_hr = build_terrain_tensor_5ch(
+                elev_syn, slope_syn, aspect_syn, center_lat_deg=c_lat, month=month
+            )
+
         return {
             "lr": lr_tensor,
             "hr": hr_tensor,
+            "terrain_hr": terrain_hr,
             "lr_phys": torch.from_numpy(np.maximum(lr_raw, 0.0)).unsqueeze(0),
             "hr_phys": torch.from_numpy(np.maximum(hr_raw, 0.0)).unsqueeze(0),
-            "lat": float(self.lats[real_idx]),
-            "lon": float(self.lons[real_idx]),
-            "date": str(self.dates[real_idx]),
+            "lat": c_lat,
+            "lon": c_lon,
+            "date": date_str,
         }
 
 
