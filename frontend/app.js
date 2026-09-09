@@ -26,6 +26,29 @@ function showToast(message) {
   }, 4000);
 }
 
+// Progress Bar & Visual Feedback Manager
+function triggerCockpitFeedback(elementToPulse = null) {
+  const progressBar = document.querySelector("#cockpit-top-progress");
+  if (progressBar) {
+    progressBar.classList.remove("finished");
+    progressBar.classList.add("loading");
+    setTimeout(() => {
+      progressBar.classList.remove("loading");
+      progressBar.classList.add("finished");
+      setTimeout(() => {
+        progressBar.classList.remove("finished");
+      }, 250);
+    }, 180);
+  }
+
+  if (elementToPulse) {
+    elementToPulse.classList.remove("data-updating-pulse");
+    void elementToPulse.offsetWidth; // Force reflow
+    elementToPulse.classList.add("data-updating-pulse");
+    setTimeout(() => elementToPulse.classList.remove("data-updating-pulse"), 350);
+  }
+}
+
 // IndexedDB Helper
 function getDb() {
   return new Promise((resolve, reject) => {
@@ -1034,6 +1057,7 @@ function renderForecastDetails(record) {
       const idx = parseInt(pill.dataset.dayIdx, 10);
       if (!isNaN(idx) && idx !== currentSelectedDayIndex) {
         currentSelectedDayIndex = idx;
+        triggerCockpitFeedback(container.querySelector(".village-rain-val"));
         renderForecastDetails(record);
         if (leafletLayers) {
           leafletLayers.forEach((layerObj, code) => {
@@ -1045,17 +1069,55 @@ function renderForecastDetails(record) {
     };
   });
 
-  // Parcel Selector Tab Handlers
+  // Parcel Selector Tab Handlers with Map Spotlighting & Tactile Pulse
   container.querySelectorAll(".btn-parcel-tab").forEach(tab => {
     tab.onclick = () => {
       const pId = tab.dataset.parcelId;
       const lgd = tab.dataset.lgd;
       if (pId && lgd) {
+        tab.classList.add("tab-clicked");
         activeParcelMap.set(String(lgd), pId);
+
+        // Find parcel metadata for map centering and toast
+        const targetParcel = spVar?.parcels?.find(p => p.parcel_id === pId);
+        const pName = currentLanguage === "kn" ? (targetParcel?.name_kn || "ಭಾಗ") : (targetParcel?.name_en || "Parcel");
+        const pRain = currentSelectedDayIndex === 0
+          ? (targetParcel?.expected_mm ?? 0)
+          : +((targetParcel?.expected_mm ?? 0) * dayRatio).toFixed(1);
+
+        // Trigger micro-progress shimmer bar and toast confirmation
+        triggerCockpitFeedback(container.querySelector(".village-rain-val"));
+        showToast(`📍 ${record.panchayat_name} — ${pName} (${pRain.toFixed(1)} mm)`);
+
+        // Re-render Cockpit view with pulse animation
         renderForecastDetails(record);
+
+        // Smooth Leaflet Pan/Zoom to Sub-Parcel Centroid
+        if (leafletMap && targetParcel?.centroid && Array.isArray(targetParcel.centroid)) {
+          leafletMap.flyTo(targetParcel.centroid, 12, {
+            animate: true,
+            duration: 0.6
+          });
+        }
+
+        // On mobile, smoothly scroll up slightly to ensure updated verdict is in direct view
+        if (window.innerWidth < 1025) {
+          const heroHeader = container.querySelector(".village-hero-header");
+          if (heroHeader) {
+            heroHeader.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }
       }
     };
   });
+
+  // Pulse animation on the rainfall metric block
+  const rainBlock = container.querySelector(".village-rain-block");
+  if (rainBlock) {
+    rainBlock.classList.remove("data-updating-pulse");
+    void rainBlock.offsetWidth;
+    rainBlock.classList.add("data-updating-pulse");
+  }
 
   // Attach Event Handlers
   const voiceBtn = container.querySelector("#btn-voice");
@@ -1491,6 +1553,7 @@ async function renderMap(records) {
         zoomControl: true,
         attributionControl: true
       });
+      window.leafletMap = leafletMap;
 
       // OpenStreetMap Free Tile Basemap (No API key, No watermarks)
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -1950,6 +2013,7 @@ async function loadData() {
     if (!record) return;
     selectedLgdCode = record.lgd_code;
     currentSelectedDayIndex = 0;
+    triggerCockpitFeedback();
     if (searchInput) {
       searchInput.value = record.panchayat_name;
       if (clearBtn) clearBtn.classList.remove("hidden");
