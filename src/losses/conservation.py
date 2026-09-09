@@ -278,11 +278,19 @@ class CompositeLogConservationLoss(nn.Module):
     Dual-Domain Composite Loss:
         - Reconstruction Loss in Log Domain: L1(pred_log, target_log)
         - Conservation Loss in Physical Domain: MSE(Coarsen(expm1(pred_log)), lr_phys)
+        - Balanced Wind Correlation Loss: -mean(w * (pred - block_mean))
     """
 
-    def __init__(self, lambda_cons: float = 0.1, kernel_size: int = 5, stride: int = 5):
+    def __init__(
+        self,
+        lambda_cons: float = 0.1,
+        lambda_wind: float = 0.03,
+        kernel_size: int = 5,
+        stride: int = 5,
+    ):
         super().__init__()
         self.lambda_cons = lambda_cons
+        self.lambda_wind = lambda_wind
         self.kernel_size = kernel_size
         self.stride = stride
 
@@ -292,6 +300,7 @@ class CompositeLogConservationLoss(nn.Module):
         target_log: torch.Tensor,
         lr_phys: torch.Tensor,
         hr_lats_deg: torch.Tensor,
+        terrain_hr: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
         # 1. Reconstruction loss in log domain (stabilizes gradients for extremes)
         loss_recon = F.l1_loss(pred_log, target_log)
@@ -308,11 +317,23 @@ class CompositeLogConservationLoss(nn.Module):
             stride=self.stride,
         )
 
-        total_loss = loss_recon + self.lambda_cons * loss_cons
+        # 4. Balanced wind correlation loss (orographic lifting enhancement & rain shadow suppression)
+        if terrain_hr is not None and terrain_hr.shape[1] >= 5:
+            w = terrain_hr[:, 4:5, :, :].float()
+            block_mean = F.avg_pool2d(pred_phys, self.kernel_size, stride=self.stride)
+            block_mean_up = F.interpolate(block_mean, scale_factor=self.kernel_size, mode="nearest")
+            mask = (w.abs() > 0.15).float()
+            denom = mask.mean().clamp(min=0.01)
+            loss_wind = -torch.mean(mask * w * (pred_phys - block_mean_up)) / denom
+        else:
+            loss_wind = torch.tensor(0.0, device=pred_log.device)
+
+        total_loss = loss_recon + self.lambda_cons * loss_cons + self.lambda_wind * loss_wind
 
         metrics = {
             "loss_total": total_loss.detach(),
             "loss_recon_l1": loss_recon.detach(),
             "loss_conservation": loss_cons.detach(),
+            "loss_wind": loss_wind.detach(),
         }
         return total_loss, metrics

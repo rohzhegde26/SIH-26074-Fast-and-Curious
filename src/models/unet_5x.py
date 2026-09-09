@@ -122,9 +122,15 @@ class UNet5x(nn.Module):
             nn.GroupNorm(num_groups=4, num_channels=8),
             nn.LeakyReLU(0.2, inplace=True),
         )
+        # Stable warm-start initialization (prevents gradient explosion and breaks zero deadlock)
+        nn.init.normal_(self.terrain_proj[0].weight, mean=0.0, std=0.02)
+        nn.init.constant_(self.terrain_proj[1].weight, 0.1)
+        nn.init.zeros_(self.terrain_proj[1].bias)
 
-        # Channel-wise learnable orographic wind gating parameter
-        self.alpha = nn.Parameter(torch.zeros(c1))
+        # Learnable gating and coupling parameters
+        self.alpha = nn.Parameter(torch.zeros(c1))   # Channel-wise linear gate
+        self.gamma = nn.Parameter(torch.zeros(c1))   # Feature-level FiLM gate
+        self.beta = nn.Parameter(torch.tensor(0.0))  # Physical orographic coupling scalar
 
         # 5x Super-Resolution Upscaling Head (16x16 -> 80x80)
         # 32 base feature channels + 8 terrain projection channels = 40 channels (40 % 8 == 0)
@@ -188,11 +194,16 @@ class UNet5x(nn.Module):
 
         terrain_feat = self.terrain_proj(terrain_hr)  # [B, 8, 80, 80]
 
-        # Orographic wind-aware modulation via channel-wise alpha
+        # Orographic wind-aware modulation via FiLM gating + alpha
         if terrain_hr.shape[1] >= 5:
             w_orog_norm = terrain_hr[:, 4:5, :, :]
-            gated_out_5x = out_5x * (1.0 + self.alpha.view(1, -1, 1, 1) * w_orog_norm)
+            gated_out_5x = out_5x * (
+                1.0
+                + self.alpha.view(1, -1, 1, 1) * w_orog_norm
+                + torch.tanh(self.gamma.view(1, -1, 1, 1) * w_orog_norm)
+            )
         else:
+            w_orog_norm = torch.zeros(b, 1, 80, 80, dtype=x.dtype, device=x.device)
             gated_out_5x = out_5x
 
         fused = torch.cat([gated_out_5x, terrain_feat], dim=1)  # [B, 40, 80, 80]
@@ -205,7 +216,9 @@ class UNet5x(nn.Module):
                 mode="bilinear",
                 align_corners=False,
             )
-            return base + hr_pred
+            # Direct physical orographic coupling with dry floor (+0.5 mm)
+            phys_mod = self.beta * w_orog_norm * (torch.clamp(base, min=0.0) + 0.5)
+            return base + hr_pred + phys_mod
         return hr_pred
 
     def forward(
@@ -239,14 +252,20 @@ class UNet5x(nn.Module):
                 if old_w.shape[1] == 32 and target_dict[key].shape[1] == 40:
                     new_w = target_dict[key].clone()
                     new_w[:, :32, :, :] = old_w
-                    new_w[:, 32:, :, :] = 0.0  # Zero-init new terrain channels
+                    new_w[:, 32:, :, :] = 0.0  # Zero-init new terrain channels for exact parity
                     state_dict[key] = new_w
 
-        # Zero-initialize terrain_proj and alpha if not present
+        # Initialize terrain_proj with stable small normal weights if not in checkpoint
         if "terrain_proj.0.weight" in target_dict and "terrain_proj.0.weight" not in state_dict:
-            nn.init.zeros_(self.terrain_proj[0].weight)
+            nn.init.normal_(self.terrain_proj[0].weight, mean=0.0, std=0.02)
+            nn.init.constant_(self.terrain_proj[1].weight, 0.1)
+            nn.init.zeros_(self.terrain_proj[1].bias)
         if "alpha" in target_dict and "alpha" not in state_dict:
             nn.init.zeros_(self.alpha)
+        if "gamma" in target_dict and "gamma" not in state_dict:
+            nn.init.zeros_(self.gamma)
+        if "beta" in target_dict and "beta" not in state_dict:
+            nn.init.zeros_(self.beta)
 
         self.load_state_dict(state_dict, strict=False)
         return self

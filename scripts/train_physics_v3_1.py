@@ -49,19 +49,56 @@ def parse_args():
 
 
 class SyntheticPatchDataset(torch.utils.data.Dataset):
-    """Fallback dataset if 8GB Zarr cube is not present locally."""
+    """
+    Physically realistic anisotropic fallback dataset simulating moist monsoon flow
+    hitting a North-South Western Ghats orographic barrier with leeward rain shadow.
+    """
 
-    def __init__(self, n_samples: int = 128):
+    def __init__(self, n_samples: int = 256):
         self.n = n_samples
 
     def __len__(self):
         return self.n
 
     def __getitem__(self, idx):
-        # Generate realistic rain patterns
-        lr_phys = torch.clamp(torch.randn(1, 16, 16) * 10.0 + 5.0, min=0.0)
-        hr_phys = torch.nn.functional.interpolate(lr_phys.unsqueeze(0), scale_factor=5, mode="bilinear")[0]
-        terrain = torch.randn(5, 80, 80)
+        base_val = (torch.rand(1).item() * 12.0 + 1.0) if idx % 2 == 0 else 0.5
+        lr_raw = torch.clamp(torch.randn(1, 16, 16) * 3.0 + base_val, min=0.0) if base_val > 1.0 else torch.full((1, 16, 16), base_val)
+        hr_base = F.interpolate(lr_raw.unsqueeze(0), scale_factor=5, mode="bilinear", align_corners=False)[0]
+
+        # 80x80 spatial coordinates in [-2, 2]
+        x = torch.linspace(-2.0, 2.0, 80).view(1, 80).expand(80, 80)
+        y = torch.linspace(-2.0, 2.0, 80).view(80, 1).expand(80, 80)
+
+        if idx % 2 == 0:
+            # North-South Western Ghats ridge centered at x = -0.2
+            ridge_x = -0.2
+            elev = 400.0 + 800.0 * torch.exp(-(((x - ridge_x) / 0.5) ** 2))
+            d_elev_dx = -((x - ridge_x) / 0.25) * 800.0 * torch.exp(-(((x - ridge_x) / 0.5) ** 2))
+            slope = torch.clamp(torch.abs(d_elev_dx) * 0.05, min=0.0, max=30.0)
+            aspect = torch.where(d_elev_dx > 0, torch.full_like(x, 270.0), torch.full_like(x, 90.0))
+            # Westerly monsoon wind: w_orog > 0 on windward (west), w_orog < 0 on leeward (east)
+            w_orog = torch.tanh((d_elev_dx * 8.0) / 100.0)
+        else:
+            # Moderate isolated hill
+            r2 = x**2 + y**2
+            elev = 400.0 + 400.0 * torch.exp(-r2 / 1.5)
+            slope = torch.clamp(torch.sqrt(r2) * 5.0, min=0.0, max=25.0)
+            aspect = (torch.atan2(y, x) * 180.0 / np.pi + 360.0) % 360.0
+            w_orog = torch.tanh((x * -4.0) / 50.0)
+
+        # 5-channel terrain features: [dem_norm, slope_norm, sin_aspect, cos_aspect, w_orog]
+        dem_norm = torch.clamp((elev - 382.5) / 458.2, -2.5, 3.5) / 3.5
+        slope_norm = torch.clamp(slope / 22.3, 0.0, 1.0)
+        aspect_rad = aspect * np.pi / 180.0
+        terrain = torch.stack([dem_norm, slope_norm, torch.sin(aspect_rad), torch.cos(aspect_rad), w_orog], dim=0)
+
+        # Physical rainfall label: windward enhancement (+35%) and leeward rain shadow (-25%)
+        orog_factor = 1.0 + 0.35 * torch.clamp(w_orog, min=0.0) - 0.25 * torch.clamp(-w_orog, min=0.0)
+        hr_phys = torch.clamp(hr_base * orog_factor, min=0.0)
+
+        # Area-coarsen HR to LR so training labels strictly preserve mass conservation
+        lr_phys = F.avg_pool2d(hr_phys.unsqueeze(0), kernel_size=5, stride=5)[0]
+
         return {
             "lr": torch.log1p(lr_phys),
             "hr": torch.log1p(hr_phys),
@@ -98,11 +135,11 @@ def run_finetuning(args):
         print(f"[!] Base checkpoint not found at {base_ckpt_path}. Initializing clean surgery.")
 
     # 2. Freeze Backbone (Encoder, Bottleneck, Decoder)
-    # Only train terrain_proj, alpha, and refine_5x
+    # Only train terrain_proj, alpha, gamma, beta, and refine_5x
     frozen_count = 0
     trainable_count = 0
     for name, param in model.named_parameters():
-        if any(head in name for head in ["terrain_proj", "alpha", "refine_5x"]):
+        if any(head in name for head in ["terrain_proj", "alpha", "gamma", "beta", "refine_5x"]):
             param.requires_grad = True
             trainable_count += param.numel()
         else:
@@ -119,7 +156,7 @@ def run_finetuning(args):
         print(f"[*] Loading 14-year Zarr patch cube: {zarr_path}")
         dataset = MonsoonPatchDataset(str(zarr_path), split="train", log_transform=True)
     else:
-        print(f"[!] Zarr store not found at {zarr_path}. Using fallback synthetic dataset.")
+        print(f"[!] Zarr store not found at {zarr_path}. Using anisotropic Western Ghats dataset.")
         dataset = SyntheticPatchDataset(n_samples=256)
 
     loader = DataLoader(
@@ -160,6 +197,7 @@ def run_finetuning(args):
                     target_log=hr_log,
                     lr_phys=lr_phys,
                     hr_lats_deg=lats,
+                    terrain_hr=terrain_hr,
                 )
 
             scaler.scale(loss).backward()
@@ -174,7 +212,8 @@ def run_finetuning(args):
                 loss_val = float(loss_dict["loss_total"])
                 loss_l1 = float(loss_dict["loss_recon_l1"])
                 loss_cons = float(loss_dict["loss_conservation"])
-                print(f"  Step [{step:03d}/{args.steps}] | Total Loss: {loss_val:.4f} (L1: {loss_l1:.4f}, Cons: {loss_cons:.4f}) | Elapsed: {elapsed:.1f}s")
+                loss_wind = float(loss_dict.get("loss_wind", 0.0))
+                print(f"  Step [{step:03d}/{args.steps}] | Total Loss: {loss_val:.4f} (L1: {loss_l1:.4f}, Cons: {loss_cons:.4f}, Wind: {loss_wind:.4f}) | Elapsed: {elapsed:.1f}s")
 
     # 5. Save Model Checkpoint
     out_dir = Path(args.output_dir)
