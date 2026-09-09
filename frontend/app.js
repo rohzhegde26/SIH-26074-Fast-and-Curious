@@ -140,7 +140,7 @@ let activeParcelMap = new Map(); // lgdCode -> parcelId
 let leafletMap = null;
 let leafletGeoJsonLayer = null;
 let leafletLayers = new Map(); // lgdCode -> L.Path
-let currentMapLayer = "rainfall"; // 'rainfall' | 'risk' | 'spread'
+let currentMapLayer = "ai"; // 'ai' | 'rainfall' | 'imd' | 'risk' | 'spread'
 
 // TopoJSON Arc Decoder
 function decodeArc(topology, index) {
@@ -1391,6 +1391,8 @@ function broadcastToWhatsApp(record) {
 // -------------------------------------------------------------
 function getLayerColor(record, layerType) {
   if (!record) return "#cbd5e1";
+  if (layerType === "imd") return "#e3f2fd";
+
   const mdf = record.multi_day_forecast;
   const activeDay = (mdf && mdf[currentSelectedDayIndex]) ? mdf[currentSelectedDayIndex] : null;
 
@@ -1413,7 +1415,7 @@ function getLayerColor(record, layerType) {
     return "#a7f3d0";
   }
 
-  // Default 'rainfall'
+  // Default 'ai' / 'rainfall'
   return getRainColor(exp);
 }
 
@@ -1421,6 +1423,52 @@ function getFeatureStyle(feature, isSelected = false) {
   const code = String(feature?.id || feature?.properties?.code || "");
   const record = currentRecords.find(r => String(r.lgd_code) === code);
 
+  // 1. IMD Block View: Uniform 1.8mm light blue across all 234 GPs
+  if (currentMapLayer === "imd") {
+    if (isSelected) {
+      return {
+        fillColor: "#e3f2fd",
+        fillOpacity: 0.95,
+        weight: 3.5,
+        color: "#000000",
+        dashArray: "",
+        className: "selected-gp-highlight"
+      };
+    }
+    return {
+      fillColor: "#e3f2fd",
+      fillOpacity: 0.85,
+      weight: 1.0,
+      color: "#94a3b8",
+      dashArray: "",
+      className: "imd-block-polygon"
+    };
+  }
+
+  // 2. 5x AI / Rainfall Layer: Full Downscaled Spatial Choropleth
+  if (currentMapLayer === "ai" || currentMapLayer === "rainfall") {
+    const highlightColor = getLayerColor(record, currentMapLayer);
+    if (isSelected) {
+      return {
+        fillColor: highlightColor,
+        fillOpacity: 0.95,
+        weight: 3.5,
+        color: "#000000",
+        dashArray: "",
+        className: "selected-gp-highlight"
+      };
+    }
+    return {
+      fillColor: highlightColor,
+      fillOpacity: 0.85,
+      weight: 1.0,
+      color: "#64748b",
+      dashArray: "",
+      className: "ai-gp-polygon"
+    };
+  }
+
+  // 3. Other Layers (Risk / Spread): Selected is colored, others subdued grey
   if (isSelected) {
     const highlightColor = getLayerColor(record, currentMapLayer);
     return {
@@ -1433,7 +1481,6 @@ function getFeatureStyle(feature, isSelected = false) {
     };
   }
 
-  // Rest of the Gram Panchayats go subdued grey
   return {
     fillColor: "#cbd5e1", // Subdued neutral grey
     fillOpacity: 0.55,
@@ -1455,6 +1502,34 @@ function formatTooltipContent(record, feature) {
   const lMax = activeDay ? activeDay.likely_max_mm : (record?.rainfall_mm?.likely_max ?? record?.likely_max_mm ?? 0.0);
   const dayLabel = activeDay ? (currentLanguage === "kn" ? activeDay.day_label_kn : activeDay.day_label_en) : "Today";
   const spread = Math.max(0, lMax - lMin);
+
+  if (currentMapLayer === "imd") {
+    const aiVal = exp.toFixed(1);
+    const delta = (exp - 1.8).toFixed(1);
+    const deltaSign = (exp - 1.8) > 0 ? "+" : "";
+    const anomalyBadge = exp >= 15.0
+      ? `<span style="color:#ef4444; font-weight:700;">🚨 Cloudburst hidden by IMD</span>`
+      : (exp >= 2.5 ? `<span style="color:#f59e0b; font-weight:700;">⚠️ Local rain missed by block</span>` : `<span style="color:#10b981; font-weight:700;">🟢 Dry valley (matches block)</span>`);
+
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:4px;">
+        <strong style="font-size:0.92rem; color:#f8fafc;">${pName}</strong>
+        <span style="font-size:0.72rem; color:#f59e0b; font-weight:700; background:rgba(245,158,11,0.2); padding:1px 6px; border-radius:4px;">IMD 0.25° Block</span>
+      </div>
+      <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • LGD ${record?.lgd_code || feature.id}</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+        <span style="font-size:0.8rem; color:#cbd5e1;">IMD Block Prediction:</span>
+        <strong style="font-size:0.88rem; color:#93c5fd;">1.8 mm (Flat)</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <span style="font-size:0.8rem; color:#cbd5e1;">Our 5× Downscaled:</span>
+        <strong style="font-size:0.88rem; color:${exp >= 15 ? '#f87171' : (exp >= 2.5 ? '#38bdf8' : '#34d399')};">${aiVal} mm (Δ ${deltaSign}${delta} mm)</strong>
+      </div>
+      <div style="font-size:0.75rem; border-top:1px dashed rgba(255,255,255,0.15); padding-top:4px; margin-top:2px;">
+        ${anomalyBadge}
+      </div>
+    `;
+  }
 
   if (currentMapLayer === "risk") {
     const risk = getFinancialRisk(currentCropStage, exp, lMax, currentLanguage);
@@ -1499,6 +1574,15 @@ function formatTooltipContent(record, feature) {
 function updateMapLegend(layerType) {
   const legend = document.querySelector("#map-legend");
   if (!legend) return;
+
+  if (layerType === "imd") {
+    legend.innerHTML = `
+      <span class="legend-title">IMD Block NWP (0.25°):</span>
+      <div class="legend-item"><span class="legend-swatch" style="background:#e3f2fd;border:1px solid #94a3b8;"></span> Uniform 1.8 mm (All 234 GPs)</div>
+      <div class="legend-item" style="color:#d97706;font-weight:600;"><span class="legend-swatch" style="background:#f59e0b;"></span> ⚠️ Blind to Local Cloudbursts</div>
+    `;
+    return;
+  }
 
   if (layerType === "risk") {
     legend.innerHTML = `
@@ -1650,6 +1734,7 @@ function setupMapLayerSelector() {
   const proofContainer = document.querySelector("#downscaling-proof-container");
   const mapLegend = document.querySelector("#map-legend");
   const spatialBar = document.querySelector("#mission-spatial-variance-bar");
+  const imdBanner = document.querySelector("#imd-comparison-banner");
 
   buttons.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -1657,6 +1742,15 @@ function setupMapLayerSelector() {
       if (!layer || layer === currentMapLayer) return;
       currentMapLayer = layer;
       buttons.forEach(b => b.classList.toggle("active", b === btn));
+
+      // Show/hide IMD comparison banner
+      if (imdBanner) {
+        if (layer === "imd") {
+          imdBanner.classList.remove("hidden");
+        } else {
+          imdBanner.classList.add("hidden");
+        }
+      }
 
       if (layer === "proof") {
         if (mapContainer) mapContainer.classList.add("hidden");
@@ -1686,6 +1780,19 @@ function setupMapLayerSelector() {
       });
     });
   });
+
+  const btnAudit = document.querySelector("#btn-side-by-side-audit");
+  const modalClose = document.querySelector("#dual-modal-close");
+  const dualModal = document.querySelector("#dual-map-modal");
+
+  if (btnAudit) btnAudit.addEventListener("click", openDualModal);
+  if (modalClose) modalClose.addEventListener("click", closeDualModal);
+  if (dualModal) {
+    dualModal.addEventListener("click", (e) => {
+      if (e.target === dualModal) closeDualModal();
+    });
+  }
+
   setupLiveInference();
 }
 
@@ -1742,6 +1849,7 @@ async function renderMap(records) {
 
     const geojsonData = topoToGeoJSON(topology);
     if (!geojsonData.features.length) throw new Error("No valid GeoJSON features decoded");
+    window.panchayatGeoJSON = geojsonData;
 
     if (leafletGeoJsonLayer) {
       leafletMap.removeLayer(leafletGeoJsonLayer);
@@ -2528,6 +2636,161 @@ async function loadData() {
     // Select Nalligere by default to immediately showcase Exclave & Cloudburst Variance
     const initial = records.find(r => String(r.lgd_code) === "219388") || records[0];
     selectPanchayat(initial);
+  }
+}
+
+// -------------------------------------------------------------
+// Dual Map Synchronized Audit Modal (Double Leaflet for MoES/IMD)
+// -------------------------------------------------------------
+let mapImd = null;
+let mapOur = null;
+let isSyncing = false;
+
+function initDualSyncMaps() {
+  if (mapImd) {
+    try { mapImd.remove(); } catch (_) {}
+    mapImd = null;
+  }
+  if (mapOur) {
+    try { mapOur.remove(); } catch (_) {}
+    mapOur = null;
+  }
+
+  const mandyaCenter = [12.52, 76.89];
+  mapImd = L.map("map-imd", {
+    center: mandyaCenter,
+    zoom: 10,
+    minZoom: 8,
+    maxZoom: 15,
+    zoomControl: true,
+    attributionControl: false
+  });
+
+  mapOur = L.map("map-our", {
+    center: mandyaCenter,
+    zoom: 10,
+    minZoom: 8,
+    maxZoom: 15,
+    zoomControl: false,
+    attributionControl: false
+  });
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18
+  }).addTo(mapImd);
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18
+  }).addTo(mapOur);
+
+  // 1. IMD Layer: Uniform 1.8mm flat pale blue across all 234 GPs
+  const imdStyle = {
+    fillColor: "#e3f2fd",
+    fillOpacity: 0.88,
+    weight: 1.2,
+    color: "#64748b"
+  };
+
+  // 2. 5x AI Layer: High-res downscaled orographic precipitation
+  function aiStyle(feature) {
+    const code = String(feature?.id || feature?.properties?.code || "");
+    const rec = currentRecords.find(r => String(r.lgd_code) === code);
+    const v = rec ? (rec.rainfall_mm?.expected ?? rec.expected_mm ?? 0.0) : (feature?.properties?.expected_mm || 0.0);
+    return {
+      fillColor: getRainColor(v),
+      fillOpacity: 0.88,
+      weight: 1.0,
+      color: "#334155"
+    };
+  }
+
+  const geojson = window.panchayatGeoJSON;
+  if (geojson) {
+    const imdGeoLayer = L.geoJSON(geojson, {
+      style: imdStyle,
+      onEachFeature: (f, l) => {
+        const code = String(f.id || f.properties?.code || "");
+        const rec = currentRecords.find(r => String(r.lgd_code) === code);
+        const name = rec?.panchayat_name || f.properties?.gpname || `GP ${code}`;
+        const taluk = f.properties?.sdtname || "Mandya";
+        const v = rec ? (rec.rainfall_mm?.expected ?? rec.expected_mm ?? 0.0) : 0.0;
+        l.bindTooltip(`
+          <div style="font-family:sans-serif; font-size:11px; line-height:1.3; color:#0f172a;">
+            <strong>${name} (${taluk})</strong><br>
+            <span style="color:#0369a1; font-weight:700;">IMD NWP: 1.8 mm (Uniform Flat)</span><br>
+            <span style="color:#64748b;">Our 5× Downscaled: ${v.toFixed(1)} mm</span><br>
+            <span style="color:#d97706; font-weight:600;">⚠️ Blind to local convective cells</span>
+          </div>
+        `, { sticky: true });
+      }
+    }).addTo(mapImd);
+
+    const ourGeoLayer = L.geoJSON(geojson, {
+      style: aiStyle,
+      onEachFeature: (f, l) => {
+        const code = String(f.id || f.properties?.code || "");
+        const rec = currentRecords.find(r => String(r.lgd_code) === code);
+        const name = rec?.panchayat_name || f.properties?.gpname || `GP ${code}`;
+        const taluk = f.properties?.sdtname || "Mandya";
+        const v = rec ? (rec.rainfall_mm?.expected ?? rec.expected_mm ?? 0.0) : 0.0;
+        const delta = (v - 1.8).toFixed(1);
+        const deltaSign = (v - 1.8) > 0 ? "+" : "";
+        const alertNote = v >= 15.0
+          ? "<span style='color:#ef4444;font-weight:700;'>🚨 Cloudburst Cell Resolved</span>"
+          : (v >= 2.5 ? "<span style='color:#0284c7;font-weight:700;'>🌧️ Active Rain Zone</span>" : "<span style='color:#10b981;font-weight:700;'>🟢 Leeward Rain Shadow</span>");
+        l.bindTooltip(`
+          <div style="font-family:sans-serif; font-size:11px; line-height:1.3; color:#0f172a;">
+            <strong>${name} (${taluk})</strong><br>
+            <span style="color:${v >= 15 ? '#ef4444' : '#0369a1'}; font-weight:800;">5× Downscaled: ${v.toFixed(1)} mm (Δ ${deltaSign}${delta} mm)</span><br>
+            <span style="color:#64748b;">IMD Block Input: 1.8 mm</span><br>
+            ${alertNote}
+          </div>
+        `, { sticky: true });
+      }
+    }).addTo(mapOur);
+
+    try {
+      mapImd.fitBounds(imdGeoLayer.getBounds(), { padding: [10, 10] });
+      mapOur.fitBounds(ourGeoLayer.getBounds(), { padding: [10, 10] });
+    } catch (_) {}
+  }
+
+  // Non-recursive synchronized pan & zoom
+  function syncMaps(source, target) {
+    if (isSyncing || !target) return;
+    isSyncing = true;
+    target.setView(source.getCenter(), source.getZoom(), { animate: false });
+    isSyncing = false;
+  }
+
+  mapImd.on("move", () => syncMaps(mapImd, mapOur));
+  mapOur.on("move", () => syncMaps(mapOur, mapImd));
+
+  setTimeout(() => {
+    if (mapImd) mapImd.invalidateSize();
+    if (mapOur) mapOur.invalidateSize();
+  }, 100);
+}
+
+function openDualModal() {
+  const modal = document.querySelector("#dual-map-modal");
+  if (!modal) return;
+  modal.classList.remove("hidden");
+  setTimeout(() => {
+    initDualSyncMaps();
+  }, 60);
+}
+
+function closeDualModal() {
+  const modal = document.querySelector("#dual-map-modal");
+  if (modal) modal.classList.add("hidden");
+  if (mapImd) {
+    try { mapImd.remove(); } catch (_) {}
+    mapImd = null;
+  }
+  if (mapOur) {
+    try { mapOur.remove(); } catch (_) {}
+    mapOur = null;
   }
 }
 

@@ -2984,3 +2984,315 @@ path.selected-gp-highlight,
   color: #15803d;
 }
 
+/* ==========================================================================
+   IMD vs 5x AI Downscaling Comparison (Option B + Option A)
+   ========================================================================== */
+.btn-layer-imd {
+  border: 1px solid #f59e0b !important;
+  background: #fffbeb !important;
+  color: #92400e !important;
+}
+
+.btn-layer-imd:hover {
+  background: #fef3c7 !important;
+}
+
+.btn-layer-imd.active {
+  background: #f59e0b !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.4) !important;
+}
+
+.btn-layer-ai {
+  border: 1px solid #059669;
+  color: #065f46;
+}
+
+.btn-layer-ai.active {
+  background: #059669;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.imd-comparison-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-left: 4px solid #f59e0b;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.8rem;
+  color: #92400e;
+  margin: 0.5rem 0 0.75rem 0;
+  animation: fadeInDown 0.2s ease;
+}
+
+.imd-comparison-banner .banner-icon {
+  font-size: 1.1rem;
+}
+
+.dual-benchmark-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.benchmark-pane {
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--radius-sm, 6px);
+  padding: 8px;
+  text-align: center;
+  background: var(--surface-secondary, #f8fafc);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.benchmark-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.benchmark-badge.imd {
+  background: #e0f2fe;
+  color: #0c4a6e;
+}
+
+.benchmark-badge.ours {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.benchmark-value {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #475569);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.benchmark-color {
+  height: 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.varg-details {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.varg-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 4px 0;
+  user-select: none;
+}
+
+.varg-details summary:hover {
+  color: var(--primary, #0284c7);
+}
+
+/* ==========================================================================
+   Dual Map Synchronized Audit Modal (Double Leaflet)
+   ========================================================================== */
+.btn-side-by-side {
+  border: 1px solid #6366f1 !important;
+  background: #eef2ff !important;
+  color: #4338ca !important;
+  font-weight: 700 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-side-by-side:hover {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(99, 102, 241, 0.4);
+}
+
+.dual-map-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.dual-map-modal.hidden {
+  display: none;
+}
+
+.dual-map-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dual-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dual-modal-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: #eef2ff;
+  color: #4f46e5;
+  padding: 3px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+}
+
+.dual-modal-close {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dual-modal-close:hover {
+  background: #dc2626;
+}
+
+.dual-map-modal-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+.dual-map-pane {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.dual-map-label {
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dual-map-label .label-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.dual-map-label .badge.imd {
+  background: #e0f2fe;
+  color: #0c4a6e;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.dual-map-label .badge.ours {
+  background: #dcfce7;
+  color: #14532d;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.dual-leaflet-map {
+  flex: 1;
+  min-height: 400px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  z-index: 1;
+}
+
+.dual-map-legend {
+  background: #ffffff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-top: 12px;
+  font-size: 0.78rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.legend-scale {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.legend-swatch-mini {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-physics {
+  color: #334155;
+  font-size: 0.75rem;
+}
+
+.legend-physics code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #0369a1;
+}
+
+@media (max-width: 900px) {
+  .dual-map-modal-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .dual-leaflet-map {
+    min-height: 300px;
+  }
+}
+
+
+

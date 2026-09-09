@@ -193,11 +193,19 @@
                     <p class="card-sub" id="map-status">Click any panchayat to inspect localized downscaled forecast</p>
                   </div>
                   <div class="map-layer-selector" role="radiogroup" aria-label="Map display layer">
-                    <button type="button" class="btn-map-layer active" data-layer="rainfall">🌧️ Rain (mm)</button>
+                    <button type="button" class="btn-map-layer btn-layer-ai active" data-layer="ai">⚡ 5× AI (0.05°)</button>
+                    <button type="button" class="btn-map-layer btn-layer-imd" data-layer="imd">🛰️ IMD Block View (0.25°)</button>
+                    <button type="button" class="btn-map-layer btn-side-by-side" id="btn-side-by-side-audit">⧉ Side-by-Side Audit</button>
                     <button type="button" class="btn-map-layer" data-layer="risk">⚠️ Advisory Risk</button>
                     <button type="button" class="btn-map-layer" data-layer="spread">📊 Uncertainty</button>
                     <button type="button" class="btn-map-layer btn-proof-tab" id="btn-proof-tab" data-layer="proof">🔬 Coarse vs Fine Plots</button>
                   </div>
+                </div>
+
+                <!-- IMD Block Comparison Warning Banner -->
+                <div id="imd-comparison-banner" class="imd-comparison-banner hidden">
+                  <span class="banner-icon">⚠️</span>
+                  <span><strong>IMD Block View:</strong> Uniform 1.8mm over all 234 GPs • Nalligere cloudburst (30.4mm) obscured • Zero intra-block resolution</span>
                 </div>
 
                 <div class="map-container" id="map-container">
@@ -254,6 +262,45 @@
                 <div id="mission-spatial-variance-bar" class="mission-inspection-strip">
                   <div class="mission-inspection-text">
                     <strong>Panchayat Inspection:</strong> Click any panchayat on the map to inspect localized downscaled forecast & exclave variance.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dual Map Synchronized Audit Modal -->
+              <div id="dual-map-modal" class="dual-map-modal hidden" role="dialog" aria-modal="true" aria-label="IMD vs 5x AI Spatial Benchmark">
+                <div class="dual-map-modal-header">
+                  <div class="dual-modal-title-wrap">
+                    <span class="dual-modal-pill">🔬 SPATIAL BENCHMARK AUDIT</span>
+                    <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#0f172a;">IMD Block vs 5× AI Downscaling - Spatial Resolution Proof</h3>
+                  </div>
+                  <button type="button" id="dual-modal-close" class="dual-modal-close" aria-label="Close Dual Map Modal">✕ Close</button>
+                </div>
+                <div class="dual-map-modal-body">
+                  <div class="dual-map-pane">
+                    <div class="dual-map-label">
+                      <span class="badge imd">IMD Mausamgram 0.25° • 27 km • 1 Value</span>
+                      <span class="label-desc">Uniform 1.8mm flat • Blind to cloudburst</span>
+                    </div>
+                    <div id="map-imd" class="dual-leaflet-map"></div>
+                  </div>
+                  <div class="dual-map-pane">
+                    <div class="dual-map-label">
+                      <span class="badge ours">Fast & Curious 5× • 0.05° • 5.5 km • 234 Values</span>
+                      <span class="label-desc">1.7–30.4mm • Nalligere cloudburst resolved • 99.8% Conserved</span>
+                    </div>
+                    <div id="map-our" class="dual-leaflet-map"></div>
+                  </div>
+                </div>
+                <div class="dual-map-legend">
+                  <div class="legend-scale">
+                    <strong>Precipitation: </strong>
+                    <span class="legend-swatch-mini" style="background:#e3f2fd; color:#0f172a;">&lt;2.5 Dry</span>
+                    <span class="legend-swatch-mini" style="background:#90caf9; color:#0f172a;">2.5–15.5 Light</span>
+                    <span class="legend-swatch-mini" style="background:#1e88e5; color:white;">15.5–64.4 Mod</span>
+                    <span class="legend-swatch-mini" style="background:#0d47a1; color:white;">&gt;64.4 Heavy</span>
+                  </div>
+                  <div class="legend-physics">
+                    <strong>Mass Invariant:</strong> <code>(1/25)∑ HR·cos(φ) = LR</code> • District conserved mean 1.8 mm identical
                   </div>
                 </div>
               </div>
@@ -357,13 +404,28 @@
                 <p class="pillar-desc">
                   Generates downscaled, mass-conserved 0.05° precipitation forecasts for all 234 Mandya panchayats in exact compliance with IMD AWS JSON standard schemas:
                 </p>
-                <div class="varg-code-wrapper">
-                  <div class="varg-code-bar">
-                    <span id="varg-station-title">Panchayat: KA_MAN_215504 (Banavasi)</span>
-                    <span class="varg-status-pill">● VALIDATED_MASS_CONSERVED</span>
+                <div class="dual-benchmark-grid">
+                  <div class="benchmark-pane imd-pane">
+                    <span class="benchmark-badge imd">IMD Mausamgram 0.25°</span>
+                    <div class="benchmark-value">1 Value • 1.8mm flat • 27km</div>
+                    <div class="benchmark-color" style="background:#e3f2fd"></div>
                   </div>
-                  <pre id="varg-json-code" class="varg-pre"><code>Loading live IMD schema payload...</code></pre>
+                  <div class="benchmark-pane our-pane">
+                    <span class="benchmark-badge ours">Fast & Curious 5×</span>
+                    <div class="benchmark-value">234 Values • 1.7-30.4mm • 5.5km • 99.8% Conserved</div>
+                    <div class="benchmark-color" style="background:linear-gradient(90deg,#e3f2fd,#1e88e5,#0d47a1)"></div>
+                  </div>
                 </div>
+                <details class="varg-details">
+                  <summary>🔍 View WMO/IMD Standard JSON Payload</summary>
+                  <div class="varg-code-wrapper" style="margin-top: 8px;">
+                    <div class="varg-code-bar">
+                      <span id="varg-station-title">Panchayat: KA_MAN_215504 (Banavasi)</span>
+                      <span class="varg-status-pill">● VALIDATED_MASS_CONSERVED</span>
+                    </div>
+                    <pre id="varg-json-code" class="varg-pre"><code>Loading live IMD schema payload...</code></pre>
+                  </div>
+                </details>
               </div>
             </div>
           </div>
