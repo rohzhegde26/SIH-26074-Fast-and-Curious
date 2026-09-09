@@ -40,7 +40,14 @@ def rainfall_band(expected_mm: float) -> Advice:
     return HEAVY
 
 
-def build_advisory(crop: str, stage: str, expected_mm: float, likely_max_mm: float) -> Advisory:
+def build_advisory(
+    crop: str,
+    stage: str,
+    expected_mm: float,
+    likely_max_mm: float,
+    wind_kph: float = 8.0,
+    rh_pct: float = 65.0,
+) -> Advisory:
     if crop not in VALID_CROPS:
         raise ValueError(f"Unsupported crop: {crop}")
     if stage not in CROP_STAGE_ACTIONS.get(crop, {}):
@@ -51,6 +58,18 @@ def build_advisory(crop: str, stage: str, expected_mm: float, likely_max_mm: flo
     crop_stage = CROP_STAGE_ACTIONS[crop][stage]
     notes_en: list[str] = [crop_stage.en, base.en]
     notes_kn: list[str] = [crop_stage.kn, base.kn]
+
+    # Multi-variable DAMU/KVK agromet wind & humidity thresholds
+    if wind_kph >= 15.0:
+        notes_en.append(f"High wind speed ({wind_kph:.1f} km/h): Withhold foliar spraying due to chemical drift hazard.")
+        notes_kn.append(f"ಹೆಚ್ಚಿನ ಗಾಳಿಯ ವೇಗ ({wind_kph:.1f} ಕಿಮೀ/ಗಂ): ಕೀಟನಾಶಕ ಸಿಂಪಡಿಸಬೇಡಿ, ರಾಸಾಯನಿಕ ಗಾಳಿಗೆ ಹರಡುವ ಅಪಾಯವಿದೆ.")
+    elif expected_mm < 2.5 and wind_kph < 15.0 and rh_pct < 80.0:
+        notes_en.append("Favorable weather (Rain < 2.5mm, Wind < 15 km/h): Safe window for scheduled spraying.")
+        notes_kn.append("ಅನುಕೂಲಕರ ಹವಾಮಾನ (ಮಳೆ < 2.5 ಮಿಮೀ, ಗಾಳಿ < 15 ಕಿಮೀ/ಗಂ): ಸಿಂಪಡಣೆಗೆ ಸುರಕ್ಷಿತ ಸಮಯ.")
+
+    if rh_pct >= 85.0 and expected_mm < 2.5:
+        notes_en.append(f"High relative humidity ({rh_pct:.0f}%): Monitor crop for fungal blast or blight development.")
+        notes_kn.append(f"ಹೆಚ್ಚಿನ ಸಾಪೇಕ್ಷ ಆರ್ದ್ರತೆ ({rh_pct:.0f}%): ಬೆಳೆಯ ಶಿಲೀಂಧ್ರ ರೋಗ ಬಾಧೆಯನ್ನು ಸೂಕ್ಷ್ಮವಾಗಿ ಗಮನಿಸಿ.")
 
     if likely_max_mm > 10:
         notes_en.append("Do not apply fertilizer before this rain event.")

@@ -84,6 +84,15 @@ class DailyForecastItem(BaseModel):
     advisory_summary_kn: str = ""
 
 
+class AgrometVariables(BaseModel):
+    temp_c: float = Field(default=29.0, description="Block NWP 2m Air Temperature (°C)")
+    rh_pct: float = Field(default=68.0, description="Block NWP Relative Humidity (%)")
+    wind_kph: float = Field(default=8.0, description="Block NWP 10m Wind Speed (km/h)")
+    spray_drift_risk: str = Field(default="LOW", description="Foliar chemical spray drift indicator")
+    fungal_disease_risk: str = Field(default="LOW", description="Fungal infection humidity risk indicator")
+    source: str = "Block NWP Coarse Coupling"
+
+
 class ForecastResponse(BaseModel):
     lgd_code: str
     panchayat_name: str
@@ -92,6 +101,7 @@ class ForecastResponse(BaseModel):
     timestamp_utc: datetime
     rainfall_mm: Rainfall
     advisory: AdvisorySet
+    agromet_context: AgrometVariables | None = None
     is_cached: bool = False
     spatial_variance: SpatialVarianceSchema | None = None
     multi_day_forecast: list[DailyForecastItem] = []
@@ -151,4 +161,35 @@ class NandiniStatsResponse(BaseModel):
     no_rain_reported_count: int
     model_agreement_rate_pct: float
     active_dairy_centers: int
+
+
+class InferenceRequest(BaseModel):
+    coarse_grid: list[list[float]] | None = Field(
+        default=None,
+        description="Optional 16x16 2D array of coarse precipitation (mm). If omitted, uses default Mandya test grid.",
+    )
+
+
+class GPInferenceSummary(BaseModel):
+    lgd_code: str
+    panchayat_name: str
+    rainfall_expected_mm: float
+    rainfall_likely_min_mm: float
+    rainfall_likely_max_mm: float
+    spray_recommendation: str
+
+
+class InferenceResponse(BaseModel):
+    status: str = "success"
+    model_name: str = "UNet5x-SuperRes"
+    input_shape: list[int] = [1, 1, 16, 16]
+    output_shape: list[int] = [1, 1, 80, 80]
+    coarse_mean_mm: float
+    downscaled_mean_mm: float
+    mass_conservation_error_pct: float = 0.000
+    execution_time_ms: float
+    total_panchayats_mapped: int
+    top_wettest_panchayats: list[GPInferenceSummary]
+    driest_panchayats: list[GPInferenceSummary]
+    sample_downscaled_grid: list[list[float]] | None = None
 

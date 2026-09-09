@@ -17,51 +17,53 @@
 * A smallholder in a rain-shadow valley gets the exact same forecast as an upland ridge farmer.
 * Coarse forecasts lack phenological context: 15 mm of rain during vegetative growth is beneficial; 15 mm during harvest is ₹6,500/acre catastrophic crop rot.
 
-### Slide 3: The Delivery Pivot: The Intermediary Reality
-* **The Industry Truth:** *"Direct-to-farmer agri-apps show near-zero sustained retention — the sector's graveyard is well documented."*
-* A smallholder with a ₹7,000 phone and 20 minutes between the field and the dairy cannot navigate complex weather apps or rain-gauge logging screens.
-* **The Architectural Unlock:** The farmer is the beneficiary, not the user. The actual users are the existing village intermediaries who *already* dispense agricultural advice:
-  1. **Dairy Secretary (KMF Nandini):** Interacts with 150+ farmers daily at the 06:00 AM milk collection weighing desk.
-  2. **RSK Agriculture Officer:** Manages subsidized seed/fertilizer distribution and crop health advisories.
-  3. **GP Secretary:** Publishes daily panchayat chalkboard slates and manages disaster compliance.
-  4. **Lead Farmer / SHG Head:** Coordinates local labour pools and shared farm machinery.
+### Slide 3: Meteorological Downscaling & Multi-Variable Agromet Advisory
+* **The 0.25° Blindspot:** IMD 0.25° grid (~752 km²) averages out orographic and micro-climatic variation across 30–39 Gram Panchayats.
+* A smallholder in a rain-shadow valley gets the exact same forecast as an upland ridge farmer.
+* **Multi-Variable Agromet Context:** Coupled downscaled precipitation with Block NWP thermodynamics (Temp, RH, Wind Speed).
+* **Crop Phenology Rules:**
+  - 15 mm rain during vegetative growth = beneficial; 15 mm during harvest = ₹6,500/acre catastrophic rot.
+  - Safe spray window requires: Rain < 2.5 mm AND Wind < 15 km/h AND RH < 80%.
 
 ### Slide 4: Data Pipeline & Spatial Integrity
 * **All-India Training:** 2010–2023 daily monsoon data (1,708 days, 240k land patches $\ge 70\%$ land filter).
-* **Topography Conditioning:** GLO-30 DEM, slope, aspect, curvature, and orographic indices.
+* **Topography Conditioning:** Copernicus GLO-30 DEM, slope, aspect, and curvature.
 * **Zero-Shot Spatial Holdout:** Mandya district $+ 0.5^\circ$ buffer (~50–100 km) strictly held out from training (`patch_index ∩ buffer == ∅`). Proven generalization to unseen terrain.
 
-### Slide 5: Physics & Mathematical Invariants
-* **Strict Mass Conservation ($L_{\text{cons}}$):** Area-weighted kernel=5 average-pooling preserves integrated precipitation volume across 5× super-resolution ($<0.2\%$ seasonal discrepancy vs $11.2\%$ hallucination in vanilla super-resolution).
+### Slide 5: Physics & Local Mass Conservation
+* **Strict Local 5×5 Mass Conservation ($L_{\text{cons}}$):** Area-weighted kernel=5 average-pooling preserves integrated precipitation volume cell-by-cell ($0.000\%$ local block mass error vs $11.2\%$ hallucination in vanilla super-resolution).
 * **Grid Registration Realignment:** Fixed the critical 2.7 km half-pixel center-vs-corner coordinate offset.
-* **Cos-Latitude Weighting:** Explicit spherical cell area weights ($A_i = R^2 \Delta\phi \Delta\lambda \cos\phi$) prevent high-latitude area distortion.
+* **On-Demand Live Inference:** `/api/v1/infer` runs 5× downscaling on arbitrary 16×16 coarse inputs in <50 ms on CPU.
 
-### Slide 6: Calibration & Conformalized Uncertainty (CQR)
-* **Quantile Mapping:** Aligns model predictions to empirical IMD ground gauge distributions.
-* **Conformalized Quantile Regression (CQR):** Generates rigorous 90% prediction intervals ($Q_{\text{low}}, Q_{\text{high}}$) with valid finite-sample empirical coverage.
-* **Honest Metrics:** Evaluated on wet-day MAE ($>2.5\text{ mm}$) and extreme event CSI (R95/R99) rather than misleading zero-inflated dry-day metrics.
+### Slide 6: Scientific Comparison vs. IMD Mausamgram (GPLWF)
+| Dimension | IMD Mausamgram GPLWF (Operational) | Fast & Curious Solution (SIH 26074) |
+| :--- | :--- | :--- |
+| **Downscaling Approach** | Bilinear interpolation from 12 km NCUM | **5× Deep Super-Resolution U-Net (`UNet5x`)** |
+| **Intra-Block Resolution** | Smooth gradient; misses micro-convective events | Resolves **Nalligere 30.4 mm** vs **Banavasi 1.7 mm** in same block |
+| **Mass Conservation** | None (integrated water mass violated) | **0.000% Local Block Mass Conservation** |
+| **Delivery Payload** | Web portal requiring persistent 4G (>3 MB) | **Dual-Mode PWA (<400 KB)** with 100% offline Service Worker |
 
 ### Slide 7: The Intermediary Cockpit (Dynamic Role Reordering)
 * **Democratized Cockpit:** Role toggle reorders cards dynamically so each operator sees their exact two-second routine first:
-  - **Dairy Secretary:** Nandini 2-Tap Sensor first, WhatsApp Community Broadcast second.
-  - **RSK Officer:** Crop Growth Stage + ₹ Cost-of-Error Financial Risk first.
-  - **GP Secretary:** A4 Print Notice / Chalkboard Template + Virtual ARG JSON Feed first.
-  - **Lead Farmer:** High-contrast today/tomorrow field action notice only (zero technical jargon).
-* **Frictionless Routine:** Choice persisted in `localStorage` — collection tablet boots as Dairy Secretary every morning.
+  - **RSK Officer:** Crop Growth Stage + Multi-Variable Spray Drift & Leaching Risk.
+  - **GP Secretary:** A4 Print Notice / Chalkboard Slate + Panchayat Forecast Feed API.
+  - **Lead Farmer:** High-contrast today/tomorrow field action notice (Kannada audio, zero jargon).
+  - **Dairy Secretary:** 2-Tap ground-truth confirmation during morning milk intake.
+* **Frictionless Routine:** Choice persisted in `localStorage` — boots instantly in field conditions.
 
-### Slide 8: The "Nandini Ground-Truth" Sensor Loop
+### Slide 8: Ground Validation & Continuous Feedback Loop
 * **Human Sensor Network:** Solves the acute sparsity of physical rain gauges (Mandya has only 2 official IMD ARGs across 234 GPs).
-* **2-Second Incentive Design:** Secretary taps "🟢 ಹೌದು (Yes)" or "🔴 ಇಲ್ಲ (No)" while recording milk weight. Costs zero extra seconds; earns enormous village social capital.
-* **Closed-Loop API:** `/api/v1/validation/nandini` records ground agreement and automatically flags divergent micro-clusters for continuous quantile recalibration.
+* **2-Second Ground Confirmation:** Secretary taps "🟢 ಹೌದು (Yes)" or "🔴 ಇಲ್ಲ (No)" while recording milk intake.
+* **Closed-Loop API:** `/api/v1/validation/nandini` logs ground agreement and flags divergent micro-clusters for continuous quantile recalibration.
 
 ### Slide 9: 100% Offline Resilience (Airplane-Mode Ready)
 * **Offline Audio Precache:** 7 canonical Mandya Kannada audio advisory files precached in Service Worker (`STATIC_ASSETS`, <500 KB total).
 * **Offline Dispatch Queue:** When network drops, WhatsApp dispatch queues into IndexedDB, audio plays locally, and chalkboard template unfolds.
 * **Truthful UI Diagnostics:** Banner states objective facts: *"⚠️ No network — operating on cached 06:00 IST advisory. Chalkboard & dispatch queue active."*
 
-### Slide 10: Headless Virtual ARG Feed (IMD AWS Schema)
-* Synthetic Automated Rain Gauge feed for all 232 unmonitored panchayats via `/api/v1/virtual-arg/{lgd_code}`.
-* Exact JSON compliance with IMD AWS standard schemas for zero-code e-GramSwaraj and State Disaster Management ingestion.
+### Slide 10: High-Resolution Panchayat Forecast Feed (IMD AWS Schema)
+* Downscaled 0.05° precipitation forecast feed for all 234 panchayats via `/api/v1/panchayat-feed/{lgd_code}`.
+* Exact JSON compliance with IMD AWS standard schemas for zero-code e-Governance and State Disaster Management ingestion.
 
 ### Slide 11: Scientific Honesty & The 11 Forbidden Claims
 * Explicit transparency on operational boundaries:
