@@ -634,7 +634,7 @@ function renderForecastDetails(record) {
     <div class="village-hero-header">
       <div class="village-name-block">
         <span class="village-pin">📍</span>
-        <h2 class="village-title">${record.panchayat_name} ${parcelSuffix} ${selectedDayLabel ? `<small style="font-size:0.85rem; font-weight:700; color:#059669;">[${selectedDayLabel}]</small>` : ''}</h2>
+        <h2 class="village-title">${record.panchayat_name} ${record.taluk ? `<span style="font-size:0.82rem; color:#94a3b8; font-weight:normal;">(${record.taluk})</span>` : ""} ${parcelSuffix} ${selectedDayLabel ? `<small style="font-size:0.85rem; font-weight:700; color:#059669;">[${selectedDayLabel}]</small>` : ''}</h2>
         <span class="village-role-tag">${roleTagText}</span>
       </div>
       <div class="village-rain-block">
@@ -2169,8 +2169,9 @@ async function loadData() {
         item.setAttribute("role", "option");
         item.setAttribute("aria-selected", idx === 0 ? "true" : "false");
         const exp = r.rainfall_mm?.expected ?? r.expected_mm ?? 0.0;
+        const talukLabel = r.taluk ? `<span style="color:#94a3b8; font-size:0.75rem; margin-left:4px;">(${r.taluk})</span>` : "";
         item.innerHTML = `
-          <span class="suggestion-name">${r.panchayat_name}</span>
+          <span class="suggestion-name">${r.panchayat_name} ${talukLabel}</span>
           <span class="suggestion-meta">
             <span class="suggestion-badge">${exp.toFixed(1)} mm</span>
             <span>LGD: ${r.lgd_code}</span>

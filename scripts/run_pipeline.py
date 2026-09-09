@@ -81,7 +81,7 @@ def run_pipeline(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
     base_model = UNet5x(in_channels=1, out_channels=1, base_channels=32).to(device)
-    base_model.load_state_dict(ckpt["model_state_dict"])
+    base_model.load_pretrained(ckpt, device=device)
     base_model.eval()
 
     mc_model = MCDropoutWrapper(base_model, p=0.1).to(device)
@@ -148,9 +148,11 @@ def run_pipeline(
         l_min = min(l_min, exp)
         l_max = max(l_max, exp)
 
+        taluk_name = str(row.get("sdtname", row.get("blkname", ""))).strip()
         rec = {
             "lgd_code": gpcode,
             "panchayat_name": str(row.get("gpname", "")).strip() or f"GP-{gpcode}",
+            "taluk": taluk_name,
             "district": district.upper(),
             "forecast_date": actual_date_str,
             "timestamp_utc": dt_utc,

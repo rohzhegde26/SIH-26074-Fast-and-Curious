@@ -87,6 +87,7 @@ class DailyForecastItem(BaseModel):
 class ForecastResponse(BaseModel):
     lgd_code: str
     panchayat_name: str
+    taluk: str | None = None
     district: str
     forecast_date: date
     timestamp_utc: datetime

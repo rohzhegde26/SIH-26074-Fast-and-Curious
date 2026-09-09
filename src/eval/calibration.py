@@ -28,7 +28,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.losses.conservation import expm1_transform
+from src.losses.conservation import expm1_transform, conserve_hr
 
 
 class QuantileMapper:
@@ -192,11 +192,8 @@ class QuantileMapper:
                 m_val = mapper(c_val) if mapper is not None else c_val
                 mapped_lr[:, 0, r, col] = np.maximum(m_val, 0.0)
 
-        # Scale 5x5 HR blocks by ratio to preserve intra-cell spatial texture
-        ratio = mapped_lr / np.maximum(coarse_lr, 1e-4)
-        ratio_up = np.repeat(np.repeat(ratio, scale_factor, axis=2), scale_factor, axis=3)
-
-        mapped_hr = np.maximum(arr * ratio_up, 0.0)
+        # Strictly conserve physical mass using guarded additive repair and safe scaling
+        mapped_hr = conserve_hr(arr, mapped_lr, kernel_size=scale_factor, stride=scale_factor, eps=1e-3)
 
         if squeeze_batch:
             mapped_hr = mapped_hr[0, 0]

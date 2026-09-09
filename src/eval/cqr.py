@@ -43,51 +43,27 @@ from src.models.unet_5x import UNet5x
 
 class MCDropoutWrapper(nn.Module):
     """
-    Wraps UNet5x with Monte Carlo Dropout2d (p=0.1) inserted after
-    each encoder block and the bottleneck.
+    Wraps UNet5x with Monte Carlo Dropout (p=0.1) delegated to UNet5x.forward_with_dropout.
+    Uses elementwise Dropout(p=0.1) for smooth quantile prediction without channel drop artifacts.
     """
 
     def __init__(self, base_model: UNet5x, p: float = 0.1):
         super().__init__()
         self.base_model = base_model
         self.p = p
-        self.dropout = nn.Dropout2d(p=p)
+        self.dropout = nn.Dropout(p=p)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Encoder (with dropout active)
-        x0 = self.base_model.in_conv(x)
-        x0 = self.dropout(x0)
-
-        x1_down = self.base_model.down1(x0)
-        x1 = self.base_model.down1_conv(x1_down)
-        x1 = self.dropout(x1)
-
-        x2_down = self.base_model.down2(x1)
-        x2 = self.base_model.down2_conv(x2_down)
-        x2 = self.dropout(x2)
-
-        # Bottleneck
-        bn = self.base_model.bottleneck(x2)
-        bn = self.dropout(bn)
-
-        # Decoder
-        d2 = self.base_model.up2(bn, x2)
-        d1 = self.base_model.up1(d2, x1)
-        d0 = self.base_model.up0(d1, x0)
-
-        # 5x Super-Resolution Upscaling Head (16x16 -> 80x80)
-        out_5x = F.interpolate(
-            d0,
-            scale_factor=self.base_model.scale_factor,
-            mode="bilinear",
-            align_corners=False,
-        )
-        hr_pred = self.base_model.refine_5x(out_5x)
-        return hr_pred
+    def forward(
+        self,
+        x: torch.Tensor,
+        terrain_hr: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        return self.base_model.forward_with_dropout(x, terrain_hr=terrain_hr, dropout=self.dropout)
 
     def predict_with_uncertainty(
         self,
         x: torch.Tensor,
+        terrain_hr: Optional[torch.Tensor] = None,
         n_passes: int = 20,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -103,7 +79,7 @@ class MCDropoutWrapper(nn.Module):
 
         with torch.no_grad():
             for _ in range(n_passes):
-                pred_log = self(x)
+                pred_log = self(x, terrain_hr=terrain_hr)
                 pred_phys = expm1_transform(pred_log)
                 passes.append(pred_phys.unsqueeze(0))
 
@@ -150,8 +126,11 @@ class CQRCalibrator:
                     break
                 x = batch["lr"].to(device)
                 y_true = batch["hr_phys"].to(device)
+                terrain_hr = batch.get("terrain_hr")
+                if terrain_hr is not None:
+                    terrain_hr = terrain_hr.to(device)
 
-                _, q_lo, q_hi = mc_model.predict_with_uncertainty(x, n_passes=n_passes)
+                _, q_lo, q_hi = mc_model.predict_with_uncertainty(x, terrain_hr=terrain_hr, n_passes=n_passes)
 
                 # Nonconformity score: s_i = max(q_lo - y, y - q_hi)
                 under = q_lo - y_true
@@ -174,6 +153,7 @@ class CQRCalibrator:
         x: torch.Tensor,
         mc_model: MCDropoutWrapper,
         device: torch.device,
+        terrain_hr: Optional[torch.Tensor] = None,
         n_passes: int = 20,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -182,7 +162,9 @@ class CQRCalibrator:
         """
         mc_model.to(device)
         x = x.to(device)
-        mean_pred, q_lo, q_hi = mc_model.predict_with_uncertainty(x, n_passes=n_passes)
+        if terrain_hr is not None:
+            terrain_hr = terrain_hr.to(device)
+        mean_pred, q_lo, q_hi = mc_model.predict_with_uncertainty(x, terrain_hr=terrain_hr, n_passes=n_passes)
 
         # Calibrated intervals clipped at zero
         interval_lo = torch.clamp(q_lo - self.q_hat, min=0.0)
@@ -212,8 +194,11 @@ class CQRCalibrator:
                     break
                 x = batch["lr"].to(device)
                 y_true = batch["hr_phys"].to(device)
+                terrain_hr = batch.get("terrain_hr")
+                if terrain_hr is not None:
+                    terrain_hr = terrain_hr.to(device)
 
-                mean_p, int_lo, int_hi = self.predict(x, mc_model, device, n_passes=n_passes)
+                mean_p, int_lo, int_hi = self.predict(x, mc_model, device, terrain_hr=terrain_hr, n_passes=n_passes)
 
                 # Check if ground truth falls within the interval
                 covered = ((y_true >= int_lo) & (y_true <= int_hi)).cpu().numpy().flatten()
@@ -340,7 +325,7 @@ def run_cqr_pipeline(
     print(f"[*] Initializing MCDropoutWrapper for CQR pipeline on {device}...")
     ckpt = torch.load(checkpoint_path, map_location=device)
     base_model = UNet5x(in_channels=1, out_channels=1, base_channels=32).to(device)
-    base_model.load_state_dict(ckpt["model_state_dict"])
+    base_model.load_pretrained(ckpt, device=device)
 
     mc_model = MCDropoutWrapper(base_model, p=0.1).to(device)
 

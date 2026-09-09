@@ -131,6 +131,7 @@ def _response(record: dict) -> ForecastResponse:
     return ForecastResponse(
         lgd_code=str(record["lgd_code"]),
         panchayat_name=record["panchayat_name"],
+        taluk=record.get("taluk"),
         district=record["district"],
         forecast_date=record["forecast_date"],
         timestamp_utc=record["timestamp_utc"],
