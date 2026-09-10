@@ -1,0 +1,86 @@
+[
+  {
+    "crop": "ragi",
+    "stage": "harvest",
+    "risk_inr_per_acre": 6500,
+    "source": "University of Agricultural Sciences (UAS) Bangalore, Package of Practices for Higher Yields: Kharif Ragi (2022-2023)",
+    "assumption": "Direct earhead sprouting and grain mold discolouration under rain >5mm on cut crop stacks during solar drying; loss estimated at 3-4 quintals/acre at MSP."
+  },
+  {
+    "crop": "ragi",
+    "stage": "vegetative",
+    "risk_inr_per_acre": 1800,
+    "source": "University of Agricultural Sciences (UAS) Bangalore, AICRP on Small Millets Agronomy Protocol (2023)",
+    "assumption": "Runoff wash-off and leaching of surface-broadcast urea and DAP top-dressing before root establishment."
+  },
+  {
+    "crop": "ragi",
+    "stage": "flowering",
+    "risk_inr_per_acre": 1400,
+    "source": "University of Agricultural Sciences (UAS) Bangalore, Krishi Vigyan Kendra (KVK) Mandya Extension Bulletin (2023)",
+    "assumption": "Foliar fungicide/pesticide wash-off requiring re-spraying and mechanical pollen dislodgement from panicles under heavy showers."
+  },
+  {
+    "crop": "ragi",
+    "stage": "sowing",
+    "risk_inr_per_acre": 2500,
+    "source": "University of Agricultural Sciences (UAS) Bangalore, Dryland Farming Research Station Extension Series (2022)",
+    "assumption": "Soil crusting and broadcast seed displacement from intense runoff exceeding 35mm requiring secondary land preparation and re-sowing."
+  },
+  {
+    "crop": "paddy",
+    "stage": "harvest",
+    "risk_inr_per_acre": 6500,
+    "source": "University of Agricultural Sciences (UAS) Bangalore, Rice Production Technology Manual (2023)",
+    "assumption": "Panicle submersion, grain shattering, and premature sprouting in standing water during final harvest window."
+  },
+  {
+    "crop": "paddy",
+    "stage": "vegetative",
+    "risk_inr_per_acre": 1800,
+    "source": "University of Agricultural Sciences (UAS) Bangalore, Nutrient Management in Wetland Rice (2022)",
+    "assumption": "Nitrogen loss via surface runoff from submerged field channels during heavy precipitation bursts."
+  },
+  {
+    "crop": "paddy",
+    "stage": "flowering",
+    "risk_inr_per_acre": 1400,
+    "source": "University of Agricultural Sciences (UAS) Bangalore, Extension Directorate Rice Advisory (2023)",
+    "assumption": "Spikelet sterility from rain during anthesis and foliar blast spray wash-off."
+  },
+  {
+    "crop": "paddy",
+    "stage": "sowing",
+    "risk_inr_per_acre": 2500,
+    "source": "University of Agricultural Sciences (UAS) Bangalore, Wet Nursery Management Guidelines (2022)",
+    "assumption": "Nursery bed erosion and seedling uprooting from uncontrolled surface flow."
+  },
+  {
+    "crop": "sugarcane",
+    "stage": "ripening",
+    "risk_inr_per_acre": 6500,
+    "source": "ICAR-Sugarcane Breeding Institute / UAS Bangalore Extension Bulletin (2023)",
+    "assumption": "Sucrose inversion and Brix reduction due to late-stage waterlogging 15 days prior to mill crushing."
+  },
+  {
+    "crop": "sugarcane",
+    "stage": "tillering",
+    "risk_inr_per_acre": 1800,
+    "source": "UAS Bangalore, Mandya Sugarcane Research Station Technical Bulletin (2022)",
+    "assumption": "Leaching of ammonium/urea nutrients from furrow ridges during tillering phase."
+  },
+  {
+    "crop": "sugarcane",
+    "stage": "grand_growth",
+    "risk_inr_per_acre": 1800,
+    "source": "UAS Bangalore, Mandya Sugarcane Research Station Technical Bulletin (2022)",
+    "assumption": "Waterlogging in root zone and lodging risk requiring remedial trenching and prop-tying."
+  },
+  {
+    "crop": "sugarcane",
+    "stage": "germination",
+    "risk_inr_per_acre": 2500,
+    "source": "ICAR-Sugarcane Breeding Institute, Cane Sett Agronomy Bulletin (2023)",
+    "assumption": "Sett rotting and poor bud sprouting in waterlogged furrows requiring sett replanting."
+  }
+]

@@ -52,13 +52,15 @@ def create_imd_dataset(
             "source": "India Meteorological Department (IMD), Ministry of Earth Sciences",
             "resolution": "0.25 degree x 0.25 degree",
             "spatial_extent": "6.5N-38.5N, 66.5E-100.0E",
+            "provenance": "SYNTHETIC_GAMMA_CLIMATOLOGY",
+            "synthetic_harness_note": "Emulates IMD 0.25 deg binary grid specs for air-gapped development.",
         },
     )
     return ds
 
 
-def generate_sample_imd(output_path: str = "data/raw/imd/imd_sample.nc", n_days: int = 5):
-    """Generate sample IMD NetCDF file for pipeline testing."""
+def generate_synthetic_imd_climatology(output_path: str = "data/raw/imd/imd_sample.nc", n_days: int = 5):
+    """Generate synthetic IMD climatology NetCDF file for pipeline testing and air-gapped development."""
     out_file = Path(output_path)
     out_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -69,9 +71,15 @@ def generate_sample_imd(output_path: str = "data/raw/imd/imd_sample.nc", n_days:
     rain[rain < 1.0] = 0.0  # Zero out trace rainfall
 
     ds = create_imd_dataset(dates, rain)
+    ds.attrs["provenance"] = "SYNTHETIC_GAMMA_CLIMATOLOGY"
+    ds.attrs["synthetic_harness_note"] = "Emulates IMD 0.25 deg binary grid specs for air-gapped development."
     ds.to_netcdf(out_file)
-    print(f"[SUCCESS] Saved IMD sample dataset to {out_file} ({out_file.stat().st_size / 1024:.1f} KB)")
+    print(f"[SUCCESS] Saved synthetic IMD climatology dataset to {out_file} ({out_file.stat().st_size / 1024:.1f} KB)")
     return ds
+
+
+# Backward-compatible alias
+generate_sample_imd = generate_synthetic_imd_climatology
 
 
 if __name__ == "__main__":
@@ -80,4 +88,4 @@ if __name__ == "__main__":
     parser.add_argument("--days", type=int, default=5)
     args = parser.parse_args()
 
-    generate_sample_imd(args.output, args.days)
+    generate_synthetic_imd_climatology(args.output, args.days)

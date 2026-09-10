@@ -93,6 +93,16 @@ CROP_STAGE_ACTIONS = {
 }
 
 
+from .economics import get_crop_risk_inr
+
+# Meteorological rainfall thresholds for agro-phenological risk tiers
+HARVEST_RAIN_THRESHOLD_MM = 5.0
+VEGETATIVE_RAIN_THRESHOLD_MM = 5.0
+FLOWERING_RAIN_THRESHOLD_MM = 10.0
+SOWING_RUNOFF_THRESHOLD_MM = 35.0
+SOWING_BENEFICIAL_THRESHOLD_MM = 5.0
+
+
 @dataclass(frozen=True)
 class FinancialRisk:
     risk_level: str  # "LOW", "MODERATE_WARNING", "HIGH_FINANCIAL_LOSS"
@@ -104,14 +114,14 @@ class FinancialRisk:
 
 
 def compute_financial_risk(crop: str, stage: str, expected_mm: float, likely_max_mm: float) -> FinancialRisk:
-    """Calculates phenology-weighted economic cost-of-error in INR."""
+    """Calculates phenology-weighted economic cost-of-error in INR from cited extension data."""
     norm_stage = stage.lower()
 
     if norm_stage in {"harvest", "ripening"}:
-        if likely_max_mm >= 5.0:
+        if likely_max_mm >= HARVEST_RAIN_THRESHOLD_MM:
             return FinancialRisk(
                 risk_level="HIGH_FINANCIAL_LOSS",
-                cost_estimate_inr=6500,
+                cost_estimate_inr=get_crop_risk_inr(crop, norm_stage),
                 impact_title_en="Crop Spoilage & Grain Rot Alert",
                 impact_title_kn="ಧಾನ್ಯ ಕೊಳೆಯುವಿಕೆ ಮತ್ತು ಬೆಳೆ ನಷ್ಟದ ಎಚ್ಚರಿಕೆ",
                 impact_desc_en="Severe threat of earhead sprouting and grain rotting (₹5,000–₹8,000/acre loss). Expedite harvesting or cover cut stacks immediately.",
@@ -127,10 +137,10 @@ def compute_financial_risk(crop: str, stage: str, expected_mm: float, likely_max
         )
 
     if norm_stage in {"vegetative", "tillering", "grand_growth"}:
-        if likely_max_mm >= 5.0:
+        if likely_max_mm >= VEGETATIVE_RAIN_THRESHOLD_MM:
             return FinancialRisk(
                 risk_level="MODERATE_WARNING",
-                cost_estimate_inr=1800,
+                cost_estimate_inr=get_crop_risk_inr(crop, norm_stage),
                 impact_title_en="Fertilizer Leaching & Runoff Risk",
                 impact_title_kn="ರಸಗೊಬ್ಬರ ಕೊಚ್ಚಿಹೋಗುವ ಅಪಾಯ",
                 impact_desc_en="Urea and top-dressing fertilizer will leach into runoff (₹1,500–₹2,000/acre waste). Withhold application until rainfall ceases.",
@@ -146,10 +156,10 @@ def compute_financial_risk(crop: str, stage: str, expected_mm: float, likely_max
         )
 
     if norm_stage in {"flowering"}:
-        if likely_max_mm >= 10.0:
+        if likely_max_mm >= FLOWERING_RAIN_THRESHOLD_MM:
             return FinancialRisk(
                 risk_level="MODERATE_WARNING",
-                cost_estimate_inr=1400,
+                cost_estimate_inr=get_crop_risk_inr(crop, norm_stage),
                 impact_title_en="Pesticide Wash-off & Pollen Disruption",
                 impact_title_kn="ಕೀಟನಾಶಕ ಕೊಚ್ಚಿಹೋಗುವಿಕೆ ಮತ್ತು ಪರಾಗಸ್ಪರ್ಶ ಹಾನಿ",
                 impact_desc_en="Foliar spray wash-off (₹1,200–₹1,500/acre chemical waste) and floral damage. Delay pesticide/fungicide spraying.",
@@ -165,16 +175,16 @@ def compute_financial_risk(crop: str, stage: str, expected_mm: float, likely_max
         )
 
     # Sowing / Germination
-    if likely_max_mm >= 35.0:
+    if likely_max_mm >= SOWING_RUNOFF_THRESHOLD_MM:
         return FinancialRisk(
             risk_level="HIGH_FINANCIAL_LOSS",
-            cost_estimate_inr=2500,
+            cost_estimate_inr=get_crop_risk_inr(crop, norm_stage),
             impact_title_en="Seed Runoff & Seedling Burial Risk",
             impact_title_kn="ಬೀಜ ಕೊಚ್ಚಿಹೋಗುವ ಮತ್ತು ಮಣ್ಣು ಮುಚ್ಚುವ ಅಪಾಯ",
             impact_desc_en="Intense runoff will wash away broadcast seeds or bury germinating seedlings (₹2,000–₹3,000/acre resowing cost). Delay sowing.",
-            impact_desc_kn="ಭಾರಿ ಮಳೆಯಿಂದ ಬಿತ್ತಿದ ಬೀಜ ಕೊಚ್ಚಿಹೋಗುವ ಅಥವಾ ಕೊಳೆಯುವ ಅಪಾಯ (ಮರುಬಿತ್ತನೆಗೆ ₹2,000-₹3,000 ಖರ್ಚು). ಬಿತ್ತನೆ ತಕ್ಷಣ ಮುಂದೂಡಿ.",
+            impact_desc_kn="ಭಾರಿ ಮಳೆಯಿಂದ ಬಿತ್ತಿದ ಬೀಜ ಕೊಚ್ಚಿಹೋಗುವ ಅಥವಾ ಕೊಳೆಯುವ ಅಪಾಯ (ಮರುಬಿತ್ತನೆಗೆ ₹2,000-₹3,000 ಖर्चು). ಬಿತ್ತನೆ ತಕ್ಷಣ ಮುಂದೂಡಿ.",
         )
-    if likely_max_mm >= 5.0:
+    if likely_max_mm >= SOWING_BENEFICIAL_THRESHOLD_MM:
         return FinancialRisk(
             risk_level="LOW",
             cost_estimate_inr=0,

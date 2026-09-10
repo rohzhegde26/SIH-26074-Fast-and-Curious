@@ -96,10 +96,10 @@ def test_phenology_financial_cost_of_error():
 def test_concurrent_nandini_writes(tmp_path, monkeypatch):
     """
     Test 20 concurrent requests to /api/v1/validation/nandini using asyncio.gather.
-    Asserts all 20 successfully append without 500 errors or JSON corruption.
+    Asserts all 20 successfully append to SQLite store without 500 errors or corruption.
     """
-    temp_feedback_file = tmp_path / "nandini_feedback_test.json"
-    monkeypatch.setattr(api_main, "FEEDBACK_PATH", temp_feedback_file)
+    temp_feedback_db = tmp_path / "nandini_feedback_test.db"
+    monkeypatch.setattr(api_main, "FEEDBACK_DB_PATH", temp_feedback_db)
 
     async def _fire_concurrent_requests():
         transport = ASGITransport(app=app)
@@ -130,10 +130,10 @@ def test_concurrent_nandini_writes(tmp_path, monkeypatch):
         assert payload["status"] == "success"
         assert payload["validation_id"]
 
-    # 2. Assert the feedback JSON exists and is valid, uncorrupted JSON
-    assert temp_feedback_file.exists(), "Target feedback JSON file should exist"
-    with open(temp_feedback_file, encoding="utf-8") as f:
-        data = json.load(f)
+    # 2. Assert the feedback SQLite DB exists and is valid
+    assert temp_feedback_db.exists(), "Target feedback SQLite DB file should exist"
+    from src.api.feedback_store import list_feedbacks
+    data = list_feedbacks(temp_feedback_db)
 
     # 3. Assert all 20 writes were successfully appended and recorded
     assert isinstance(data, list)

@@ -61,10 +61,20 @@ def load_inference_model() -> Tuple[UNet5x, torch.device]:
     return model, device
 
 
+BASELINE_SHIFT_MM: float = 1.8
+"""
+Mandya district climatological July daily block mean precipitation (1.8 mm)
+derived from IMD 30-year rainfall normals (1981-2010) for the Southern Dry Zone
+of Karnataka. Used strictly as the baseline coarse input grid center for testing
+and air-gapped demo runs when no external NWP grid is supplied.
+Distinct from QuantileMapper, which corrects heavy-tail distribution bias post-inference.
+"""
+
+
 def get_default_coarse_grid() -> np.ndarray:
     """Returns a representative 16x16 coarse precipitation grid for Mandya."""
-    # Centered at Mandya block average ~1.8 mm with realistic synoptic gradients
-    base = np.full((16, 16), 1.8, dtype=np.float32)
+    # Centered at Mandya block average BASELINE_SHIFT_MM with realistic synoptic gradients
+    base = np.full((16, 16), BASELINE_SHIFT_MM, dtype=np.float32)
     # Add subtle orographic gradient: Western Ghats rain shadow towards eastern plains
     for r in range(16):
         for c in range(16):
@@ -361,6 +371,6 @@ def run_live_inference(
         driest_panchayats=top_dry,
         sample_downscaled_grid=sample_grid,
         multivariate_fields=["rainfall", "tmax", "tmin", "rh", "wind"],
-        provenance=multi_res.get("provenance", PROVENANCE_TAG),
+        provenance=f"{multi_res.get('provenance', PROVENANCE_TAG)} | baseline_coarse_mm={BASELINE_SHIFT_MM}",
         fine_grid_max_mm=fine_max,
     )

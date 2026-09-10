@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import sys
 import time
@@ -257,26 +258,41 @@ def run_pipeline(
     return records
 
 
+class SyntheticIngestionHarness:
+    """
+    Emulates IMD 0.25 deg binary grid specs for air-gapped development because live FTP is IP-whitelisted to ministry intranets.
+    """
+
+    def __init__(self, provenance: str = "SYNTHETIC_GAMMA_CLIMATOLOGY"):
+        self.provenance = provenance
+
+    def ingest(self, forecast_date: str) -> dict:
+        ingest_mode = os.getenv("INGEST_MODE", "synthetic").lower()
+        if ingest_mode == "live":
+            from src.integrations.imd_live_adapter import IMDLiveAdapter
+            adapter = IMDLiveAdapter()
+            return adapter.fetch_grid(forecast_date)
+
+        now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        print(f"\n[SYNTHETIC INGESTION HARNESS] {now_utc}")
+        print("================================================================================")
+        print("      MODE: Synthetic emulation of IMD 0.25 deg binary grid")
+        print("      NOTE: Air-gapped development harness (Live FTP is IP-whitelisted to ministry intranets)")
+        print(f"      Provenance: {self.provenance}")
+        print(f"      Simulated cycle: {forecast_date}")
+        print("================================================================================\n")
+        return {
+            "status": "success",
+            "provenance": self.provenance,
+            "forecast_date": forecast_date,
+            "mode": "synthetic",
+        }
+
+
 def simulate_live_imd_ingest(forecast_date: str) -> None:
-    now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    print(f"\n[CRON / LIVE INGEST DAEMON] {now_utc}")
-    print("================================================================================")
-    print("[1/4] Establishing secure FTP/SFTP session to IMD Data Distribution Gateway...")
-    print("      Remote Host: ftp-service.imd.gov.in:21/pub/data/gridded/daily_0.25deg")
-    print("      Auth: TLS v1.3 Mutual Authentication (IMD-AGRO-CLIENT-ID: SIH26074-PUNE)")
-    time.sleep(0.3)
-    print("      Connected. Polling remote directory for newest 08:30 IST observation...")
-    time.sleep(0.3)
-    simulated_file = f"RF25_{forecast_date.replace('-', '')}.nc"
-    print(f"[2/4] Remote file found: {simulated_file} (Status: Finalized, Size: 1.42 MB)")
-    print("      Downloading gridded NetCDF binary payload into temporary buffer...")
-    time.sleep(0.4)
-    print("      Download complete. Verifying SHA-256 integrity checksum...")
-    sha_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    print(f"      SHA256: {sha_hash[:16]}... [VERIFIED MATCH]")
-    print("[3/4] Validating spatial CRS (EPSG:4326) and bounding box for Mandya cluster [11.0°N..14.75°N]...")
-    print("      Spatial integrity verified. Handing off to AI/ML downscaling engine.")
-    print("================================================================================\n")
+    """Backward-compatible wrapper invoking SyntheticIngestionHarness."""
+    harness = SyntheticIngestionHarness()
+    harness.ingest(forecast_date)
 
 
 def main() -> int:

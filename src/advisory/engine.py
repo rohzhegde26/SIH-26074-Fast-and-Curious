@@ -170,6 +170,43 @@ def evaluate_lookahead_risk(
 
 
 from datetime import date, timedelta
+from functools import lru_cache
+import json
+import math
+from pathlib import Path
+
+CENTROIDS_PATH = Path(__file__).resolve().parents[2] / "data" / "serving" / "mandya_centroids.json"
+
+
+@lru_cache(maxsize=1)
+def _load_centroids() -> dict[str, dict]:
+    """Loads and caches Mandya GP centroids containing elevation_m data."""
+    if CENTROIDS_PATH.exists():
+        try:
+            with open(CENTROIDS_PATH, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+
+def compute_orographic_mod(lgd: str, elevation_m: float | None = None) -> float:
+    """
+    Computes orographic moisture retention modifier derived from GP elevation.
+    Higher elevation => slightly higher moisture retention; bounded to [0.9, 1.15].
+    Base elevation for Mandya plateau is ~670m.
+    """
+    if elevation_m is None:
+        centroids = _load_centroids()
+        if lgd in centroids:
+            elevation_m = float(centroids[lgd].get("elevation_m", 670.0))
+        else:
+            elevation_m = 670.0
+
+    # Gradient: +0.05 per 100m above 670m base plateau elevation
+    mod = 1.0 + (elevation_m - 670.0) * 0.0005
+    return min(1.15, max(0.9, mod))
+
 
 DAY_NAMES_KN = ["ಸೋಮ", "ಮಂಗಳ", "ಬುಧ", "ಗುರು", "ಶುಕ್ರ", "ಶನಿ", "ಭಾನು"]
 
@@ -222,14 +259,25 @@ def build_7day_forecast(record: dict) -> list[dict]:
             (0.0, 0.0, 0.5),
         ]
     else:
-        seed_hash = sum(ord(c) for c in lgd)
+        # Physical 7-day monsoon decay model:
+        # day[n] = day1_mm * exp(-n / tau) * orographic_mod(gp)
+        # tau = 2.5 days (monsoon spell decay constant)
+        # orographic_mod derived from GP elevation in data/serving/mandya_centroids.json
+        # (higher elevation => slightly higher moisture retention; bounded strictly to [0.9, 1.15])
+        tau = 2.5
+        elev_input = record.get("elevation_m")
+        if elev_input is not None:
+            try:
+                elev_input = float(elev_input)
+            except (ValueError, TypeError):
+                elev_input = None
+        orographic_mod = compute_orographic_mod(lgd, elev_input)
         daily_rains = [(exp_0, lmin_0, lmax_0)]
         for day_i in range(1, 7):
-            synoptic_factor = [0.0, 1.8, 0.9, 0.3, 0.1, 0.05, 0.1][day_i]
-            local_variation = ((seed_hash * (day_i + 3) * 17) % 100) / 100.0 - 0.2
-            day_exp = max(0.0, round(exp_0 * synoptic_factor + local_variation * 3.5, 1))
+            decay_factor = math.exp(-day_i / tau)
+            day_exp = max(0.0, round(exp_0 * decay_factor * orographic_mod, 1))
             day_lmin = max(0.0, round(day_exp * 0.5, 1))
-            day_lmax = round(day_exp * 1.6 + 2.0, 1)
+            day_lmax = round(day_exp * 1.6 + (0.5 if day_exp > 0.0 else 0.0), 1)
             daily_rains.append((day_exp, day_lmin, day_lmax))
 
     items = []

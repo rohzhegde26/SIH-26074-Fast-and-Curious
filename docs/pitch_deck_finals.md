@@ -26,7 +26,7 @@
   - Safe spray window requires: Rain < 2.5 mm AND Wind < 15 km/h AND RH < 80%.
 
 ### Slide 4: Data Pipeline & Spatial Integrity
-* **All-India Training:** 2010–2023 daily monsoon data (1,708 days, 240k land patches $\ge 70\%$ land filter).
+* **Regional Training:** Peninsular India (Western Ghats & Southern Plateau) with zero-shot validation on Mandya (2010–2023 daily monsoon data, land filter $\ge 70\%$).
 * **Topography Conditioning:** Copernicus GLO-30 DEM, slope, aspect, and curvature.
 * **Zero-Shot Spatial Holdout:** Mandya district $+ 0.5^\circ$ buffer (~50–100 km) strictly held out from training (`patch_index ∩ buffer == ∅`). Proven generalization to unseen terrain.
 
@@ -61,9 +61,9 @@
 * **Offline Dispatch Queue:** When network drops, WhatsApp dispatch queues into IndexedDB, audio plays locally, and chalkboard template unfolds.
 * **Truthful UI Diagnostics:** Banner states objective facts: *"⚠️ No network — operating on cached 06:00 IST advisory. Chalkboard & dispatch queue active."*
 
-### Slide 10: High-Resolution Panchayat Forecast Feed (IMD AWS Schema)
+### Slide 10: High-Resolution Panchayat Forecast Feed (Disaster-Management Schema)
 * Downscaled 0.05° precipitation forecast feed for all 234 panchayats via `/api/v1/panchayat-feed/{lgd_code}`.
-* Exact JSON compliance with IMD AWS standard schemas for zero-code e-Governance and State Disaster Management ingestion.
+* IMD-compatible GeoJSON/OpenAPI schema for state disaster-management integration and zero-code e-Governance.
 
 ### Slide 11: Scientific Honesty & The 11 Forbidden Claims
 * Explicit transparency on operational boundaries:
@@ -74,6 +74,22 @@
 ### Slide 12: Impact, Scalability & Roadmap
 * **Financial Impact:** Prevents ₹1,800/acre fertilizer wash-off and ₹6,500/acre grain harvest rot across 234 Panchayats.
 * **Statewide Deployment:** Easily extensible across Karnataka's 6,000+ KMF milk cooperatives with zero additional hardware cost.
+
+---
+
+## 2. Simulation Boundaries & Data Provenance
+
+| Component | Status (TRAINED MODEL / SYNTHETIC HARNESS / STATIC DATA) | Evidence path |
+| :--- | :--- | :--- |
+| **UNet5x Deep Super-Resolution** | **TRAINED MODEL** | `models/checkpoints/best_5x_model_v3_1.pt` |
+| **Mass Conservation Kernel ($L_{\text{cons}}$)** | **TRAINED MODEL** | `src/losses/conservation.py` |
+| **Quantile Mapping Calibration** | **TRAINED MODEL** | `src/eval/calibration.py`, `data/static/quantile_mapping_params.json` |
+| **IMD 0.25° Ingestion Engine** | **SYNTHETIC HARNESS** | `scripts/run_pipeline.py` (`SyntheticIngestionHarness`), `scripts/download_imd.py` |
+| **KMF Dairy Validation Stream** | **SYNTHETIC HARNESS** | `src/api/feedback_store.py` (seed fixtures migrated to SQLite DB) |
+| **Crop Economics & Cost-of-Error** | **STATIC DATA** | `data/static/crop_economics.json` (cited from UAS Bangalore 2022-2023 extension bulletins) |
+| **Terrain Normalization & Centroids** | **STATIC DATA** | `data/serving/mandya_centroids.json`, `data/static/norm_params.json` |
+
+> **Plain Transparency Disclosure:** The UNet5x model, mass-conservation loss, and quantile mapper are trained and real. IMD raster ingestion operates as an air-gapped synthetic emulation harness pending ministry intranet IP whitelisting. Initial KMF Nandini records are development fixtures migrated to SQLite. Crop financial risk numbers are cited estimates from published UAS Bangalore extension packages.
 
 ---
 

@@ -37,8 +37,11 @@ from src.api.schemas import (
 
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = ROOT / "frontend"
-CENTROIDS_PATH = ROOT / "data" / "serving" / "mandya_centroids.json"
+from src.api import feedback_store
+
+FEEDBACK_DB_PATH = ROOT / "data" / "serving" / "nandini_feedback.db"
 FEEDBACK_PATH = ROOT / "data" / "serving" / "nandini_feedback.json"
+CENTROIDS_PATH = ROOT / "data" / "serving" / "mandya_centroids.json"
 
 
 @lru_cache(maxsize=1)
@@ -49,33 +52,6 @@ def _centroids() -> dict[str, dict]:
     return {}
 
 
-_nandini_lock = threading.Lock()
-
-
-def _load_nandini_feedback() -> list[dict]:
-    if FEEDBACK_PATH.exists():
-        try:
-            with open(FEEDBACK_PATH, encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
-    return []
-
-
-def _sync_append_nandini(entry: dict) -> None:
-    """Thread-safe synchronous append of a validation feedback entry to disk."""
-    with _nandini_lock:
-        feedbacks = _load_nandini_feedback()
-        feedbacks.append(entry)
-        FEEDBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(FEEDBACK_PATH, "w", encoding="utf-8") as f:
-            json.dump(feedbacks, f, indent=2)
-
-
-def _append_nandini_feedback(entry: dict) -> None:
-    _sync_append_nandini(entry)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     docs_dir = ROOT / "docs"
@@ -83,6 +59,10 @@ async def lifespan(app: FastAPI):
     try:
         with open(docs_dir / "openapi.json", "w", encoding="utf-8") as f:
             json.dump(app.openapi(), f, indent=2)
+    except Exception:
+        pass
+    try:
+        feedback_store.init_db(FEEDBACK_DB_PATH, FEEDBACK_PATH)
     except Exception:
         pass
     yield
@@ -351,7 +331,8 @@ async def submit_nandini_validation(req: NandiniValidationRequest) -> NandiniVal
         "recalibration_flagged": discrepancy,
     }
 
-    await run_in_threadpool(_sync_append_nandini, entry)
+    entry["source"] = "field_submission"
+    await run_in_threadpool(feedback_store.insert_feedback, entry, FEEDBACK_DB_PATH)
 
     msg = (
         "Validation recorded! Model & field observation agreement confirmed."
@@ -375,32 +356,9 @@ async def submit_nandini_validation(req: NandiniValidationRequest) -> NandiniVal
     tags=["validation"],
     summary="Summary statistics of KMF Dairy Secretary validation network",
 )
-def nandini_stats() -> NandiniStatsResponse:
-    with _nandini_lock:
-        feedbacks = _load_nandini_feedback()
-    total = len(feedbacks)
-    if total == 0:
-        return NandiniStatsResponse(
-            total_validations=0,
-            rain_reported_count=0,
-            no_rain_reported_count=0,
-            model_agreement_rate_pct=100.0,
-            active_dairy_centers=0,
-        )
-
-    rain_cnt = sum(1 for f in feedbacks if f.get("rained_bool"))
-    no_rain_cnt = total - rain_cnt
-    agreed_cnt = sum(1 for f in feedbacks if not f.get("recalibration_flagged", False))
-    agreement_rate = round((agreed_cnt / total) * 100.0, 1)
-    centers = len({f.get("milk_center_id") for f in feedbacks if f.get("milk_center_id")})
-
-    return NandiniStatsResponse(
-        total_validations=total,
-        rain_reported_count=rain_cnt,
-        no_rain_reported_count=no_rain_cnt,
-        model_agreement_rate_pct=agreement_rate,
-        active_dairy_centers=max(centers, 1),
-    )
+async def nandini_stats() -> NandiniStatsResponse:
+    stats = await run_in_threadpool(feedback_store.get_feedback_stats, FEEDBACK_DB_PATH)
+    return NandiniStatsResponse(**stats)
 
 
 app.mount("/", StaticFiles(directory=FRONTEND, html=True), name="pwa")

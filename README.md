@@ -149,7 +149,23 @@ pytest
 
 ---
 
-## 6. Repository Architecture
+## 6. Simulation Boundaries & Data Provenance
+
+| Component | Status (TRAINED MODEL / SYNTHETIC HARNESS / STATIC DATA) | Evidence path |
+| :--- | :--- | :--- |
+| **UNet5x Deep Super-Resolution** | **TRAINED MODEL** | [`models/checkpoints/best_5x_model_v3_1.pt`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/models/checkpoints/best_5x_model_v3_1.pt) |
+| **Mass Conservation Kernel ($L_{\text{cons}}$)** | **TRAINED MODEL** | [`src/losses/conservation.py`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/src/losses/conservation.py) |
+| **Quantile Mapping Calibration** | **TRAINED MODEL** | [`src/eval/calibration.py`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/src/eval/calibration.py), [`data/static/quantile_mapping_params.json`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/data/static/quantile_mapping_params.json) |
+| **IMD 0.25° Ingestion Engine** | **SYNTHETIC HARNESS** | [`scripts/run_pipeline.py`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/scripts/run_pipeline.py) (`SyntheticIngestionHarness`), [`scripts/download_imd.py`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/scripts/download_imd.py) |
+| **KMF Dairy Validation Stream** | **SYNTHETIC HARNESS** | [`src/api/feedback_store.py`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/src/api/feedback_store.py) (seed fixtures migrated to SQLite DB) |
+| **Crop Economics & Cost-of-Error** | **STATIC DATA** | [`data/static/crop_economics.json`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/data/static/crop_economics.json) (cited from UAS Bangalore 2022-2023 extension bulletins) |
+| **Terrain Normalization & Centroids** | **STATIC DATA** | [`data/serving/mandya_centroids.json`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/data/serving/mandya_centroids.json), [`data/static/norm_params.json`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/data/static/norm_params.json) |
+
+> **Plain Transparency Disclosure:** The UNet5x model, mass-conservation loss, and quantile mapper are trained and real. IMD raster ingestion operates as an air-gapped synthetic emulation harness pending ministry intranet IP whitelisting. Initial KMF Nandini records are development fixtures migrated to SQLite. Crop financial risk numbers are cited estimates from published UAS Bangalore extension packages.
+
+---
+
+## 7. Repository Architecture
 
 ```
 SIH-FINALISTS-2026/

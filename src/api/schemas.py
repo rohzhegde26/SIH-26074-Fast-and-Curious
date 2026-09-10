@@ -172,6 +172,8 @@ class NandiniStatsResponse(BaseModel):
     no_rain_reported_count: int
     model_agreement_rate_pct: float
     active_dairy_centers: int
+    real_count: int = 0
+    seed_count: int = 0
 
 
 class InferenceRequest(BaseModel):

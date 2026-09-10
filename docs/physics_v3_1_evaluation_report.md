@@ -142,3 +142,22 @@ The empirical distribution matching completely eliminates the systematic heavy-t
 - **Under-prediction fix**: Pre-fit -21.8% bias at the 95th percentile and -19.1% bias at the 99th percentile are brought to 0.0% residual bias.
 - **Physical mass conservation**: The delivered grid retains 0.000% coarse-block mass conservation error under `conservative_renorm_local()` while providing a measured +47.08% fine-grid maximum boost during convective cloudburst scenarios.
 
+## 9. Future Roadmap & External Couplers (Stage-2 Deployment)
+
+To transition from the current air-gapped synthetic verification harness to operational ministerial deployment, the codebase includes typed integration adapter contracts:
+
+1. **NCMRWF Unified Model (NCUM) Ingestion Adapter**:
+   - Implemented in [`src/integrations/ncum_adapter.py`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/src/integrations/ncum_adapter.py).
+   - Contract: Ingests 3-hourly 12 km curvilinear numerical weather prediction tensors (precipitation flux, 2m temperature, specific humidity, 10m U/V wind vectors, surface pressure) and interpolates them onto the standard 0.25° block mesh.
+   - Stage-2 Requirement: Access to NCMRWF OpenDAP / SFTP data distribution nodes with authenticated ministry IP whitelisting.
+
+2. **NASA/ISRO SMAP Soil Moisture Ingestion Adapter**:
+   - Implemented in [`src/integrations/smap_adapter.py`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/src/integrations/smap_adapter.py).
+   - Contract: Ingests SMAP L3 Enhanced 9 km radiometer surface volumetric soil moisture rasters to compute antecedent soil moisture indices, directly conditioning phenological runoff and leaching loss warnings.
+   - Stage-2 Requirement: NASA Earthdata / NSIDC DAAC sandbox credentials.
+
+3. **Operational IMD Gateway Coupler**:
+   - Implemented in [`src/integrations/imd_live_adapter.py`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/src/integrations/imd_live_adapter.py).
+   - Contract: Scheduled TLS v1.3 automated polling of IMD daily 08:30 IST 0.25° gridded NetCDF binary feeds.
+
+
