@@ -253,3 +253,41 @@
 - **Round 5 Cycle 29 Rejected:** Residual Dense Topographic Aggregation (Sub-optimal score).
 
 - **Round 5 Cycle 30 Rejected:** W-GCA + Conserved Quantiles + Vorticity Super-Champion (Mass conservation breach (23.24%)).
+
+- **Round 5 Cycle 32 Rejected:** Pareto Multi-Objective Loss Calibration (Sub-optimal score).
+
+- **Round 5 Cycle 33 Rejected:** Single-Period Cosine Restart Basin Deepening (Sub-optimal score).
+
+- **Round 5 Cycle 34 Rejected:** Top-3 Checkpoint Weight Averaging (Sub-optimal score).
+
+- **Round 5 Cycle 35 Rejected:** Multi-Pillar Calibrated Production Checkpoint (Sub-optimal score).
+
+- **Round 5 Cycle 36 Rejected:** Wavelet High-Frequency Energy Reinforcement (Sub-optimal score).
+
+- **Round 5 Cycle 37 Rejected:** Vorticity-Enhanced Convective Updraft Prior (Sub-optimal score).
+
+- **Round 5 Cycle 38 Rejected:** Gradient-Isolated Dewpoint Depression Coupling (Mass conservation breach (16.00%)).
+
+- **Round 5 Cycle 39 Rejected:** Conserved P95 Extreme Cloudburst Gate (Mass conservation breach (27.59%)).
+
+- **Round 5 Cycle 40 Rejected:** Dual-Band Directional Laplacian Wavelet Filter (Sub-optimal score).
+
+- **Round 5 Cycle 41 Rejected:** Sub-Grid Terrain Roughness Index Module (Sub-optimal score).
+
+- **Round 5 Cycle 42 Rejected:** Asymmetric Convective Core Spatial Booster (Sub-optimal score).
+
+- **Round 5 Cycle 43 Rejected:** Multi-Octave Kolmogorov Power Spectrum Loss (Sub-optimal score).
+
+- **Round 5 Cycle 44 Rejected:** Agent B Unconstrained Convective Flood Probe (Mass conservation breach (36.72%)).
+
+- **Round 5 Cycle 45 Rejected:** Conserved Quantile Monotonic Projection Layer (Mass conservation breach (54.62%)).
+
+- **Round 5 Cycle 46 Rejected:** Deep Loss Basin Trajectory Synchronization (Sub-optimal score).
+
+- **Round 5 Cycle 47 Rejected:** Refined Orographic Updraft Scaling (Sub-optimal score).
+
+- **Round 5 Cycle 48 Rejected:** Unified Round 5 Super-Champion Synthesis (Sub-optimal score).
+
+- **Round 5 Cycle 49 Rejected:** Top-5 Checkpoint Polyak Averaging (Sub-optimal score).
+
+- **Round 5 Cycle 50 Rejected:** Final Calibrated Production Master Ensemble (Sub-optimal score).
