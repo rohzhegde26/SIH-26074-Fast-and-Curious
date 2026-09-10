@@ -52,3 +52,5 @@
 - **Cycle 2 Rejected:** Differentiable Mass-Conserving Head (Blurry texture collapse (HF ratio=0.007)).
 
 - **Cycle 1 Rejected:** Baseline Model Characterization (Mass conservation breach (59.53%)).
+
+- **Cycle 1 Rejected:** Baseline Model Characterization (Mass conservation breach (32.40%)).
