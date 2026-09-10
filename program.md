@@ -132,3 +132,7 @@
 - **Round 3 Cycle 14 Rejected:** Balanced Convective Multi-Objective Tuning (Sub-optimal score).
 
 - **Round 3 Cycle 15 Rejected:** Top-K Pareto Ensemble Checkpoint (Sub-optimal score).
+
+- **Round 3 Cycle 2 Rejected:** Extreme Tail Pinball Loss (tau=0.92) (Sub-optimal score).
+
+- **Round 3 Cycle 3 Rejected:** Storm-Core Spatial Focal Loss Mask (Sub-optimal score).
