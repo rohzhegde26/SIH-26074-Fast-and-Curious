@@ -554,7 +554,10 @@ function renderForecastDetails(record) {
                 <span class="pill-day-label">${dayLabel}</span>
                 <span class="pill-weather-icon">${bandIcon}</span>
                 <span class="pill-rain-val">${day.expected_mm.toFixed(1)} <small>mm</small></span>
+                <span class="pill-temp-val" style="font-size:0.7rem; color:#f97316; font-weight:700;">${(day.tmax_c || 31.5).toFixed(0)}° / ${(day.tmin_c || 21.0).toFixed(0)}°</span>
                 ${washoffChip}
+                ${day.disease_risk_flag ? `<span class="pill-disease-chip" title="Fungal disease risk" style="font-size:0.75rem;">🍄</span>` : ''}
+                ${day.heat_stress_level && day.heat_stress_level !== 'NONE' ? `<span class="pill-heat-chip" title="Heat stress" style="font-size:0.75rem;">🔥</span>` : ''}
               </button>
             `;
           }).join("")}
@@ -685,18 +688,18 @@ function renderForecastDetails(record) {
       </div>
       <div class="agromet-var-card">
         <span class="agromet-var-label">${currentLanguage === "kn" ? "ತಾಪಮಾನ" : "Temperature"}</span>
-        <span class="agromet-var-val">${(record.agromet_context?.temp_c ?? 29.0).toFixed(1)}°C</span>
-        <span class="agromet-var-source">Block NWP</span>
+        <span class="agromet-var-val">${(activeDay?.tmax_c ?? record.tmax_c ?? 31.5).toFixed(1)}° / ${(activeDay?.tmin_c ?? record.tmin_c ?? 21.0).toFixed(1)}°C</span>
+        <span class="agromet-var-source tag-downscaled">Lapse Rate</span>
       </div>
       <div class="agromet-var-card">
         <span class="agromet-var-label">${currentLanguage === "kn" ? "ಆರ್ದ್ರತೆ" : "Humidity (RH)"}</span>
-        <span class="agromet-var-val">${(record.agromet_context?.rh_pct ?? 68.0).toFixed(0)}%</span>
-        <span class="agromet-var-source">Block NWP</span>
+        <span class="agromet-var-val">${(activeDay?.rh_pct ?? record.rh_pct ?? 68.0).toFixed(0)}%</span>
+        <span class="agromet-var-source tag-downscaled">Psychrometric</span>
       </div>
       <div class="agromet-var-card">
         <span class="agromet-var-label">${currentLanguage === "kn" ? "ಗಾಳಿಯ ವೇಗ" : "Wind Speed"}</span>
-        <span class="agromet-var-val">${(record.agromet_context?.wind_kph ?? 8.2).toFixed(1)} km/h</span>
-        <span class="agromet-var-source">Block NWP</span>
+        <span class="agromet-var-val">${(activeDay?.wind_kph ?? record.wind_kph ?? 8.5).toFixed(1)} km/h</span>
+        <span class="agromet-var-source tag-downscaled">Ridge Boost</span>
       </div>
     </div>
 
@@ -1400,6 +1403,31 @@ function getLayerColor(record, layerType) {
   const lMin = activeDay ? activeDay.likely_min_mm : (record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0);
   const lMax = activeDay ? activeDay.likely_max_mm : (record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0);
 
+  if (layerType === "temp") {
+    const tmax = activeDay?.tmax_c ?? record.tmax_c ?? 31.5;
+    if (tmax >= 38.0) return "#dc2626"; // Deep Red (Severe Heat)
+    if (tmax >= 35.0) return "#ea580c"; // Orange Red (Moderate Heat)
+    if (tmax >= 32.0) return "#f59e0b"; // Amber (Warm)
+    if (tmax >= 28.0) return "#eab308"; // Yellow (Mild)
+    return "#84cc16";                   // Green (Cool/Pleasant)
+  }
+
+  if (layerType === "rh") {
+    const rh = activeDay?.rh_pct ?? record.rh_pct ?? 68.0;
+    if (rh >= 85.0) return "#0284c7"; // Intense Blue (Humid / Fungal Risk)
+    if (rh >= 70.0) return "#06b6d4"; // Cyan
+    if (rh >= 55.0) return "#2dd4bf"; // Teal
+    return "#a7f3d0";                 // Mint (Dry)
+  }
+
+  if (layerType === "wind") {
+    const wind = activeDay?.wind_kph ?? record.wind_kph ?? 8.5;
+    if (wind >= 20.0) return "#7c3aed"; // Violet (High Wind)
+    if (wind >= 15.0) return "#a855f7"; // Purple (Drift Hazard)
+    if (wind >= 10.0) return "#38bdf8"; // Sky Blue (Moderate Breeze)
+    return "#e2e8f0";                   // Light Grey (Calm)
+  }
+
   if (layerType === "risk") {
     const risk = getFinancialRisk(currentCropStage, exp, lMax, "en");
     if (risk.level === "risk-high") return "#ef4444";
@@ -1445,8 +1473,8 @@ function getFeatureStyle(feature, isSelected = false) {
     };
   }
 
-  // 2. 5x AI / Rainfall Layer: Full Downscaled Spatial Choropleth
-  if (currentMapLayer === "ai" || currentMapLayer === "rainfall") {
+  // 2. 5x AI / Rainfall / Temp / RH / Wind Layer: Full Downscaled Spatial Choropleth
+  if (["ai", "rainfall", "temp", "rh", "wind"].includes(currentMapLayer)) {
     const highlightColor = getLayerColor(record, currentMapLayer);
     if (isSelected) {
       return {
@@ -1531,6 +1559,48 @@ function formatTooltipContent(record, feature) {
     `;
   }
 
+  if (currentMapLayer === "temp") {
+    const tmax = activeDay?.tmax_c ?? record?.tmax_c ?? 31.5;
+    const tmin = activeDay?.tmin_c ?? record?.tmin_c ?? 21.0;
+    const heat = activeDay?.heat_stress_level ?? record?.heat_stress_level ?? "NONE";
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:4px;">
+        <strong style="font-size:0.92rem; color:#f8fafc;">${pName}</strong>
+        <span style="font-size:0.72rem; color:#f97316; font-weight:700;">🌡️ ${dayLabel}</span>
+      </div>
+      <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • LGD ${record?.lgd_code || feature.id}</div>
+      <div style="font-size:0.84rem; color:#f8fafc;">Tmax: <strong style="color:#f97316;">${tmax.toFixed(1)}°C</strong> | Tmin: <strong style="color:#38bdf8;">${tmin.toFixed(1)}°C</strong></div>
+      <div style="font-size:0.76rem; color:${heat !== 'NONE' ? '#ef4444' : '#10b981'}; font-weight:700; margin-top:2px;">Heat Stress: ${heat} (Lapse: -6.5°C/km)</div>
+    `;
+  }
+
+  if (currentMapLayer === "rh") {
+    const rh = activeDay?.rh_pct ?? record?.rh_pct ?? 68.0;
+    const disease = activeDay?.disease_risk_flag ?? record?.disease_risk_flag ?? false;
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:4px;">
+        <strong style="font-size:0.92rem; color:#f8fafc;">${pName}</strong>
+        <span style="font-size:0.72rem; color:#06b6d4; font-weight:700;">💧 ${dayLabel}</span>
+      </div>
+      <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • LGD ${record?.lgd_code || feature.id}</div>
+      <div style="font-size:0.84rem; color:#f8fafc;">Relative Humidity: <strong style="color:#06b6d4;">${rh.toFixed(1)}%</strong></div>
+      <div style="font-size:0.76rem; color:${disease ? '#ef4444' : '#10b981'}; font-weight:700; margin-top:2px;">Fungal Blast Risk: ${disease ? 'HIGH ⚠️' : 'LOW ✅'} (Magnus)</div>
+    `;
+  }
+
+  if (currentMapLayer === "wind") {
+    const wind = activeDay?.wind_kph ?? record?.wind_kph ?? 8.5;
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:4px;">
+        <strong style="font-size:0.92rem; color:#f8fafc;">${pName}</strong>
+        <span style="font-size:0.72rem; color:#a855f7; font-weight:700;">💨 ${dayLabel}</span>
+      </div>
+      <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • LGD ${record?.lgd_code || feature.id}</div>
+      <div style="font-size:0.84rem; color:#f8fafc;">Surface Wind: <strong style="color:#a855f7;">${wind.toFixed(1)} km/h</strong></div>
+      <div style="font-size:0.76rem; color:${wind >= 15 ? '#ef4444' : '#10b981'}; font-weight:700; margin-top:2px;">Spray Drift Hazard: ${wind >= 15 ? 'HAZARDOUS 🚫' : 'SAFE ✅'}</div>
+    `;
+  }
+
   if (currentMapLayer === "risk") {
     const risk = getFinancialRisk(currentCropStage, exp, lMax, currentLanguage);
     return `
@@ -1574,6 +1644,42 @@ function formatTooltipContent(record, feature) {
 function updateMapLegend(layerType) {
   const legend = document.querySelector("#map-legend");
   if (!legend) return;
+
+  if (layerType === "temp") {
+    legend.innerHTML = `
+      <span class="legend-title">Max Temperature (°C):</span>
+      <div class="legend-item"><span class="legend-swatch" style="background:#84cc16;"></span> &lt; 28°C (Pleasant)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#eab308;"></span> 28–32°C (Mild)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#f59e0b;"></span> 32–35°C (Warm)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#dc2626;"></span> &gt; 35°C (Heat Stress)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected</div>
+    `;
+    return;
+  }
+
+  if (layerType === "rh") {
+    legend.innerHTML = `
+      <span class="legend-title">Relative Humidity (%):</span>
+      <div class="legend-item"><span class="legend-swatch" style="background:#a7f3d0;"></span> &lt; 55% (Dry)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#2dd4bf;"></span> 55–70% (Optimal)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#06b6d4;"></span> 70–85% (Humid)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#0284c7;"></span> &gt; 85% (Fungal Risk)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected</div>
+    `;
+    return;
+  }
+
+  if (layerType === "wind") {
+    legend.innerHTML = `
+      <span class="legend-title">Surface Wind Speed (km/h):</span>
+      <div class="legend-item"><span class="legend-swatch" style="background:#e2e8f0;"></span> &lt; 10 km/h (Calm)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#38bdf8;"></span> 10–15 km/h (Breeze)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#a855f7;"></span> 15–20 km/h (Drift Hazard)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#7c3aed;"></span> &gt; 20 km/h (High Wind)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected</div>
+    `;
+    return;
+  }
 
   if (layerType === "imd") {
     legend.innerHTML = `

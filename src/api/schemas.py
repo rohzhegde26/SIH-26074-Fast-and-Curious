@@ -74,6 +74,12 @@ class DailyForecastItem(BaseModel):
     expected_mm: float
     likely_min_mm: float
     likely_max_mm: float
+    tmax_c: float = 31.5
+    tmin_c: float = 21.0
+    rh_pct: float = 68.0
+    wind_kph: float = 8.5
+    heat_stress_level: str = "NONE"
+    disease_risk_flag: bool = False
     rainfall_band: str = "dry"
     spray_window: str = "SAFE"
     harvest_window: str = "SAFE"
@@ -88,9 +94,13 @@ class AgrometVariables(BaseModel):
     temp_c: float = Field(default=29.0, description="Block NWP 2m Air Temperature (°C)")
     rh_pct: float = Field(default=68.0, description="Block NWP Relative Humidity (%)")
     wind_kph: float = Field(default=8.0, description="Block NWP 10m Wind Speed (km/h)")
+    tmax_c: float = Field(default=31.5, description="Downscaled Max Temperature (°C)")
+    tmin_c: float = Field(default=21.0, description="Downscaled Min Temperature (°C)")
     spray_drift_risk: str = Field(default="LOW", description="Foliar chemical spray drift indicator")
     fungal_disease_risk: str = Field(default="LOW", description="Fungal infection humidity risk indicator")
+    heat_stress_level: str = Field(default="NONE", description="Crop heat stress indicator (NONE/MODERATE/SEVERE)")
     source: str = "Block NWP Coarse Coupling"
+    provenance: str = "SYNTHETIC_ERA5_CLIMATOLOGY_COUPLING"
 
 
 class ForecastResponse(BaseModel):
@@ -169,6 +179,11 @@ class InferenceRequest(BaseModel):
         default=None,
         description="Optional 16x16 2D array of coarse precipitation (mm). If omitted, uses default Mandya test grid.",
     )
+    coarse_grids: list[list[list[float]]] | None = Field(
+        default=None,
+        description="Optional list of 16x16 2D arrays for multi-day NWP lead times (Days 1 to 5).",
+    )
+    lead_days: int = Field(default=1, ge=1, le=5, description="Number of lead days to forecast (1 to 5).")
 
 
 class GPInferenceSummary(BaseModel):
@@ -178,11 +193,18 @@ class GPInferenceSummary(BaseModel):
     rainfall_likely_min_mm: float
     rainfall_likely_max_mm: float
     spray_recommendation: str
+    tmax_c: float = 31.5
+    tmin_c: float = 21.0
+    rh_pct: float = 68.0
+    wind_kph: float = 8.5
+    heat_stress_level: str = "NONE"
+    disease_risk_flag: bool = False
 
 
 class InferenceResponse(BaseModel):
     status: str = "success"
     model_name: str = "UNet5x-SuperRes"
+    lead_days: int = 1
     input_shape: list[int] = [1, 1, 16, 16]
     output_shape: list[int] = [1, 1, 80, 80]
     coarse_mean_mm: float
@@ -193,4 +215,7 @@ class InferenceResponse(BaseModel):
     top_wettest_panchayats: list[GPInferenceSummary]
     driest_panchayats: list[GPInferenceSummary]
     sample_downscaled_grid: list[list[float]] | None = None
+    multivariate_fields: list[str] | None = None
+    provenance: str | None = None
+
 

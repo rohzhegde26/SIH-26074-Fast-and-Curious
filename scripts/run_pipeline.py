@@ -123,6 +123,16 @@ def run_pipeline(
     hr_lo = int_lo.squeeze().cpu().numpy()
     hr_hi = int_hi.squeeze().cpu().numpy()
 
+    # Downscale thermodynamic fields via MultivariatePhysicalDownscaler
+    from src.models.multivariate import MultivariatePhysicalDownscaler, PROVENANCE_TAG
+
+    multi_downscaler = MultivariatePhysicalDownscaler()
+    multi_res = multi_downscaler(terrain_5ch=terrain_tensor, target_size=(80, 80))
+    hr_tmax = multi_res["tmax_hr"].squeeze().cpu().numpy()
+    hr_tmin = multi_res["tmin_hr"].squeeze().cpu().numpy()
+    hr_rh = multi_res["rh_hr"].squeeze().cpu().numpy()
+    hr_wind = multi_res["wind_hr"].squeeze().cpu().numpy()
+
     # 4. Zonal polygon aggregation
     hr_lats = np.linspace(10.90, 14.85, 80)
     hr_lons = np.linspace(74.90, 78.85, 80)
@@ -131,6 +141,10 @@ def run_pipeline(
     agg_mean = aggregator.aggregate_grid(hr_mean, hr_lats, hr_lons)
     agg_lo = aggregator.aggregate_grid(hr_lo, hr_lats, hr_lons)
     agg_hi = aggregator.aggregate_grid(hr_hi, hr_lats, hr_lons)
+    agg_tmax = aggregator.aggregate_grid(hr_tmax, hr_lats, hr_lons)
+    agg_tmin = aggregator.aggregate_grid(hr_tmin, hr_lats, hr_lons)
+    agg_rh = aggregator.aggregate_grid(hr_rh, hr_lats, hr_lons)
+    agg_wind = aggregator.aggregate_grid(hr_wind, hr_lats, hr_lons)
     agg_detailed = aggregator.aggregate_grid_detailed(hr_mean, hr_lo, hr_hi, hr_lats, hr_lons)
 
     # Read simplified map gpcodes to ensure exact 1-to-1 correspondence
@@ -158,6 +172,8 @@ def run_pipeline(
     else:
         r_stage, p_stage = "harvest", "harvest"
 
+    from src.advisory.engine import build_7day_forecast
+
     for _, row in gdf.iterrows():
         gpcode = str(row.get("gpcode", "")).strip()
         if not gpcode or gpcode not in valid_gpcodes:
@@ -171,6 +187,19 @@ def run_pipeline(
         l_min = min(l_min, exp)
         l_max = max(l_max, exp)
 
+        tmax_val = round(float(agg_tmax.get(gpcode, 31.5)), 1)
+        tmin_val = round(float(agg_tmin.get(gpcode, 21.0)), 1)
+        rh_val = round(float(agg_rh.get(gpcode, 68.0)), 1)
+        wind_val = round(float(agg_wind.get(gpcode, 8.5)), 1)
+
+        heat_stress = "NONE"
+        if tmax_val >= 38.0:
+            heat_stress = "SEVERE"
+        elif tmax_val >= 35.0:
+            heat_stress = "MODERATE"
+
+        disease_flag = bool(rh_val >= 85.0 and 20.0 <= tmax_val <= 30.0)
+
         taluk_name = str(row.get("sdtname", row.get("blkname", ""))).strip()
         rec = {
             "lgd_code": gpcode,
@@ -182,10 +211,19 @@ def run_pipeline(
             "expected_mm": exp,
             "likely_min_mm": l_min,
             "likely_max_mm": l_max,
+            "tmax_c": tmax_val,
+            "tmin_c": tmin_val,
+            "temp_c": round((tmax_val + tmin_val) / 2.0, 1),
+            "rh_pct": rh_val,
+            "wind_kph": wind_val,
+            "heat_stress_level": heat_stress,
+            "disease_risk_flag": disease_flag,
+            "provenance": PROVENANCE_TAG,
             "ragi_stage": r_stage,
             "paddy_stage": p_stage,
             "spatial_variance": agg_detailed.get(gpcode),
         }
+        rec["multi_day_forecast"] = build_7day_forecast(rec)
         records.append(rec)
 
     # Sort deterministically by gpcode
@@ -202,8 +240,13 @@ def run_pipeline(
         rec_map = {r["lgd_code"]: r for r in records}
         mask = gdf["gpcode"].astype(str).str.strip().isin(rec_map)
         export_gdf = gdf[mask].copy()
-        for col in ["expected_mm", "likely_min_mm", "likely_max_mm", "ragi_stage", "paddy_stage", "forecast_date", "timestamp_utc"]:
-            export_gdf[col] = export_gdf["gpcode"].astype(str).str.strip().map(lambda c: rec_map[c][col])
+        for col in [
+            "expected_mm", "likely_min_mm", "likely_max_mm",
+            "tmax_c", "tmin_c", "temp_c", "rh_pct", "wind_kph",
+            "heat_stress_level", "disease_risk_flag",
+            "ragi_stage", "paddy_stage", "forecast_date", "timestamp_utc"
+        ]:
+            export_gdf[col] = export_gdf["gpcode"].astype(str).str.strip().map(lambda c: rec_map[c].get(col))
         export_gdf.to_file(output_geojson_path, driver="GeoJSON")
 
     elapsed = time.time() - t_start

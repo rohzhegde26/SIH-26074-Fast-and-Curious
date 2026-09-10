@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 import uuid
 
+from typing import Optional
+
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -116,27 +118,44 @@ def _convert_advisory(adv) -> CropAdvisory:
 def _response(record: dict) -> ForecastResponse:
     expected = float(record["expected_mm"])
     likely_max = float(record["likely_max_mm"])
-    temp_c = float(record.get("temp_c", 29.0))
+    tmax_c = float(record.get("tmax_c", 31.5))
+    tmin_c = float(record.get("tmin_c", 21.0))
+    temp_c = float(record.get("temp_c", round((tmax_c + tmin_c) / 2.0, 1)))
     rh_pct = float(record.get("rh_pct", 68.0))
     wind_kph = float(record.get("wind_kph", 8.2))
 
     ragi = build_advisory(
-        "ragi", record.get("ragi_stage", "vegetative"), expected, likely_max, wind_kph=wind_kph, rh_pct=rh_pct
+        "ragi", record.get("ragi_stage", "vegetative"), expected, likely_max,
+        wind_kph=wind_kph, rh_pct=rh_pct, tmax_c=tmax_c, tmin_c=tmin_c
     )
     paddy = build_advisory(
-        "paddy", record.get("paddy_stage", "vegetative"), expected, likely_max, wind_kph=wind_kph, rh_pct=rh_pct
+        "paddy", record.get("paddy_stage", "vegetative"), expected, likely_max,
+        wind_kph=wind_kph, rh_pct=rh_pct, tmax_c=tmax_c, tmin_c=tmin_c
     )
     sugarcane = build_advisory(
-        "sugarcane", record.get("sugarcane_stage", "grand_growth"), expected, likely_max, wind_kph=wind_kph, rh_pct=rh_pct
+        "sugarcane", record.get("sugarcane_stage", "grand_growth"), expected, likely_max,
+        wind_kph=wind_kph, rh_pct=rh_pct, tmax_c=tmax_c, tmin_c=tmin_c
     )
+
+    heat_stress = "NONE"
+    if tmax_c >= 38.0:
+        heat_stress = "SEVERE"
+    elif tmax_c >= 35.0:
+        heat_stress = "MODERATE"
+
+    disease_risk = "HIGH" if (rh_pct >= 85.0 and 20.0 <= tmax_c <= 30.0) else "LOW"
 
     agromet = AgrometVariables(
         temp_c=temp_c,
         rh_pct=rh_pct,
         wind_kph=wind_kph,
+        tmax_c=tmax_c,
+        tmin_c=tmin_c,
         spray_drift_risk="HIGH" if wind_kph >= 15.0 else "LOW",
-        fungal_disease_risk="HIGH" if rh_pct >= 85.0 else "LOW",
+        fungal_disease_risk=disease_risk,
+        heat_stress_level=heat_stress,
         source="Block NWP Coarse Coupling",
+        provenance=record.get("provenance", "SYNTHETIC_ERA5_CLIMATOLOGY_COUPLING"),
     )
 
     sp_var = None
@@ -270,16 +289,24 @@ def health_check():
     tags=["inference"],
     summary="[LIVE INFERENCE] Run on-demand 5x downscaling with local block mass conservation",
 )
+@app.post(
+    "/api/inference",
+    response_model=InferenceResponse,
+    tags=["inference"],
+    include_in_schema=False,
+)
 def infer(req: Optional[InferenceRequest] = None) -> InferenceResponse:
     """
-    Takes an input 16x16 coarse precipitation grid (or uses Mandya default),
+    Takes an input 16x16 coarse precipitation grid or multi-day batch (or uses Mandya default),
     executes 5x UNet super-resolution, applies cell-by-cell local mass conservation,
     and returns 80x80 fine grid along with 234 GP forecasts.
     """
     from src.api.inference_service import run_live_inference
 
     grid = req.coarse_grid if req else None
-    return run_live_inference(coarse_grid=grid)
+    grids = req.coarse_grids if req else None
+    lead_days = req.lead_days if req else 1
+    return run_live_inference(coarse_grid=grid, coarse_grids=grids, lead_days=lead_days)
 
 
 @app.post(

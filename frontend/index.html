@@ -193,12 +193,15 @@
                     <p class="card-sub" id="map-status">Click any panchayat to inspect localized downscaled forecast</p>
                   </div>
                   <div class="map-layer-selector" role="radiogroup" aria-label="Map display layer">
-                    <button type="button" class="btn-map-layer btn-layer-ai active" data-layer="ai">⚡ 5× AI (0.05°)</button>
-                    <button type="button" class="btn-map-layer btn-layer-imd" data-layer="imd">🛰️ IMD Block View (0.25°)</button>
-                    <button type="button" class="btn-map-layer btn-side-by-side" id="btn-side-by-side-audit">⧉ Side-by-Side Audit</button>
-                    <button type="button" class="btn-map-layer" data-layer="risk">⚠️ Advisory Risk</button>
+                    <button type="button" class="btn-map-layer btn-layer-ai active" data-layer="ai">⚡ 5× Rain (0.05°)</button>
+                    <button type="button" class="btn-map-layer" data-layer="temp">🌡️ Max Temp</button>
+                    <button type="button" class="btn-map-layer" data-layer="rh">💧 Humidity</button>
+                    <button type="button" class="btn-map-layer" data-layer="wind">💨 Wind</button>
+                    <button type="button" class="btn-map-layer btn-layer-imd" data-layer="imd">🛰️ IMD 0.25°</button>
+                    <button type="button" class="btn-map-layer btn-side-by-side" id="btn-side-by-side-audit">⧉ Side-by-Side</button>
+                    <button type="button" class="btn-map-layer" data-layer="risk">⚠️ Risk</button>
                     <button type="button" class="btn-map-layer" data-layer="spread">📊 Uncertainty</button>
-                    <button type="button" class="btn-map-layer btn-proof-tab" id="btn-proof-tab" data-layer="proof">🔬 Coarse vs Fine Plots</button>
+                    <button type="button" class="btn-map-layer btn-proof-tab" id="btn-proof-tab" data-layer="proof">🔬 Plots</button>
                   </div>
                 </div>
 
@@ -426,6 +429,37 @@
                     <pre id="varg-json-code" class="varg-pre"><code>Loading live IMD schema payload...</code></pre>
                   </div>
                 </details>
+              <!-- Pillar 4: Thermodynamic Lapse Rates & Multi-Day NWP Engine -->
+              <div class="card jury-card pillar-card">
+                <div class="pillar-header">
+                  <div class="pillar-title-wrap">
+                    <span class="pillar-num">4</span>
+                    <div>
+                      <h4 class="pillar-title">Thermodynamic Lapse Rates & 5-Day NWP Engine</h4>
+                      <span class="pillar-badge badge-physics">Γ = -6.5°C/km Troposphere</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="pillar-desc">
+                  Jointly downscales precipitation, temperature, relative humidity, and surface wind with psychrometric Magnus saturation and C¹ Hann boundary blending:
+                </p>
+                <div class="cqr-metrics-grid" style="grid-template-columns: repeat(3, 1fr); margin: 10px 0;">
+                  <div class="cqr-stat-box">
+                    <span class="cqr-stat-val text-success">-6.5°C/km</span>
+                    <span class="cqr-stat-label">Lapse Rate (Melukote vs Valley)</span>
+                  </div>
+                  <div class="cqr-stat-box">
+                    <span class="cqr-stat-val text-primary">&lt; 0.05 mm</span>
+                    <span class="cqr-stat-label">C¹ Hann Seam Step Jump</span>
+                  </div>
+                  <div class="cqr-stat-box">
+                    <span class="cqr-stat-val" style="color:#f59e0b;">1–5 Days</span>
+                    <span class="cqr-stat-label">NWP Batch Lead Times</span>
+                  </div>
+                </div>
+                <div class="pillar-note">
+                  <strong>Thermodynamic Guarantee:</strong> Diurnal range <code>Tmin ≤ Tmax</code> strictly bounded via <code>softplus(ΔT)</code>; Clausius-Clapeyron saturation deficit bounds RH in <code>[10%, 100%]</code>.
+                </div>
               </div>
             </div>
           </div>

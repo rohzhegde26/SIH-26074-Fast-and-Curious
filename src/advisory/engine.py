@@ -47,6 +47,8 @@ def build_advisory(
     likely_max_mm: float,
     wind_kph: float = 8.0,
     rh_pct: float = 65.0,
+    tmax_c: float = 31.5,
+    tmin_c: float = 21.0,
 ) -> Advisory:
     if crop not in VALID_CROPS:
         raise ValueError(f"Unsupported crop: {crop}")
@@ -67,9 +69,17 @@ def build_advisory(
         notes_en.append("Favorable weather (Rain < 2.5mm, Wind < 15 km/h): Safe window for scheduled spraying.")
         notes_kn.append("ಅನುಕೂಲಕರ ಹವಾಮಾನ (ಮಳೆ < 2.5 ಮಿಮೀ, ಗಾಳಿ < 15 ಕಿಮೀ/ಗಂ): ಸಿಂಪಡಣೆಗೆ ಸುರಕ್ಷಿತ ಸಮಯ.")
 
-    if rh_pct >= 85.0 and expected_mm < 2.5:
+    if rh_pct >= 85.0 and 20.0 <= tmax_c <= 30.0:
+        notes_en.append(f"Fungal disease risk (RH {rh_pct:.0f}%, Temp {tmax_c:.1f}°C): Favorable conditions for blast/blight pathogen multiplication. Monitor crop foliage closely.")
+        notes_kn.append(f"ಶಿಲೀಂಧ್ರ ರೋಗದ ಅಪಾಯ (ಆರ್ದ್ರತೆ {rh_pct:.0f}%, ಉಷ್ಣಾಂಶ {tmax_c:.1f}°C): ಬೆಂಕಿ ರೋಗ ಹರಡುವ ಸಾಧ್ಯತೆ ಹೆಚ್ಚಾಗಿದೆ. ಬೆಳೆಗಳನ್ನು ಸೂಕ್ಷ್ಮವಾಗಿ ಪರಿಶೀಲಿಸಿ.")
+    elif rh_pct >= 85.0 and expected_mm < 2.5:
         notes_en.append(f"High relative humidity ({rh_pct:.0f}%): Monitor crop for fungal blast or blight development.")
         notes_kn.append(f"ಹೆಚ್ಚಿನ ಸಾಪೇಕ್ಷ ಆರ್ದ್ರತೆ ({rh_pct:.0f}%): ಬೆಳೆಯ ಶಿಲೀಂಧ್ರ ರೋಗ ಬಾಧೆಯನ್ನು ಸೂಕ್ಷ್ಮವಾಗಿ ಗಮನಿಸಿ.")
+
+    # Thermal heat stress threshold
+    if tmax_c >= 35.0:
+        notes_en.append(f"Extreme heat stress (Tmax {tmax_c:.1f}°C): High thermal load during {stage} stage can induce pollen sterility. Provide light frequent irrigations.")
+        notes_kn.append(f"ಅಧಿಕ ತಾಪಮಾನದ ಒತ್ತಡ ({tmax_c:.1f}°C): {stage} ಹಂತದಲ್ಲಿ ಹೂವು ಉದುರುವಿಕೆ ತಡೆಯಲು ಲಘು ನೀರಾವರಿ ನೀಡಿ.")
 
     if likely_max_mm > 10:
         notes_en.append("Do not apply fertilizer before this rain event.")
@@ -259,6 +269,26 @@ def build_7day_forecast(record: dict) -> list[dict]:
             sum_en = f"Heavy rain risk ({cur_exp:.1f} mm). Postpone fertilizer and clear drainage."
             sum_kn = f"ಭಾರಿ ಮಳೆ ಸಂಭವ ({cur_exp:.1f} ಮಿಮೀ). ಗೊಬ್ಬರ ಹಾಕಬೇಡಿ ಹಾಗೂ ಚರಂಡಿ ಸ್ವಚ್ಛಗೊಳಿಸಿ."
 
+        # Natural synoptic variation: rain cools Tmax and raises RH
+        tmax_base = float(record.get("tmax_c", 31.5))
+        tmin_base = float(record.get("tmin_c", 21.0))
+        rh_base = float(record.get("rh_pct", 68.0))
+        wind_base = float(record.get("wind_kph", 8.5))
+
+        rain_cooling = min(3.5, cur_exp * 0.15)
+        day_tmax = round(tmax_base - rain_cooling + (0.5 if cur_exp < 1.0 else 0.0), 1)
+        day_tmin = round(tmin_base - rain_cooling * 0.4, 1)
+        day_rh = min(100.0, round(rh_base + (15.0 if cur_exp >= 2.5 else 0.0), 1))
+        day_wind = round(wind_base + (2.0 if cur_exp >= 10.0 else 0.0), 1)
+
+        heat_stress = "NONE"
+        if day_tmax >= 38.0:
+            heat_stress = "SEVERE"
+        elif day_tmax >= 35.0:
+            heat_stress = "MODERATE"
+
+        disease_flag = bool(day_rh >= 85.0 and 20.0 <= day_tmax <= 30.0)
+
         items.append({
             "date": cur_d.isoformat(),
             "day_offset": day_i,
@@ -267,6 +297,12 @@ def build_7day_forecast(record: dict) -> list[dict]:
             "expected_mm": float(cur_exp),
             "likely_min_mm": float(cur_lmin),
             "likely_max_mm": float(cur_lmax),
+            "tmax_c": float(day_tmax),
+            "tmin_c": float(day_tmin),
+            "rh_pct": float(day_rh),
+            "wind_kph": float(day_wind),
+            "heat_stress_level": heat_stress,
+            "disease_risk_flag": disease_flag,
             "rainfall_band": band,
             "spray_window": lookahead["spray_window"],
             "harvest_window": lookahead["harvest_window"],

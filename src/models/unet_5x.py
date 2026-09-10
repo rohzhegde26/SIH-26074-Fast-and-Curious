@@ -228,6 +228,42 @@ class UNet5x(nn.Module):
     ) -> torch.Tensor:
         return self.forward_with_dropout(x, terrain_hr=terrain_hr, dropout=None)
 
+    def forward_multivariate(
+        self,
+        x: torch.Tensor,
+        terrain_hr: Optional[torch.Tensor] = None,
+        tmax_lr: Optional[torch.Tensor] = None,
+        tmin_lr: Optional[torch.Tensor] = None,
+        rh_lr: Optional[torch.Tensor] = None,
+        wind_lr: Optional[torch.Tensor] = None,
+        elevation_hr: Optional[torch.Tensor] = None,
+        slope_hr: Optional[torch.Tensor] = None,
+        w_orog_hr: Optional[torch.Tensor] = None,
+        reference_elevation_m: Optional[Union[float, torch.Tensor]] = None,
+    ) -> dict:
+        """
+        Executes joint downscaling of precipitation and multi-variable thermodynamic fields.
+        Returns dictionary of HR grids [B, 1, 80, 80] for precip, tmax, tmin, tmean, rh, wind.
+        """
+        from src.models.multivariate import MultivariatePhysicalDownscaler
+
+        precip_hr = self.forward(x, terrain_hr=terrain_hr)
+        downscaler = MultivariatePhysicalDownscaler()
+        multi_dict = downscaler(
+            tmax_lr=tmax_lr,
+            tmin_lr=tmin_lr,
+            rh_lr=rh_lr,
+            wind_lr=wind_lr,
+            elevation_hr=elevation_hr,
+            slope_hr=slope_hr,
+            w_orog_hr=w_orog_hr,
+            terrain_5ch=terrain_hr,
+            reference_elevation_m=reference_elevation_m,
+            target_size=(precip_hr.shape[-2], precip_hr.shape[-1]),
+        )
+        multi_dict["precip_hr"] = precip_hr
+        return multi_dict
+
     def load_pretrained(
         self,
         checkpoint_or_path: Union[str, Path, dict],
