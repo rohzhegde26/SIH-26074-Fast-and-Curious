@@ -78,3 +78,9 @@
 - **Cycle 14 Rejected:** Aggressive Sharpness-Regularized Loss (Sub-optimal score).
 
 - **Cycle 15 Rejected:** Final Multi-Objective Consolidated Model (Sub-optimal score).
+
+- **Round 2 Cycle 2 Rejected:** Dynamic Orographic FiLM Modulation (Sub-optimal score).
+
+- **Round 2 Cycle 3 Rejected:** Multi-Scale Atrous / Dilated ConvNeXt (Sub-optimal score).
+
+- **Round 2 Cycle 4 Rejected:** 2D FFT Fourier Spectral Regularization (Sub-optimal score).
