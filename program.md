@@ -54,3 +54,27 @@
 - **Cycle 1 Rejected:** Baseline Model Characterization (Mass conservation breach (59.53%)).
 
 - **Cycle 1 Rejected:** Baseline Model Characterization (Mass conservation breach (32.40%)).
+
+- **Cycle 4 Rejected:** High-Frequency Laplacian Sharpness Loss (Sub-optimal score).
+
+- **Cycle 5 Rejected:** Terrain Spatial Cross-Attention (Sub-optimal score).
+
+- **Cycle 6 Rejected:** Focal Convective Tail Weighting (Sub-optimal score).
+
+- **Cycle 7 Rejected:** Two-Stage Hurdle Probability Gate (Sub-optimal score).
+
+- **Cycle 8 Rejected:** High Learning Rate Exploration (Sub-optimal score).
+
+- **Cycle 9 Rejected:** Over-Smoothed Regularization Probe (Mass conservation breach (58.00%)).
+
+- **Cycle 10 Rejected:** Cosine Annealing with Warmup (Sub-optimal score).
+
+- **Cycle 11 Rejected:** Extreme Gradient Clipping Test (Sub-optimal score).
+
+- **Cycle 12 Rejected:** Pareto Unified Champion Architecture (Sub-optimal score).
+
+- **Cycle 13 Rejected:** Directional Windward Orographic Lifting Scaling (Sub-optimal score).
+
+- **Cycle 14 Rejected:** Aggressive Sharpness-Regularized Loss (Sub-optimal score).
+
+- **Cycle 15 Rejected:** Final Multi-Objective Consolidated Model (Sub-optimal score).
