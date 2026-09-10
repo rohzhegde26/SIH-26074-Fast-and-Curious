@@ -125,3 +125,67 @@
 - **Round 3 Cycle 13 Rejected:** Fine-Grained Learning Rate Refinement (Sub-optimal score).
 
 - **Round 3 Cycle 15 Rejected:** Top-K Pareto Ensemble Checkpoint (Sub-optimal score).
+
+- **Round 4 Cycle 1 Rejected:** Round 3 Champion Calibrated Baseline (Sub-optimal score).
+
+- **Round 4 Cycle 2 Rejected:** 2D Haar Wavelet Decomposition Head (Sub-optimal score).
+
+- **Round 4 Cycle 3 Rejected:** Directional Squall-Line Wavelet Tuning (Sub-optimal score).
+
+- **Round 4 Cycle 4 Rejected:** Multivariate Temperature-Moisture Coupling (Mass conservation breach (22.24%)).
+
+- **Round 4 Cycle 5 Rejected:** Relative Humidity Saturation Prior (Mass conservation breach (21.22%)).
+
+- **Round 4 Cycle 6 Rejected:** Calibrated Multi-Quantile P10/P50/P90 Head (Mass conservation breach (25.49%)).
+
+- **Round 4 Cycle 7 Rejected:** Asymmetric Cloudburst Quantile Boosting (tau=0.95) (Mass conservation breach (100.00%)).
+
+- **Round 4 Cycle 8 Rejected:** Froude Number Flow Regime Gating (Sub-optimal score).
+
+- **Round 4 Cycle 9 Rejected:** Agent B Over-Smoothing Stress Probe (Sub-optimal score).
+
+- **Round 4 Cycle 10 Rejected:** Cosine Annealing with Warm Restarts (SGDR) (Mass conservation breach (28.98%)).
+
+- **Round 4 Cycle 11 Rejected:** Wavelet + Froude Flow Regime Synthesis (Sub-optimal score).
+
+- **Round 4 Cycle 12 Rejected:** Multivariate Wind-Shear Flux Module (Mass conservation breach (15.22%)).
+
+- **Round 4 Cycle 13 Rejected:** Monotonic Quantile Sorting Projection (Mass conservation breach (23.53%)).
+
+- **Round 4 Cycle 14 Rejected:** Balanced Multi-Pillar Regularization (Sub-optimal score).
+
+- **Round 4 Cycle 15 Rejected:** Multi-Scale Atrous Bottleneck Fusion (Sub-optimal score).
+
+- **Round 4 Cycle 16 Rejected:** Orographic Blocking Barrier Dynamics (Sub-optimal score).
+
+- **Round 4 Cycle 17 Rejected:** Agent B Gradient Noise Injection Probe (Sub-optimal score).
+
+- **Round 4 Cycle 18 Rejected:** Stochastic Weight Averaging (SWA) Explorer (Sub-optimal score).
+
+- **Round 4 Cycle 19 Rejected:** Sub-Band Attention Wavelet Gating (Sub-optimal score).
+
+- **Round 4 Cycle 20 Rejected:** Focal Convective Upper Quantile Loss (Sub-optimal score).
+
+- **Round 4 Cycle 21 Rejected:** Clausius-Clapeyron Moisture Limit (Sub-optimal score).
+
+- **Round 4 Cycle 22 Rejected:** Multi-Scale Energy Conservation Check (Mass conservation breach (16.39%)).
+
+- **Round 4 Cycle 23 Rejected:** Squeeze-and-Excitation Topographic Attention (Sub-optimal score).
+
+- **Round 4 Cycle 24 Rejected:** Katabatic Valley Drainage Flow Prior (Sub-optimal score).
+
+- **Round 4 Cycle 25 Rejected:** Lookahead Optimization Trajectory (Mass conservation breach (32.34%)).
+
+- **Round 4 Cycle 26 Rejected:** Agent B Anti-Topographic Inversion Probe (Mass conservation breach (26.97%)).
+
+- **Round 4 Cycle 27 Rejected:** Multi-Level Wavelet Decomposition (Sub-optimal score).
+
+- **Round 4 Cycle 28 Rejected:** Extreme Upper Quantile Sharpening (Sub-optimal score).
+
+- **Round 4 Cycle 29 Rejected:** Residual Dense Topographic Aggregation (Sub-optimal score).
+
+- **Round 4 Cycle 30 Rejected:** Round 4 Consolidated Super-Champion (Sub-optimal score).
+
+- **Round 4 Cycle 31 Rejected:** Conservative Basin Fine-Tuning (Sub-optimal score).
+
+- **Round 4 Cycle 32 Rejected:** Pareto Multi-Objective Loss Calibration (Sub-optimal score).

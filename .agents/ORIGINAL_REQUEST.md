@@ -55,3 +55,33 @@ Your task:
    - Scientific & Operational Value for MoES / IMD Hackathon Jury.
 6. Copy the report to `C:\Users\rohit\Downloads\Autoresearch_Round3_Progress_Report.md`.
 7. Message back the detailed summary of the 15-cycle Round 3 results and net improvements.
+
+## 2026-09-10T17:52:04Z
+
+# Teamwork Project Prompt - Round 4
+
+> Status: Launched
+> Goal: Execute Round 4 Co-Evolutionary AutoResearch Loop (35 Cycles)
+> Focus: 2D Wavelet Directional Decomposition, Multivariate Agro-Climatic Co-Downscaling, Calibrated Quantile Uncertainty, and Open-Ended Algorithmic Discovery
+
+Execute Round 4 of the autonomous Co-Evolutionary AutoResearch loop on branch 'autoresearch/coevolution-loop' across an expanded 35-cycle tournament (30-50 loop scale), seeding from the Round 3 Champion (Topographic Curvature + Balanced Multi-Objective Tuning, Elo 1320.0).
+
+Working directory: c:\Users\rohit\.gemini\antigravity\playground\SIH
+Integrity mode: demo
+
+Your task:
+1. Verify git branch is 'autoresearch/coevolution-loop'.
+2. Execute the full 35-cycle Round 4 AutoResearch loop by running:
+   `python run_autoresearch_round4_loop.py`
+3. Monitor the execution of all 35 cycles across the 4 strategic pillars (2D Wavelets, Multivariate Temp/RH downscaling, Multi-quantile P10/P50/P90 prediction, Froude flow gating, and open-ended optimization).
+4. Each cycle is audited independently by Agent B across Wet MAE, Mass conservation error, CSI@15/30/50, texture sharpness, quantile calibration, and orographic correlation.
+5. Once all 35 cycles finish, inspect `data/cache/autoresearch_round4_history.json` and git commit history (`git log -n 15 --oneline`).
+6. Generate a comprehensive, professional Markdown report `autoresearch_round4_progress_report.md` in the project root detailing:
+   - Executive Summary of Net Improvements (Round 3 Champion vs Round 4 Champion).
+   - Full 35-Cycle Progression Table (Cycle, Name, Hypothesis, Win/Reject Status, Wet-MAE, Mass Error, CSI@15, CSI@30, Texture Ratio, Orographic Correlation, Elo Rating).
+   - Top Winning Architectural Innovations & Quantitative Gains across the 4 pillars.
+   - Failure Archetypes Caught & Rejection Post-Mortems (including Agent B's stress probes).
+   - Cumulative Elo Rating Progression (from Round 3's 1320.0 to final Round 4 champion).
+   - Operational Value for MoES / IMD Hackathon Jury and Panchayat Edge Deployment.
+7. Copy the report to `C:\Users\rohit\Downloads\Autoresearch_Round4_Progress_Report.md`.
+8. Message back the detailed summary of the 35-cycle Round 4 results and net improvements.
