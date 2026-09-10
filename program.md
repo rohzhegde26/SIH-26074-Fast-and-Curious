@@ -189,3 +189,7 @@
 - **Round 4 Cycle 31 Rejected:** Conservative Basin Fine-Tuning (Sub-optimal score).
 
 - **Round 4 Cycle 32 Rejected:** Pareto Multi-Objective Loss Calibration (Sub-optimal score).
+
+- **Round 4 Cycle 34 Rejected:** Top-3 Checkpoint Weight Averaging (Sub-optimal score).
+
+- **Round 4 Cycle 35 Rejected:** Calibrated Production Ensemble Checkpoint (Sub-optimal score).
