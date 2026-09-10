@@ -45,12 +45,39 @@ def get_quantile_mapper() -> QuantileMapper:
 
 
 @lru_cache(maxsize=1)
+def get_terrain_tensor(device_name: str = "cpu") -> Optional[torch.Tensor]:
+    """Loads and caches Mandya GLO-30 5-channel terrain features if present."""
+    dem_path = ROOT / "data" / "raw" / "dem" / "glo30_terrain.nc"
+    if not dem_path.exists():
+        return None
+    try:
+        import xarray as xr
+        from src.data.terrain_features import build_terrain_tensor_5ch
+        dem_ds = xr.open_dataset(dem_path)
+        elev_p = dem_ds["elevation"].values[:80, :80]
+        slope_p = dem_ds["slope"].values[:80, :80]
+        aspect_p = dem_ds["aspect"].values[:80, :80]
+        t_5ch = build_terrain_tensor_5ch(elev_p, slope_p, aspect_p, center_lat_deg=12.52, month=7)
+        return t_5ch.unsqueeze(0).to(torch.device(device_name))
+    except Exception:
+        return None
+
+
+@lru_cache(maxsize=1)
 def load_inference_model() -> Tuple[UNet5x, torch.device]:
-    """Loads and caches UNet5x model in eval mode."""
+    """Loads and caches UNet5x model in eval mode with checkpoint-aware residual handling."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = UNet5x(in_channels=1, out_channels=1, base_channels=32, scale_factor=5)
+    is_v3_1 = "v3_1" in str(CHECKPOINT_PATH)
+    model = UNet5x(
+        in_channels=1,
+        out_channels=1,
+        base_channels=32,
+        scale_factor=5,
+        terrain_channels=5,
+        use_residual=is_v3_1,
+    )
     if CHECKPOINT_PATH.exists():
-        ckpt = torch.load(CHECKPOINT_PATH, map_location=device)
+        ckpt = torch.load(CHECKPOINT_PATH, map_location=device, weights_only=False)
         state = ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt
         try:
             model.load_state_dict(state, strict=True)
@@ -250,8 +277,12 @@ def run_live_inference(
     coarse_t = torch.from_numpy(coarse_np).unsqueeze(1).to(device)
     coarse_log = torch.log1p(torch.clamp(coarse_t, min=0.0))
 
+    terrain_tensor = get_terrain_tensor(str(device))
+    if terrain_tensor is not None and terrain_tensor.shape[0] != coarse_log.shape[0]:
+        terrain_tensor = terrain_tensor.expand(coarse_log.shape[0], -1, -1, -1)
+
     with torch.no_grad():
-        pred_log = model(coarse_log)
+        pred_log = model(coarse_log, terrain_hr=terrain_tensor)
         pred_phys = torch.clamp(torch.expm1(pred_log), min=0.0)
 
         # 1. Apply per-0.25°-cell quantile mapping strictly to precipitation channel before conservation
@@ -270,12 +301,18 @@ def run_live_inference(
     mass_err = abs(downscaled_mean - coarse_mean) / (coarse_mean + 1e-8) * 100.0
 
     # Downscale thermodynamic fields via MultivariatePhysicalDownscaler
+    terrain_single = terrain_tensor[0:1] if terrain_tensor is not None else None
     multi_downscaler = MultivariatePhysicalDownscaler()
-    multi_res = multi_downscaler(target_size=(80, 80))
-    tmax_hr_np = multi_res["tmax_hr"].squeeze().cpu().numpy()  # [80, 80]
-    tmin_hr_np = multi_res["tmin_hr"].squeeze().cpu().numpy()  # [80, 80]
-    rh_hr_np = multi_res["rh_hr"].squeeze().cpu().numpy()      # [80, 80]
-    wind_hr_np = multi_res["wind_hr"].squeeze().cpu().numpy()  # [80, 80]
+    multi_res = multi_downscaler(terrain_5ch=terrain_single, target_size=(80, 80))
+    tmax_hr_np = multi_res["tmax_hr"].squeeze().cpu().numpy()
+    tmin_hr_np = multi_res["tmin_hr"].squeeze().cpu().numpy()
+    rh_hr_np = multi_res["rh_hr"].squeeze().cpu().numpy()
+    wind_hr_np = multi_res["wind_hr"].squeeze().cpu().numpy()
+    if tmax_hr_np.ndim == 3:
+        tmax_hr_np = tmax_hr_np[0]
+        tmin_hr_np = tmin_hr_np[0]
+        rh_hr_np = rh_hr_np[0]
+        wind_hr_np = wind_hr_np[0]
 
     # Load Mandya metadata to map 80x80 grid to 234 GPs
     with open(FORECASTS_PATH, encoding="utf-8") as f:

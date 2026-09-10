@@ -1087,6 +1087,9 @@ function renderForecastDetails(record) {
         currentSelectedDayIndex = idx;
         triggerCockpitFeedback(container.querySelector(".village-rain-val"));
         renderForecastDetails(record);
+        if (typeof updateStatsBar === "function" && currentRecords) {
+          updateStatsBar(currentRecords, currentSelectedDayIndex);
+        }
         if (leafletLayers) {
           leafletLayers.forEach((layerObj, code) => {
             const isSelected = String(code) === String(selectedLgdCode);
@@ -1519,6 +1522,24 @@ function getFeatureStyle(feature, isSelected = false) {
   };
 }
 
+function getDistrictAvgRain(dayIdx = 0) {
+  if (!currentRecords || !currentRecords.length) return 7.9;
+  const rains = currentRecords.map(r => {
+    const mdf = r.multi_day_forecast;
+    return (mdf && mdf[dayIdx]) ? mdf[dayIdx].expected_mm : (r.rainfall_mm?.expected ?? r.expected_mm ?? 0.0);
+  });
+  return +(rains.reduce((a, b) => a + b, 0) / currentRecords.length).toFixed(1);
+}
+
+function getDistrictMaxRain(dayIdx = 0) {
+  if (!currentRecords || !currentRecords.length) return 53.7;
+  const rains = currentRecords.map(r => {
+    const mdf = r.multi_day_forecast;
+    return (mdf && mdf[dayIdx]) ? mdf[dayIdx].expected_mm : (r.rainfall_mm?.expected ?? r.expected_mm ?? 0.0);
+  });
+  return +Math.max(...rains).toFixed(1);
+}
+
 function formatTooltipContent(record, feature) {
   const pName = record?.panchayat_name || feature.properties?.gpname || `GP ${feature.id}`;
   const taluk = feature.properties?.sdtname || "Mandya";
@@ -1532,9 +1553,10 @@ function formatTooltipContent(record, feature) {
   const spread = Math.max(0, lMax - lMin);
 
   if (currentMapLayer === "imd") {
+    const blockVal = getDistrictAvgRain(currentSelectedDayIndex);
     const aiVal = exp.toFixed(1);
-    const delta = (exp - 1.8).toFixed(1);
-    const deltaSign = (exp - 1.8) > 0 ? "+" : "";
+    const delta = (exp - blockVal).toFixed(1);
+    const deltaSign = (exp - blockVal) > 0 ? "+" : "";
     const anomalyBadge = exp >= 15.0
       ? `<span style="color:#ef4444; font-weight:700;">🚨 Cloudburst hidden by IMD</span>`
       : (exp >= 2.5 ? `<span style="color:#f59e0b; font-weight:700;">⚠️ Local rain missed by block</span>` : `<span style="color:#10b981; font-weight:700;">🟢 Dry valley (matches block)</span>`);
@@ -1547,7 +1569,7 @@ function formatTooltipContent(record, feature) {
       <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • LGD ${record?.lgd_code || feature.id}</div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
         <span style="font-size:0.8rem; color:#cbd5e1;">IMD Block Prediction:</span>
-        <strong style="font-size:0.88rem; color:#93c5fd;">1.8 mm (Flat)</strong>
+        <strong style="font-size:0.88rem; color:#93c5fd;">${blockVal.toFixed(1)} mm (Flat)</strong>
       </div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
         <span style="font-size:0.8rem; color:#cbd5e1;">Our 5× Downscaled:</span>
@@ -1682,9 +1704,10 @@ function updateMapLegend(layerType) {
   }
 
   if (layerType === "imd") {
+    const blockVal = getDistrictAvgRain(currentSelectedDayIndex);
     legend.innerHTML = `
       <span class="legend-title">IMD Block NWP (0.25°):</span>
-      <div class="legend-item"><span class="legend-swatch" style="background:#e3f2fd;border:1px solid #94a3b8;"></span> Uniform 1.8 mm (All 234 GPs)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#e3f2fd;border:1px solid #94a3b8;"></span> Uniform ${blockVal.toFixed(1)} mm (All 234 GPs)</div>
       <div class="legend-item" style="color:#d97706;font-weight:600;"><span class="legend-swatch" style="background:#f59e0b;"></span> ⚠️ Blind to Local Cloudbursts</div>
     `;
     return;
@@ -1852,6 +1875,9 @@ function setupMapLayerSelector() {
       // Show/hide IMD comparison banner
       if (imdBanner) {
         if (layer === "imd") {
+          const avg = getDistrictAvgRain(currentSelectedDayIndex);
+          const max = getDistrictMaxRain(currentSelectedDayIndex);
+          imdBanner.innerHTML = `<span class="banner-icon">⚠️</span><span><strong>IMD Block View:</strong> Uniform ${avg.toFixed(1)}mm over all 234 GPs • Convective peaks up to ${max.toFixed(1)}mm obscured • Zero intra-block resolution</span>`;
           imdBanner.classList.remove("hidden");
         } else {
           imdBanner.classList.add("hidden");
@@ -2043,9 +2069,12 @@ function setupMapControls() {
 // -------------------------------------------------------------
 // Update District Summary Stats
 // -------------------------------------------------------------
-function updateStatsBar(records) {
-  if (!records.length) return;
-  const rains = records.map(r => r.rainfall_mm?.expected ?? r.expected_mm ?? 0.0);
+function updateStatsBar(records, dayIdx = currentSelectedDayIndex) {
+  if (!records || !records.length) return;
+  const rains = records.map(r => {
+    const mdf = r.multi_day_forecast;
+    return (mdf && mdf[dayIdx]) ? mdf[dayIdx].expected_mm : (r.rainfall_mm?.expected ?? r.expected_mm ?? 0.0);
+  });
   const avg = rains.reduce((a, b) => a + b, 0) / rains.length;
   const max = Math.max(...rains);
   const wetCount = rains.filter(mm => mm >= 2.5).length;
@@ -2672,8 +2701,20 @@ async function loadData() {
     };
   }
 
-  // 60-Second Demo Contrast Chips Handlers
+  // 60-Second Demo Contrast Chips Handlers & Dynamic Live Rainfall Labels
   document.querySelectorAll(".demo-chip").forEach(chip => {
+    const code = chip.dataset.code;
+    const match = records.find(r => String(r.lgd_code) === String(code));
+    if (match) {
+      const exp = match.rainfall_mm?.expected ?? match.expected_mm ?? 0.0;
+      if (code === "219388") {
+        chip.innerHTML = `⚡ Nalligere (${exp.toFixed(1)} mm Peak) [N]`;
+      } else if (code === "215504") {
+        chip.innerHTML = `⚡ Banavasi (${exp.toFixed(1)} mm) [B]`;
+      } else if (code === "219431") {
+        chip.innerHTML = `⚡ Naguvanahalli (${exp.toFixed(1)} mm)`;
+      }
+    }
     chip.onclick = () => {
       const code = chip.dataset.code;
       const match = records.find(r => String(r.lgd_code) === String(code));
@@ -2867,10 +2908,11 @@ function initDualSyncMaps() {
         const name = rec?.panchayat_name || f.properties?.gpname || `GP ${code}`;
         const taluk = f.properties?.sdtname || "Mandya";
         const v = rec ? (rec.rainfall_mm?.expected ?? rec.expected_mm ?? 0.0) : 0.0;
+        const blockAvg = getDistrictAvgRain(currentSelectedDayIndex);
         l.bindTooltip(`
           <div style="font-family:sans-serif; font-size:11px; line-height:1.3; color:#0f172a;">
             <strong>${name} (${taluk})</strong><br>
-            <span style="color:#0369a1; font-weight:700;">IMD NWP: 1.8 mm (Uniform Flat)</span><br>
+            <span style="color:#0369a1; font-weight:700;">IMD NWP: ${blockAvg.toFixed(1)} mm (Uniform Flat)</span><br>
             <span style="color:#64748b;">Our 5× Downscaled: ${v.toFixed(1)} mm</span><br>
             <span style="color:#d97706; font-weight:600;">⚠️ Blind to local convective cells</span>
           </div>
@@ -2886,8 +2928,9 @@ function initDualSyncMaps() {
         const name = rec?.panchayat_name || f.properties?.gpname || `GP ${code}`;
         const taluk = f.properties?.sdtname || "Mandya";
         const v = rec ? (rec.rainfall_mm?.expected ?? rec.expected_mm ?? 0.0) : 0.0;
-        const delta = (v - 1.8).toFixed(1);
-        const deltaSign = (v - 1.8) > 0 ? "+" : "";
+        const blockAvg = getDistrictAvgRain(currentSelectedDayIndex);
+        const delta = (v - blockAvg).toFixed(1);
+        const deltaSign = (v - blockAvg) > 0 ? "+" : "";
         const alertNote = v >= 15.0
           ? "<span style='color:#ef4444;font-weight:700;'>🚨 Cloudburst Cell Resolved</span>"
           : (v >= 2.5 ? "<span style='color:#0284c7;font-weight:700;'>🌧️ Active Rain Zone</span>" : "<span style='color:#10b981;font-weight:700;'>🟢 Leeward Rain Shadow</span>");
@@ -2895,7 +2938,7 @@ function initDualSyncMaps() {
           <div style="font-family:sans-serif; font-size:11px; line-height:1.3; color:#0f172a;">
             <strong>${name} (${taluk})</strong><br>
             <span style="color:${v >= 15 ? '#ef4444' : '#0369a1'}; font-weight:800;">5× Downscaled: ${v.toFixed(1)} mm (Δ ${deltaSign}${delta} mm)</span><br>
-            <span style="color:#64748b;">IMD Block Input: 1.8 mm</span><br>
+            <span style="color:#64748b;">IMD Block Input: ${blockAvg.toFixed(1)} mm</span><br>
             ${alertNote}
           </div>
         `, { sticky: true });

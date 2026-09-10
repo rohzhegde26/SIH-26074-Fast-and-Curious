@@ -41,6 +41,7 @@ data/raw/*
 data/raw/dem/*
 !data/raw/dem/provenance.json
 data/raw/geodata/*.parquet
+data/cache/
 data/processed/
 *.zarr/
 *.zarr

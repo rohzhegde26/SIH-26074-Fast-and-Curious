@@ -88,18 +88,26 @@
                   </div>
                 </div>
 
+                <!-- Active Scenario Pill -->
+                <div class="drawer-row">
+                  <span class="drawer-label">METEOROLOGICAL SCENARIO:</span>
+                  <div class="scenario-pill-badge" style="font-size:0.8rem; font-weight:700; color:#38bdf8; background:rgba(2,132,199,0.15); border:1px solid rgba(56,189,248,0.3); padding:4px 10px; border-radius:6px; display:inline-flex; align-items:center; gap:6px;">
+                    <span>🌧️ Active Monsoon Spell Benchmark (High-Rain Event Resolved Across 234 GPs)</span>
+                  </div>
+                </div>
+
                 <!-- 60-Second Demo Contrast Chips (Instantly proves 0.25° blindspot) -->
                 <div class="drawer-row">
                   <span class="drawer-label">DEMO CONTRAST:</span>
                   <div class="demo-chips-row" aria-label="Stage Demo Shortcuts">
-                    <button type="button" class="demo-chip chip-burst" data-code="219388" title="Nalligere: 30.4mm cloudburst under 1.8mm district average [Key: N]">
-                      ⚡ Nalligere (30.4 mm Cloudburst) [N]
+                    <button type="button" class="demo-chip chip-burst" data-code="219388" title="Nalligere: 53.7mm cloudburst under 7.9mm district average [Key: N]">
+                      ⚡ Nalligere (53.7 mm Peak) [N]
                     </button>
-                    <button type="button" class="demo-chip chip-safe" data-code="215504" title="Banavasi: 1.7mm safe dry window [Key: B]">
-                      ⚡ Banavasi (1.7 mm Safe Window) [B]
+                    <button type="button" class="demo-chip chip-safe" data-code="215504" title="Banavasi: 12.0mm valley rainfall [Key: B]">
+                      ⚡ Banavasi (12.0 mm Valley) [B]
                     </button>
-                    <button type="button" class="demo-chip chip-dry" data-code="219431" title="Naguvanahalli: 0.0mm dry window">
-                      ⚡ Naguvanahalli (0.0 mm Dry)
+                    <button type="button" class="demo-chip chip-dry" data-code="219331" title="Dudda: 0.0mm dry rain shadow window">
+                      ⚡ Dudda (0.0 mm Dry Shadow)
                     </button>
                   </div>
                 </div>
@@ -174,17 +182,17 @@
                 </div>
                 <div class="stat-card">
                   <span class="stat-label">District Avg</span>
-                  <span class="stat-val" id="stat-avg">1.8 mm</span>
+                  <span class="stat-val" id="stat-avg">7.9 mm</span>
                   <span class="stat-foot">Conserved Mass</span>
                 </div>
                 <div class="stat-card">
                   <span class="stat-label">Max Rain</span>
-                  <span class="stat-val" id="stat-max">30.4 mm</span>
+                  <span class="stat-val" id="stat-max">53.7 mm</span>
                   <span class="stat-foot">Nalligere Cloudburst</span>
                 </div>
                 <div class="stat-card">
                   <span class="stat-label">Rain Status</span>
-                  <span class="stat-val" id="stat-wet">40/234 Wet</span>
+                  <span class="stat-val" id="stat-wet">179/234 Wet</span>
                   <span class="stat-foot">&gt; 2.5 mm Active</span>
                 </div>
               </div>
@@ -212,7 +220,7 @@
                 <!-- IMD Block Comparison Warning Banner -->
                 <div id="imd-comparison-banner" class="imd-comparison-banner hidden">
                   <span class="banner-icon">⚠️</span>
-                  <span><strong>IMD Block View:</strong> Uniform 1.8mm over all 234 GPs • Nalligere cloudburst (30.4mm) obscured • Zero intra-block resolution</span>
+                  <span><strong>IMD Block View:</strong> Uniform 7.9mm over all 234 GPs • Nalligere cloudburst (53.7mm) obscured • Zero intra-block resolution</span>
                 </div>
 
                 <div class="map-container" id="map-container">

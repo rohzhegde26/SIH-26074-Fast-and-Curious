@@ -33,6 +33,7 @@ from src.advisory.engine import (
     evaluate_lookahead_risk,
     rainfall_band_name,
 )
+from src.api.inference_service import conservative_renorm_local
 from src.data.zonal_aggregation import ZonalAggregator
 from src.eval.cqr import MCDropoutWrapper
 from src.losses.conservation import expm1_transform
@@ -79,7 +80,7 @@ def load_multiday_coarse(
 
 
 def run_pipeline(
-    forecast_date: str = "2023-07-01",
+    forecast_date: str = "2026-09-10",
     district: str = "MANDYA",
     imd_path: Path = ROOT / "data" / "raw" / "imd" / "imd_sample.nc",
     checkpoint_path: Path = ROOT / "models" / "checkpoints" / "best_5x_model.pt",
@@ -90,36 +91,17 @@ def run_pipeline(
     n_mc_passes: int = 8,
     q_hat: float = 2.45,
     forecast_file: Path | None = None,
+    mode: str = "operational",
 ) -> list[dict]:
     t_start = time.time()
     if district.upper() != "MANDYA":
         raise ValueError(f"District {district} not supported. Only MANDYA is configured for Sprint 4.")
 
-    print(f"[*] Starting Mandya Hybrid Multi-Day Forecast Pipeline for date: {forecast_date}...")
-
-    # 1. Load IMD NetCDF and extract 16x16 LR slice covering Mandya
-    if not imd_path.exists():
-        raise FileNotFoundError(f"IMD raster file not found: {imd_path}")
-
-    ds = xr.open_dataset(imd_path)
-    time_strs = [str(t)[:10] for t in ds.time.values]
-
-    if forecast_date in time_strs:
-        time_idx = time_strs.index(forecast_date)
-        actual_date_str = forecast_date
-    else:
-        time_idx = 0
-        actual_date_str = time_strs[0]
-        print(f"[!] Requested date {forecast_date} not in sample ({time_strs[0]}..{time_strs[-1]}). Using {actual_date_str}.")
-
-    # Mandya 16x16 slice covering Lats [11.0, 14.75] and Lons [75.0, 78.75]
-    lr_slice_day1 = ds.rainfall.isel(time=time_idx, lat=slice(18, 34), lon=slice(34, 50)).values.astype(np.float32)
-    lr_slice_day1 = np.nan_to_num(np.maximum(lr_slice_day1, 0.0))
-
-    # 2. Load Operational Multi-day Coarse NWP Grids (Days 2-7)
+    # 1. Load Operational Multi-day Coarse NWP Grids
     coarse_data, is_committed_fallback = load_multiday_coarse(forecast_file)
     coarse_grids = coarse_data.get("grids", {})
-    cycle_date = coarse_data.get("cycle_date", actual_date_str)
+    cycle_date = coarse_data.get("cycle_date", forecast_date)
+    coarse_dates = coarse_data.get("dates", [])
     dt_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     fetched_at_utc = coarse_data.get("fetched_at_utc", dt_utc)
 
@@ -130,10 +112,31 @@ def run_pipeline(
     except Exception:
         cycle_age_days = 0
 
-    base_d = date.fromisoformat(actual_date_str)
-    day_dates = [(base_d + timedelta(days=d)).isoformat() for d in range(7)]
+    # Determine unified vs hybrid multi-day dates & sources
+    if mode == "hybrid":
+        use_unified_nwp = False
+        if not imd_path.exists():
+            raise FileNotFoundError(f"IMD raster file not found: {imd_path}")
+        ds = xr.open_dataset(imd_path)
+        time_strs = [str(t)[:10] for t in ds.time.values]
+        time_idx = time_strs.index(forecast_date) if forecast_date in time_strs else 0
+        actual_date_str = time_strs[time_idx]
+        lr_slice_day1 = ds.rainfall.isel(time=time_idx, lat=slice(18, 34), lon=slice(34, 50)).values.astype(np.float32)
+        lr_slice_day1 = np.nan_to_num(np.maximum(lr_slice_day1, 0.0))
+        base_d = date.fromisoformat(actual_date_str)
+        day_dates = [(base_d + timedelta(days=d)).isoformat() for d in range(7)]
+        print(f"[*] Starting Mandya Hybrid Multi-Day Pipeline (Day 0: IMD {actual_date_str}, Days 1-6: NWP)...")
+    else:
+        use_unified_nwp = True
+        actual_date_str = cycle_date
+        if len(coarse_dates) >= 7:
+            day_dates = coarse_dates[:7]
+        else:
+            base_d = date.fromisoformat(cycle_date)
+            day_dates = [(base_d + timedelta(days=d)).isoformat() for d in range(7)]
+        print(f"[*] Starting Mandya Unified Multi-Day NWP Forecast Pipeline for cycle: {cycle_date}...")
 
-    # 3. Model setup
+    # 2. Model setup with checkpoint-aware residual handling
     v3_1_path = ROOT / "models" / "checkpoints" / "best_5x_model_v3_1.pt"
     if checkpoint_path == (ROOT / "models" / "checkpoints" / "best_5x_model.pt") and v3_1_path.exists():
         checkpoint_path = v3_1_path
@@ -144,7 +147,15 @@ def run_pipeline(
     print(f"[*] Loading checkpoint: {checkpoint_path.name}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    base_model = UNet5x(in_channels=1, out_channels=1, base_channels=32).to(device)
+    is_v3_1 = "v3_1" in checkpoint_path.name
+    base_model = UNet5x(
+        in_channels=1,
+        out_channels=1,
+        base_channels=32,
+        scale_factor=5,
+        terrain_channels=5,
+        use_residual=is_v3_1,
+    ).to(device)
     base_model.load_pretrained(ckpt, device=device)
     base_model.eval()
 
@@ -172,10 +183,10 @@ def run_pipeline(
     hr_lats = np.linspace(10.90, 14.85, 80)
     hr_lons = np.linspace(74.90, 78.85, 80)
 
-    # 4. Multi-Day Loop (7 Independent Passes)
+    # 3. Multi-Day Loop (7 Independent Passes)
     daily_results = []
     for d in range(7):
-        if d == 0:
+        if not use_unified_nwp and d == 0:
             p_coarse = lr_slice_day1
             tmax_lr, tmin_lr, rh_lr, wind_lr = None, None, None, None
             day_prov = "IMD_OBSERVATION_DOWNSCALED"
@@ -198,6 +209,13 @@ def run_pipeline(
         )
         int_lo = torch.clamp(q_lo - q_hat, min=0.0)
         int_hi = torch.clamp(q_hi + q_hat, min=0.0)
+
+        # Enforce cell-by-cell local block mass conservation
+        mean_pred = conservative_renorm_local(mean_pred, x_tensor)
+        int_lo = torch.clamp(conservative_renorm_local(int_lo, x_tensor), min=0.0)
+        int_hi = torch.clamp(conservative_renorm_local(int_hi, x_tensor), min=0.0)
+        int_lo = torch.minimum(int_lo, mean_pred)
+        int_hi = torch.maximum(int_hi, mean_pred)
 
         hr_mean = mean_pred.squeeze().cpu().numpy()
         hr_lo = int_lo.squeeze().cpu().numpy()
@@ -451,11 +469,12 @@ def simulate_live_imd_ingest(forecast_date: str) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Single-Command Mandya Hybrid Weather Forecast Pipeline.")
-    parser.add_argument("--date", default="2023-07-01", help="Forecast date (YYYY-MM-DD)")
+    parser = argparse.ArgumentParser(description="Single-Command Mandya Weather Forecast Pipeline.")
+    parser.add_argument("--date", default="2026-09-10", help="Forecast date (YYYY-MM-DD)")
     parser.add_argument("--district", default="MANDYA", help="Target district (default: MANDYA)")
     parser.add_argument("--output", default="data/serving/mandya_forecasts.json", help="Output JSON path")
     parser.add_argument("--forecast-file", default=None, help="Optional path to operational multiday coarse JSON")
+    parser.add_argument("--mode", default="operational", choices=["operational", "hybrid"], help="Pipeline mode: operational (unified 7-day NWP) or hybrid (Day 0 IMD + Days 1-6 NWP)")
     parser.add_argument("--live-sim", action="store_true", help="Simulate automated FTP cron ingestion from IMD")
     args = parser.parse_args()
 
@@ -469,6 +488,7 @@ def main() -> int:
         district=args.district,
         output_json_path=Path(args.output),
         forecast_file=fc_file,
+        mode=args.mode,
     )
 
     if args.live_sim:

@@ -111,7 +111,11 @@ def test_serving_json_7days_distinct_and_provenance(client):
     assert len(multi_days) == 7
 
     # Verify Day 1 vs Days 2-7 provenance tags
-    assert multi_days[0]["provenance"] == "IMD_OBSERVATION_DOWNSCALED"
+    assert multi_days[0]["provenance"] in (
+        "OPENMETEO_FORECAST_DOWNSCALED",
+        "IMD_OBSERVATION_DOWNSCALED",
+        "COMMITTED_FALLBACK_CYCLE",
+    )
     for day in multi_days[1:]:
         assert day["provenance"] in ("OPENMETEO_FORECAST_DOWNSCALED", "COMMITTED_FALLBACK_CYCLE")
 
@@ -200,7 +204,7 @@ def test_missing_file_fallback_path(tmp_path):
     m_days = first_gp["multi_day_forecast"]
     assert len(m_days) == 7
 
-    assert m_days[0]["provenance"] == "IMD_OBSERVATION_DOWNSCALED"
+    assert m_days[0]["provenance"] in ("COMMITTED_FALLBACK_CYCLE", "IMD_OBSERVATION_DOWNSCALED")
     for d in m_days[1:]:
         assert d["provenance"] == "COMMITTED_FALLBACK_CYCLE"
 
