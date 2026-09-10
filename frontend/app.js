@@ -2345,6 +2345,49 @@ function setupOperatorRoles() {
 }
 
 // -------------------------------------------------------------
+// Cycle Badge Helper (Rural Offline Age-Bucketed SOP)
+// -------------------------------------------------------------
+export function getCycleBadgeProps(cycleDate, cycleAge) {
+  const age = Number(cycleAge ?? 0);
+  const dateStr = cycleDate || "2026-09-10";
+  if (age <= 1) {
+    return {
+      className: "badge-green",
+      text: `Cycle: ${dateStr} (age ${age}d)`,
+    };
+  } else if (age <= 3) {
+    return {
+      className: "badge-amber",
+      text: `Cycle: ${dateStr} (age ${age}d)`,
+    };
+  } else {
+    return {
+      className: "badge-red",
+      text: `Cycle: ${dateStr} (age ${age}d) — stale cycle: advisories from last sync`,
+    };
+  }
+}
+
+export function updateCycleBadge(records) {
+  const cycleBadge = document.querySelector("#cycle-badge");
+  const cycleBadgeText = document.querySelector("#cycle-badge-text");
+  if (!cycleBadge || !records || records.length === 0) return;
+  const cycleDate = records[0].cycle_date || records[0].forecast_date || "2026-09-10";
+  const cycleAge = records[0].cycle_age_days ?? 0;
+  const props = getCycleBadgeProps(cycleDate, cycleAge);
+  cycleBadge.classList.remove("badge-green", "badge-amber", "badge-red");
+  cycleBadge.classList.add(props.className);
+  if (cycleBadgeText) {
+    cycleBadgeText.textContent = props.text;
+  } else {
+    cycleBadge.textContent = props.text;
+  }
+}
+
+window.getCycleBadgeProps = getCycleBadgeProps;
+window.updateCycleBadge = updateCycleBadge;
+
+// -------------------------------------------------------------
 // Load Main Data & Wire Controller
 // -------------------------------------------------------------
 async function loadData() {
@@ -2388,6 +2431,9 @@ async function loadData() {
     if (syncBadge) syncBadge.classList.remove("offline-mode");
     if (syncStatus) syncStatus.textContent = `Synced: ${timestamp} (${records.length} GPs)`;
   }
+
+  // Update Operational Cycle Badge (age-bucketed)
+  updateCycleBadge(records);
 
   // Search Combobox
   const searchInput = document.querySelector("#panchayat-search");

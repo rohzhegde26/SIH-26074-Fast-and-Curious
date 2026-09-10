@@ -201,5 +201,27 @@ SIH-FINALISTS-2026/
 
 ---
 
-## 7. License & Authors
+## 7. Rural Store-and-Forward SOP (Offline Hardening)
+
+To ensure operational viability across rural Mandya where cellular connectivity is intermittent or absent at village level, the platform implements a **Rural Store-and-Forward Standard Operating Procedure (SOP)**:
+
+| Parameter | Operational Specification |
+| :--- | :--- |
+| **Sync Node & Operator** | **Taluk RSK Officer / KMF Milk Collection Center Secretary** (sync occurs during daily 06:00–08:30 IST milk drop-off / RSK depot visit). |
+| **Payload Size** | **~10 KB gzipped** (all 234 Gram Panchayats with 7 lead days, thermodynamic variables, and CQR bounds). |
+| **Sync Cadence** | **Daily morning sync** via broadband/4G, stored to local IndexedDB/SQLite on the village device. |
+| **Transport Medium** | Mobile PWA, Bluetooth store-and-forward, or USB shuttle between RSK and remote dairy centers. |
+
+### 3-Tier Graceful Degradation Ladder
+The frontend and API continuously monitor the forecast cycle age (`cycle_age_days` parsed from `fetched_at_utc`) and visually flag freshness:
+1. **Tier 1 — Fresh / Operational ($\le 1$ day, Green Badge `Cycle: <date> (age 0d)`):**
+   Full operational status. Day 1 verified downscaled analysis and Days 2–7 operational NWP downscaled guidance active.
+2. **Tier 2 — Aging Cache ($2\text{--}3$ days, Amber Badge `Cycle: <date> (age 2d)`):**
+   Synoptic multi-day trends remain directionally sound; lookahead chemical washoff hazard warnings flag declining NWP skill.
+3. **Tier 3 — Stale Cycle ($> 3$ days, Red Badge `stale cycle: advisories from last sync`):**
+   Advisories explicitly marked stale from last sync. Dynamic operational spraying alerts recommend field verification until next KMF/RSK store-and-forward sync.
+
+---
+
+## 8. License & Authors
 Developed by **Fast and Curious** for **Smart India Hackathon (SIH) 2026** under the auspices of the **Ministry of Earth Sciences (MoES)** and **India Meteorological Department (IMD)**.

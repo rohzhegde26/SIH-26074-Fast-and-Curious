@@ -227,58 +227,26 @@ def build_7day_forecast(record: dict) -> list[dict]:
     lmax_0 = float(record.get("likely_max_mm", 0.0))
     lgd = str(record.get("lgd_code", "0"))
 
-    # Demo contrast fixtures
-    if lgd == "215504":  # Banavasi: 1.8mm dry today -> 22.4mm wash-off hazard tomorrow!
-        daily_rains = [
-            (exp_0, lmin_0, lmax_0),
-            (22.4, 14.0, 31.5),
-            (7.8, 3.2, 12.0),
-            (1.2, 0.0, 3.5),
-            (0.0, 0.0, 1.5),
-            (0.0, 0.0, 1.0),
-            (0.5, 0.0, 2.0),
-        ]
-    elif lgd == "219388":  # Nalligere: 30.4mm Cloudburst today -> clearing out
-        daily_rains = [
-            (exp_0, lmin_0, lmax_0),
-            (4.8, 1.2, 9.0),
-            (1.5, 0.0, 3.5),
-            (0.2, 0.0, 1.0),
-            (0.0, 0.0, 0.5),
-            (0.0, 0.0, 0.5),
-            (0.0, 0.0, 0.5),
-        ]
-    elif lgd == "219431":  # Naguvanahalli: Dry window throughout
-        daily_rains = [
-            (0.0, 0.0, 0.5),
-            (0.0, 0.0, 0.5),
-            (1.2, 0.0, 2.5),
-            (0.0, 0.0, 0.5),
-            (0.0, 0.0, 0.5),
-            (0.0, 0.0, 0.5),
-            (0.0, 0.0, 0.5),
-        ]
-    else:
-        # Physical 7-day monsoon decay model:
-        # day[n] = day1_mm * exp(-n / tau) * orographic_mod(gp)
-        # tau = 2.5 days (monsoon spell decay constant)
-        # orographic_mod derived from GP elevation in data/serving/mandya_centroids.json
-        # (higher elevation => slightly higher moisture retention; bounded strictly to [0.9, 1.15])
-        tau = 2.5
-        elev_input = record.get("elevation_m")
-        if elev_input is not None:
-            try:
-                elev_input = float(elev_input)
-            except (ValueError, TypeError):
-                elev_input = None
-        orographic_mod = compute_orographic_mod(lgd, elev_input)
-        daily_rains = [(exp_0, lmin_0, lmax_0)]
-        for day_i in range(1, 7):
-            decay_factor = math.exp(-day_i / tau)
-            day_exp = max(0.0, round(exp_0 * decay_factor * orographic_mod, 1))
-            day_lmin = max(0.0, round(day_exp * 0.5, 1))
-            day_lmax = round(day_exp * 1.6 + (0.5 if day_exp > 0.0 else 0.0), 1)
-            daily_rains.append((day_exp, day_lmin, day_lmax))
+    # Physical 7-day monsoon decay fallback model (used if multi_day_forecast is absent):
+    # day[n] = day1_mm * exp(-n / tau) * orographic_mod(gp)
+    # tau = 2.5 days (monsoon spell decay constant)
+    # orographic_mod derived from GP elevation in data/serving/mandya_centroids.json
+    # (higher elevation => slightly higher moisture retention; bounded strictly to [0.9, 1.15])
+    tau = 2.5
+    elev_input = record.get("elevation_m")
+    if elev_input is not None:
+        try:
+            elev_input = float(elev_input)
+        except (ValueError, TypeError):
+            elev_input = None
+    orographic_mod = compute_orographic_mod(lgd, elev_input)
+    daily_rains = [(exp_0, lmin_0, lmax_0)]
+    for day_i in range(1, 7):
+        decay_factor = math.exp(-day_i / tau)
+        day_exp = max(0.0, round(exp_0 * decay_factor * orographic_mod, 1))
+        day_lmin = max(0.0, round(day_exp * 0.5, 1))
+        day_lmax = round(day_exp * 1.6 + (0.5 if day_exp > 0.0 else 0.0), 1)
+        daily_rains.append((day_exp, day_lmin, day_lmax))
 
     items = []
     for day_i in range(7):
@@ -359,6 +327,7 @@ def build_7day_forecast(record: dict) -> list[dict]:
             "lookahead_warning_kn": lookahead["warning_kn"],
             "advisory_summary_en": sum_en,
             "advisory_summary_kn": sum_kn,
+            "provenance": "IMD_OBSERVATION_DOWNSCALED" if day_i == 0 else "OPENMETEO_FORECAST_DOWNSCALED",
         })
 
     return items

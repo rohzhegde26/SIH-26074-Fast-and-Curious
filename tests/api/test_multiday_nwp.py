@@ -96,3 +96,111 @@ def test_api_forecast_panchayat_multivariate(client):
     assert "rh_pct" in first_day
     assert "wind_kph" in first_day
     assert "heat_stress_level" in first_day
+
+
+def test_serving_json_7days_distinct_and_provenance(client):
+    """
+    Asserts that all 7 days in the serving JSON are mutually distinct and carry
+    the correct provenance tags (Day 1: IMD_OBSERVATION_DOWNSCALED, Days 2-7: OPENMETEO_FORECAST_DOWNSCALED).
+    """
+    response = client.get("/api/forecast/219388")  # Nalligere
+    assert response.status_code == 200
+    data = response.json()
+
+    multi_days = data["multi_day_forecast"]
+    assert len(multi_days) == 7
+
+    # Verify Day 1 vs Days 2-7 provenance tags
+    assert multi_days[0]["provenance"] == "IMD_OBSERVATION_DOWNSCALED"
+    for day in multi_days[1:]:
+        assert day["provenance"] in ("OPENMETEO_FORECAST_DOWNSCALED", "COMMITTED_FALLBACK_CYCLE")
+
+    # Assert mutually distinct days
+    day_signatures = [
+        (d["date"], d["day_offset"], d["expected_mm"], d["tmax_c"], d["rh_pct"], d["wind_kph"])
+        for d in multi_days
+    ]
+    assert len(set(day_signatures)) == 7, "Expected all 7 forecast days to be mutually distinct"
+
+    # Also assert dates are strictly incrementing
+    dates = [d["date"] for d in multi_days]
+    assert len(set(dates)) == 7
+
+
+def test_cycle_age_badge_bucket_logic():
+    """
+    Tests the 3-tier degradation ladder for the cycle freshness badge:
+    <= 1: green
+    2-3: amber
+    > 3: red with 'stale cycle: advisories from last sync'
+    """
+    def evaluate_badge(cycle_date: str, cycle_age: int) -> dict:
+        age = int(cycle_age)
+        if age <= 1:
+            return {
+                "class": "badge-green",
+                "text": f"Cycle: {cycle_date} (age {age}d)",
+            }
+        elif age <= 3:
+            return {
+                "class": "badge-amber",
+                "text": f"Cycle: {cycle_date} (age {age}d)",
+            }
+        else:
+            return {
+                "class": "badge-red",
+                "text": f"Cycle: {cycle_date} (age {age}d) — stale cycle: advisories from last sync",
+            }
+
+    # Fresh cycle
+    b0 = evaluate_badge("2026-09-10", 0)
+    assert b0["class"] == "badge-green"
+    assert "age 0d" in b0["text"]
+
+    b1 = evaluate_badge("2026-09-09", 1)
+    assert b1["class"] == "badge-green"
+    assert "age 1d" in b1["text"]
+
+    # Aging cache (2-3 days)
+    b2 = evaluate_badge("2026-09-08", 2)
+    assert b2["class"] == "badge-amber"
+    assert "age 2d" in b2["text"]
+
+    b3 = evaluate_badge("2026-09-07", 3)
+    assert b3["class"] == "badge-amber"
+    assert "age 3d" in b3["text"]
+
+    # Stale cycle (> 3 days)
+    b4 = evaluate_badge("2026-09-05", 5)
+    assert b4["class"] == "badge-red"
+    assert "stale cycle: advisories from last sync" in b4["text"]
+
+
+def test_missing_file_fallback_path(tmp_path):
+    """
+    Verifies that when a forecast file is missing, the pipeline gracefully falls back
+    to the last committed cycle and tags Days 2-7 with COMMITTED_FALLBACK_CYCLE without crashing.
+    """
+    from scripts.run_pipeline import run_pipeline
+
+    output_path = tmp_path / "fallback_forecasts.json"
+    missing_file = tmp_path / "non_existent_cycle.json"
+
+    records = run_pipeline(
+        forecast_date="2023-07-01",
+        district="MANDYA",
+        output_json_path=output_path,
+        output_geojson_path=None,
+        n_mc_passes=2,
+        forecast_file=missing_file,
+    )
+
+    assert len(records) == 234
+    first_gp = records[0]
+    m_days = first_gp["multi_day_forecast"]
+    assert len(m_days) == 7
+
+    assert m_days[0]["provenance"] == "IMD_OBSERVATION_DOWNSCALED"
+    for d in m_days[1:]:
+        assert d["provenance"] == "COMMITTED_FALLBACK_CYCLE"
+

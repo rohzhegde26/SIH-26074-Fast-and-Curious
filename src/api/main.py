@@ -159,6 +159,22 @@ def _response(record: dict) -> ForecastResponse:
     raw_multi = build_7day_forecast(record)
     multi_days = [DailyForecastItem(**item) for item in raw_multi]
 
+    cycle_age_days = 0
+    if "cycle_age_days" in record:
+        cycle_age_days = int(record["cycle_age_days"])
+    else:
+        fetched_str = record.get("fetched_at_utc") or record.get("timestamp_utc")
+        if fetched_str:
+            try:
+                if "T" in str(fetched_str):
+                    dt = datetime.fromisoformat(str(fetched_str).replace("Z", "+00:00"))
+                else:
+                    dt = datetime.fromisoformat(str(fetched_str)).replace(tzinfo=timezone.utc)
+                now = datetime.now(timezone.utc)
+                cycle_age_days = max(0, int((now - dt).total_seconds() // 86400))
+            except Exception:
+                cycle_age_days = 0
+
     return ForecastResponse(
         lgd_code=str(record["lgd_code"]),
         panchayat_name=record["panchayat_name"],
@@ -166,6 +182,7 @@ def _response(record: dict) -> ForecastResponse:
         district=record["district"],
         forecast_date=record["forecast_date"],
         timestamp_utc=record["timestamp_utc"],
+        cycle_age_days=cycle_age_days,
         rainfall_mm=Rainfall(expected=expected, likely_min=record["likely_min_mm"], likely_max=likely_max),
         advisory=AdvisorySet(
             ragi=_convert_advisory(ragi),

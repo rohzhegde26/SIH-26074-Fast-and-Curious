@@ -88,6 +88,7 @@ class DailyForecastItem(BaseModel):
     lookahead_warning_kn: str | None = None
     advisory_summary_en: str = ""
     advisory_summary_kn: str = ""
+    provenance: str = "IMD_OBSERVATION_DOWNSCALED"
 
 
 class AgrometVariables(BaseModel):
@@ -110,6 +111,7 @@ class ForecastResponse(BaseModel):
     district: str
     forecast_date: date
     timestamp_utc: datetime
+    cycle_age_days: int = 0
     rainfall_mm: Rainfall
     advisory: AdvisorySet
     agromet_context: AgrometVariables | None = None

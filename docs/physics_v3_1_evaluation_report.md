@@ -160,4 +160,13 @@ To transition from the current air-gapped synthetic verification harness to oper
    - Implemented in [`src/integrations/imd_live_adapter.py`](file:///c:/Users/Rohith%20P%20Hegde/Desktop/SIH-FINALISTS-2026/src/integrations/imd_live_adapter.py).
    - Contract: Scheduled TLS v1.3 automated polling of IMD daily 08:30 IST 0.25° gridded NetCDF binary feeds.
 
+## 10. Operational Multi-Day Forecasting: Hybrid Analysis/Forecast Architecture
+
+In the operational pipeline, forecast lead days operate under a hybrid architecture:
+- **Day 1 (Analysis / Day 0 Lookahead)**: Day 1 is a verified downscaled analysis against CHIRPS ground truth, sourced from gridded gauge observations (`data/raw/imd/imd_sample.nc`) and tagged with provenance `"IMD_OBSERVATION_DOWNSCALED"`.
+- **Days 2–7 (Operational NWP Forecast)**: Days 2–7 are operational NWP forecasts sourced from operational multi-day weather forecasts (`data/raw/forecast/multiday_coarse_<YYYYMMDD>.json`) and downscaled by `UNet5x` and `MultivariatePhysicalDownscaler`. They are tagged with provenance `"OPENMETEO_FORECAST_DOWNSCALED"` (or `"COMMITTED_FALLBACK_CYCLE"` during air-gapped fallback).
+
+> **Scientific Calibration Note:** The QuantileMapper was calibrated on IMD->CHIRPS; applying it to GFS/ECMWF introduces a minor distribution shift, which is documented as a Stage-2 recalibration target.
+
+
 

@@ -111,6 +111,8 @@ data/raw/*
 !data/raw/dem/
 data/raw/dem/*
 !data/raw/dem/provenance.json
+!data/raw/forecast/
+!data/raw/forecast/multiday_coarse_*.json
 data/raw/geodata/*.parquet
 data/processed/
 *.zarr/
@@ -138,6 +140,8 @@ secrets/
 scratch/
 *.tmp
 *.part
+*.db-shm
+*.db-wal
 
 # -- Generated OpenAPI spec (auto-regenerated on startup) ----------------------
 docs/openapi.json
