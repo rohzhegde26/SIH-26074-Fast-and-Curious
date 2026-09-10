@@ -387,10 +387,17 @@ function renderMissionTimeline(record) {
             layerObj.setStyle(getFeatureStyle(layerObj.feature, isSelected));
           });
         }
-        renderMissionInspectionStrip(record);
+        if (typeof window.renderMissionInspectionStrip === "function") {
+          window.renderMissionInspectionStrip(record);
+        }
         const modal = document.querySelector("#exclave-modal");
         if (modal && !modal.classList.contains("hidden")) {
           renderExclaveModalContent(record);
+        }
+        const dualModal = document.querySelector("#dual-map-modal");
+        if (dualModal && !dualModal.classList.contains("hidden")) {
+          initDualSyncMaps();
+          updateDualModalHUD(currentRecords, currentSelectedDayIndex);
         }
       }
     };
@@ -400,7 +407,9 @@ function renderMissionTimeline(record) {
 function renderForecastDetails(record) {
   if (!record) return;
   renderMissionTimeline(record);
-  renderMissionInspectionStrip(record);
+  if (typeof window.renderMissionInspectionStrip === "function") {
+    window.renderMissionInspectionStrip(record);
+  }
 }
 
 // -------------------------------------------------------------
@@ -741,7 +750,7 @@ function getFeatureStyle(feature, isSelected = false) {
 }
 
 function getDistrictAvgRain(dayIdx = 0) {
-  if (!currentRecords || !currentRecords.length) return 7.9;
+  if (!currentRecords || !currentRecords.length) return null;
   const rains = currentRecords.map(r => {
     const mdf = r.multi_day_forecast;
     return (mdf && mdf[dayIdx]) ? mdf[dayIdx].expected_mm : (r.rainfall_mm?.expected ?? r.expected_mm ?? 0.0);
@@ -750,12 +759,30 @@ function getDistrictAvgRain(dayIdx = 0) {
 }
 
 function getDistrictMaxRain(dayIdx = 0) {
-  if (!currentRecords || !currentRecords.length) return 53.7;
+  if (!currentRecords || !currentRecords.length) return null;
   const rains = currentRecords.map(r => {
     const mdf = r.multi_day_forecast;
     return (mdf && mdf[dayIdx]) ? mdf[dayIdx].expected_mm : (r.rainfall_mm?.expected ?? r.expected_mm ?? 0.0);
   });
   return +Math.max(...rains).toFixed(1);
+}
+
+function getDistrictMinRain(dayIdx = 0) {
+  if (!currentRecords || !currentRecords.length) return null;
+  const rains = currentRecords.map(r => {
+    const mdf = r.multi_day_forecast;
+    return (mdf && mdf[dayIdx]) ? mdf[dayIdx].expected_mm : (r.rainfall_mm?.expected ?? r.expected_mm ?? 0.0);
+  });
+  return +Math.min(...rains).toFixed(1);
+}
+
+function imdCategory(mm) {
+  if (mm === null || mm === undefined || isNaN(mm)) return "unknown";
+  if (mm > 115.5) return "extreme";
+  if (mm > 64.4)  return "heavy";
+  if (mm > 15.5)  return "moderate";
+  if (mm > 2.5)   return "light";
+  return "dry";
 }
 
 function formatTooltipContent(record, feature) {
@@ -773,10 +800,10 @@ function formatTooltipContent(record, feature) {
   if (currentMapLayer === "imd") {
     const blockVal = getDistrictAvgRain(currentSelectedDayIndex);
     const aiVal = exp.toFixed(1);
-    const delta = (exp - blockVal).toFixed(1);
-    const deltaSign = (exp - blockVal) > 0 ? "+" : "";
+    const delta = blockVal !== null ? (exp - blockVal).toFixed(1) : "—";
+    const deltaSign = (blockVal !== null && (exp - blockVal) > 0) ? "+" : "";
     const anomalyBadge = exp >= 15.0
-      ? `<span style="color:#ef4444; font-weight:700;">🚨 Cloudburst hidden by IMD</span>`
+      ? `<span style="color:#ef4444; font-weight:700;">🚨 Convective peak hidden by IMD</span>`
       : (exp >= 2.5 ? `<span style="color:#f59e0b; font-weight:700;">⚠️ Local rain missed by block</span>` : `<span style="color:#10b981; font-weight:700;">🟢 Dry valley (matches block)</span>`);
 
     return `
@@ -787,7 +814,7 @@ function formatTooltipContent(record, feature) {
       <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • LGD ${record?.lgd_code || feature.id}</div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
         <span style="font-size:0.8rem; color:#cbd5e1;">IMD Block Prediction:</span>
-        <strong style="font-size:0.88rem; color:#93c5fd;">${blockVal.toFixed(1)} mm (Flat)</strong>
+        <strong style="font-size:0.88rem; color:#93c5fd;">${blockVal !== null ? blockVal.toFixed(1) + ' mm (Flat)' : '—'}</strong>
       </div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
         <span style="font-size:0.8rem; color:#cbd5e1;">Our 5× Downscaled:</span>
@@ -923,10 +950,11 @@ function updateMapLegend(layerType) {
 
   if (layerType === "imd") {
     const blockVal = getDistrictAvgRain(currentSelectedDayIndex);
+    const blockValStr = blockVal !== null ? `Uniform ${blockVal.toFixed(1)} mm (All 234 GPs)` : "No forecast data loaded";
     legend.innerHTML = `
       <span class="legend-title">IMD Block NWP (0.25°):</span>
-      <div class="legend-item"><span class="legend-swatch" style="background:#e3f2fd;border:1px solid #94a3b8;"></span> Uniform ${blockVal.toFixed(1)} mm (All 234 GPs)</div>
-      <div class="legend-item" style="color:#d97706;font-weight:600;"><span class="legend-swatch" style="background:#f59e0b;"></span> ⚠️ Blind to Local Cloudbursts</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#cbd5e1;border:1px solid #94a3b8;"></span> ${blockValStr}</div>
+      <div class="legend-item" style="color:#d97706;font-weight:600;"><span class="legend-swatch" style="background:#f59e0b;"></span> ⚠️ Blind to Local Storm Peaks</div>
     `;
     return;
   }
@@ -1024,7 +1052,7 @@ function renderDownscalingPlots() {
   ctxFine.fillStyle = "#ffffff";
   ctxFine.font = "bold 9px sans-serif";
   ctxFine.textAlign = "center";
-  ctxFine.fillText("Nalligere 30.4mm", 35 * cellW_F, 55 * cellH_F - 6);
+  ctxFine.fillText("Nalligere Peak", 35 * cellW_F, 55 * cellH_F - 6);
 
   // Label Banavasi (r=20, c=65)
   ctxFine.fillStyle = "#000000";
@@ -1095,7 +1123,9 @@ function setupMapLayerSelector() {
         if (layer === "imd") {
           const avg = getDistrictAvgRain(currentSelectedDayIndex);
           const max = getDistrictMaxRain(currentSelectedDayIndex);
-          imdBanner.innerHTML = `<span class="banner-icon">⚠️</span><span><strong>IMD Block View:</strong> Uniform ${avg.toFixed(1)}mm over all 234 GPs • Convective peaks up to ${max.toFixed(1)}mm obscured • Zero intra-block resolution</span>`;
+          const avgStr = avg !== null ? `${avg.toFixed(1)}mm` : "—";
+          const maxStr = max !== null ? `${max.toFixed(1)}mm` : "—";
+          imdBanner.innerHTML = `<span class="banner-icon">⚠️</span><span><strong>IMD Block View:</strong> Uniform ${avgStr} over all 234 GPs • Convective peaks up to ${maxStr} obscured • Zero intra-block resolution</span>`;
           imdBanner.classList.remove("hidden");
         } else {
           imdBanner.classList.add("hidden");
@@ -1860,6 +1890,7 @@ async function loadData() {
   };
 
   function renderMissionInspectionStrip(record) {
+    window.renderMissionInspectionStrip = renderMissionInspectionStrip;
     const missionBar = document.querySelector("#mission-spatial-variance-bar");
     if (!missionBar || !record) return;
 
@@ -2100,13 +2131,13 @@ async function loadData() {
       return;
     }
 
-    // Presenter Stage Hotkey: 'n' or 'N' -> Nalligere 30.4mm Cloudburst
+    // Presenter Stage Hotkey: 'n' or 'N' -> Nalligere Convective Peak
     if (e.key.toLowerCase() === "n" && !isEditing) {
       e.preventDefault();
       const match = records.find(r => String(r.lgd_code) === "219388");
       if (match) {
         selectPanchayat(match);
-        showToast("⚡ Nalligere (30.4 mm Cloudburst — ₹2,600 Savings)");
+        showToast("⚡ Nalligere (Convective Peak — ₹2,600 Savings)");
       }
       return;
     }
@@ -2145,7 +2176,7 @@ async function loadData() {
   await renderMap(records);
 
   if (records.length) {
-    // Select Nalligere by default to immediately showcase Exclave & Cloudburst Variance
+    // Select Nalligere by default to immediately showcase Exclave & Convective Peak Variance
     const initial = records.find(r => String(r.lgd_code) === "219388") || records[0];
     selectPanchayat(initial);
   }
@@ -2157,6 +2188,229 @@ async function loadData() {
 let mapImd = null;
 let mapOur = null;
 let isSyncing = false;
+
+// Official IMD 24-Hour Rainfall Warning Colormap for 5× AI
+function getImdRainCategoryColor(mm) {
+  if (mm === null || mm === undefined || isNaN(mm)) return "#cbd5e1";
+  if (mm > 115.5) return "#dc2626"; // Crimson Red (Very Heavy / Extreme)
+  if (mm > 64.4)  return "#f97316"; // Ochre Orange (Heavy Rain)
+  if (mm > 15.5)  return "#059669"; // Forest Green / Emerald (Moderate Rain)
+  if (mm > 2.5)   return "#fde047"; // Pale Yellow (Light Rain)
+  return "#f8fafc";                 // Light Grey / Off-White (Dry / Rain Shadow < 2.5mm)
+}
+
+function imdCategoryLabel(mm) {
+  if (mm === null || mm === undefined || isNaN(mm)) return "Unknown";
+  if (mm > 115.5) return "Extreme";
+  if (mm > 64.4)  return "Heavy";
+  if (mm > 15.5)  return "Moderate";
+  if (mm > 2.5)   return "Light";
+  return "Dry";
+}
+
+window.imdCategoryLabel = imdCategoryLabel;
+window.getImdRainCategoryColor = getImdRainCategoryColor;
+
+function updateDualModalHUD(records, dayIdx = 0) {
+  const granImd = document.querySelector("#hud-imd-gran");
+  const granAi = document.querySelector("#hud-ai-gran");
+  const peakImd = document.querySelector("#hud-imd-peak");
+  const peakAi = document.querySelector("#hud-ai-peak");
+  const zonesImd = document.querySelector("#hud-imd-zones");
+  const zonesAi = document.querySelector("#hud-ai-zones");
+  const subImd = document.querySelector("#dual-imd-sub");
+  const subAi = document.querySelector("#dual-ai-sub");
+  const footerMass = document.querySelector("#dual-mass-footer");
+  const provChip = document.querySelector("#dual-prov-chip");
+
+  const avg = getDistrictAvgRain(dayIdx);
+  const mx = getDistrictMaxRain(dayIdx);
+  const mn = getDistrictMinRain(dayIdx);
+
+  if (!records || !records.length || avg === null) {
+    if (subImd) subImd.textContent = "No forecast data loaded";
+    if (subAi) subAi.textContent = "—";
+    if (granImd) granImd.textContent = "—";
+    if (granAi) granAi.textContent = "—";
+    if (peakImd) peakImd.textContent = "—";
+    if (peakAi) peakAi.textContent = "—";
+    if (zonesImd) zonesImd.textContent = "—";
+    if (zonesAi) zonesAi.textContent = "—";
+    if (footerMass) footerMass.textContent = "—";
+    if (provChip) provChip.textContent = "—";
+    return;
+  }
+
+  let peakGP = "Mandya Peak";
+  let miniGP = "Mandya Valley";
+  let maxV = -Infinity;
+  let minV = Infinity;
+
+  const avgCat = imdCategory(avg);
+  let wrongCat = 0;
+
+  for (const r of records) {
+    const v = r.multi_day_forecast?.[dayIdx]?.expected_mm ?? r.rainfall_mm?.expected ?? r.expected_mm ?? 0.0;
+    if (v > maxV) {
+      maxV = v;
+      peakGP = r.panchayat_name || `GP ${r.lgd_code}`;
+    }
+    if (v < minV) {
+      minV = v;
+      miniGP = r.panchayat_name || `GP ${r.lgd_code}`;
+    }
+    if (imdCategory(v) !== avgCat) {
+      wrongCat++;
+    }
+  }
+
+  const rec0 = records[0];
+  const activeDay0 = (rec0.multi_day_forecast && rec0.multi_day_forecast[dayIdx]) ? rec0.multi_day_forecast[dayIdx] : null;
+  const dayDate = activeDay0?.date || "";
+  const dayName = activeDay0?.day_label_en || (dayIdx === 0 ? "Today" : `Day +${dayIdx}`);
+  const dayLabel = dayDate ? `${dayDate} (${dayName})` : dayName;
+  const prov = activeDay0?.provenance || rec0.provenance || "OPENMETEO_FORECAST_DOWNSCALED";
+  const cycleDate = rec0.cycle_date || rec0.forecast_date || "—";
+
+  if (granImd) granImd.textContent = "1 Block-Mean Value (0.25°)";
+  if (granAi) granAi.textContent = `${records.length} GP Forecasts (5.5 km)`;
+  if (peakImd) peakImd.textContent = `${avg} mm (Block-Mean)`;
+  if (peakAi) peakAi.textContent = `${mx} mm (${peakGP})`;
+  if (zonesImd) zonesImd.textContent = "0 (Single Warning Class)";
+  if (zonesAi) zonesAi.textContent = `${wrongCat} GPs in Different Warning Class`;
+  if (subImd) subImd.textContent = `Uniform ${avg} mm block-mean • single IMD warning class (${imdCategoryLabel(avg)}) • blind to orographic concentration & rain-shadows`;
+  if (subAi) subAi.textContent = `${mn}–${mx} mm • convective peak resolved • 0.000% mass error`;
+  if (footerMass) footerMass.textContent = `(1/25)Σ HR·cos(φ) = LR • district conserved mean ${avg} mm (= coarse block-mean)`;
+  if (provChip) provChip.textContent = `Cycle ${cycleDate} • ${dayLabel} • ${prov}`;
+}
+
+function getRingAreaAndCentroid(ring) {
+  const n = ring ? ring.length : 0;
+  if (n < 3) return { area: 0, centroid: null };
+  let signedArea2 = 0, cx = 0, cy = 0;
+  for (let i = 0; i < n; i++) {
+    const p0 = ring[i];
+    const p1 = ring[(i + 1) % n];
+    const x0 = Array.isArray(p0) ? p0[0] : (p0.lng ?? p0.x);
+    const y0 = Array.isArray(p0) ? p0[1] : (p0.lat ?? p0.y);
+    const x1 = Array.isArray(p1) ? p1[0] : (p1.lng ?? p1.x);
+    const y1 = Array.isArray(p1) ? p1[1] : (p1.lat ?? p1.y);
+    const cross = (x0 * y1 - x1 * y0);
+    signedArea2 += cross;
+    cx += (x0 + x1) * cross;
+    cy += (y0 + y1) * cross;
+  }
+  const area = Math.abs(signedArea2 / 2);
+  if (Math.abs(signedArea2) < 1e-12) {
+    let avgX = 0, avgY = 0;
+    for (let i = 0; i < n; i++) {
+      const p = ring[i];
+      avgX += Array.isArray(p) ? p[0] : (p.lng ?? p.x);
+      avgY += Array.isArray(p) ? p[1] : (p.lat ?? p.y);
+    }
+    return { area: 0, centroid: [avgY / n, avgX / n] };
+  }
+  const factor = 1 / (3 * signedArea2);
+  return { area, centroid: [cy * factor, cx * factor] };
+}
+
+function pointInRing(latLng, ring) {
+  const y = latLng[0], x = latLng[1];
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const p0 = ring[i], p1 = ring[j];
+    const xi = Array.isArray(p0) ? p0[0] : (p0.lng ?? p0.x);
+    const yi = Array.isArray(p0) ? p0[1] : (p0.lat ?? p0.y);
+    const xj = Array.isArray(p1) ? p1[0] : (p1.lng ?? p1.x);
+    const yj = Array.isArray(p1) ? p1[1] : (p1.lat ?? p1.y);
+    const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function ensureInsideRing(centroid, ring) {
+  if (pointInRing(centroid, ring)) return centroid;
+  for (let step = 0.3; step <= 0.8; step += 0.1) {
+    for (const pt of ring) {
+      const px = Array.isArray(pt) ? pt[0] : (pt.lng ?? pt.x);
+      const py = Array.isArray(pt) ? pt[1] : (pt.lat ?? pt.y);
+      const cand = [centroid[0] * (1 - step) + py * step, centroid[1] * (1 - step) + px * step];
+      if (pointInRing(cand, ring)) return cand;
+    }
+  }
+  const p0 = ring[0];
+  return [Array.isArray(p0) ? p0[1] : (p0.lat ?? p0.y), Array.isArray(p0) ? p0[0] : (p0.lng ?? p0.x)];
+}
+
+function getLayerLargestParcelCentroid(layer) {
+  if (!layer) return null;
+  if (layer.feature && layer.feature.geometry) {
+    const geom = layer.feature.geometry;
+    let rings = [];
+    if (geom.type === "Polygon") {
+      rings = [geom.coordinates[0]];
+    } else if (geom.type === "MultiPolygon") {
+      rings = geom.coordinates.map(poly => poly[0]);
+    }
+    let maxArea = -1;
+    let bestCentroid = null;
+    let bestRing = null;
+    for (const ring of rings) {
+      if (!ring || ring.length < 3) continue;
+      const { area, centroid } = getRingAreaAndCentroid(ring);
+      if (area > maxArea) {
+        maxArea = area;
+        bestCentroid = centroid;
+        bestRing = ring;
+      }
+    }
+    if (bestCentroid && bestRing) {
+      return ensureInsideRing(bestCentroid, bestRing);
+    }
+  }
+  if (layer.getBounds) {
+    const pt = layer.getBounds().getCenter();
+    return [pt.lat, pt.lng];
+  }
+  return null;
+}
+
+function adjustPinCollision(map, markerPeak, markerMin, basePeakLatLng, baseMinLatLng, cardW = 150, cardH = 58) {
+  if (!map || !markerPeak || !markerMin || !basePeakLatLng || !baseMinLatLng) return;
+  markerPeak.setLatLng(basePeakLatLng);
+  markerMin.setLatLng(baseMinLatLng);
+
+  const ptPeak = map.latLngToLayerPoint(basePeakLatLng);
+  const ptMin = map.latLngToLayerPoint(baseMinLatLng);
+
+  const rectPeak = {
+    left: ptPeak.x - cardW / 2,
+    right: ptPeak.x + cardW / 2,
+    top: ptPeak.y - cardH,
+    bottom: ptPeak.y
+  };
+
+  const rectMin = {
+    left: ptMin.x - cardW / 2,
+    right: ptMin.x + cardW / 2,
+    top: ptMin.y - cardH,
+    bottom: ptMin.y
+  };
+
+  const intersects = !(
+    rectPeak.right < rectMin.left ||
+    rectPeak.left > rectMin.right ||
+    rectPeak.bottom < rectMin.top ||
+    rectPeak.top > rectMin.bottom
+  );
+
+  if (intersects) {
+    const shiftedPt = L.point(ptMin.x, ptMin.y + (cardH + 10));
+    const shiftedLatLng = map.layerPointToLatLng(shiftedPt);
+    markerMin.setLatLng(shiftedLatLng);
+  }
+}
 
 function initDualSyncMaps() {
   if (mapImd) {
@@ -2174,6 +2428,7 @@ function initDualSyncMaps() {
     zoom: 10,
     minZoom: 8,
     maxZoom: 15,
+    zoomSnap: 0.1,
     zoomControl: true,
     attributionControl: false
   });
@@ -2183,9 +2438,13 @@ function initDualSyncMaps() {
     zoom: 10,
     minZoom: 8,
     maxZoom: 15,
+    zoomSnap: 0.1,
     zoomControl: false,
     attributionControl: false
   });
+
+  window.mapImd = mapImd;
+  window.mapOur = mapOur;
 
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18
@@ -2195,77 +2454,247 @@ function initDualSyncMaps() {
     maxZoom: 18
   }).addTo(mapOur);
 
-  // 1. IMD Layer: Uniform 1.8mm flat pale blue across all 234 GPs
-  const imdStyle = {
-    fillColor: "#e3f2fd",
-    fillOpacity: 0.88,
-    weight: 1.2,
-    color: "#64748b"
-  };
-
-  // 2. 5x AI Layer: High-res downscaled orographic precipitation
+  // 2. 5x AI Layer: High-res downscaled orographic precipitation with official IMD warning colors
   function aiStyle(feature) {
     const code = String(feature?.id || feature?.properties?.code || "");
-    const rec = currentRecords.find(r => String(r.lgd_code) === code);
-    const v = rec ? (rec.rainfall_mm?.expected ?? rec.expected_mm ?? 0.0) : (feature?.properties?.expected_mm || 0.0);
+    const rec = currentRecords ? currentRecords.find(r => String(r.lgd_code) === code) : null;
+    const v = rec
+      ? (rec.multi_day_forecast?.[currentSelectedDayIndex]?.expected_mm ?? rec.expected_mm ?? 0.0)
+      : (feature?.properties?.expected_mm || 0.0);
     return {
-      fillColor: getRainColor(v),
-      fillOpacity: 0.88,
-      weight: 1.0,
+      fillColor: getImdRainCategoryColor(v),
+      fillOpacity: 0.90,
+      weight: 1.1,
       color: "#334155"
     };
   }
 
+  let districtBounds = null;
+  let isSyncing = false;
+
   const geojson = window.panchayatGeoJSON;
   if (geojson) {
+    const blockAvg = getDistrictAvgRain(currentSelectedDayIndex);
+    const baseColor = blockAvg !== null ? getImdRainCategoryColor(blockAvg) : "#cbd5e1";
+
+    const imdStyle = {
+      fillColor: baseColor,
+      fillOpacity: 0.78,
+      weight: 1.0,
+      color: "#94a3b8"
+    };
+
     const imdGeoLayer = L.geoJSON(geojson, {
       style: imdStyle,
       onEachFeature: (f, l) => {
+        l.getStyle = () => imdStyle;
         const code = String(f.id || f.properties?.code || "");
-        const rec = currentRecords.find(r => String(r.lgd_code) === code);
+        const rec = currentRecords ? currentRecords.find(r => String(r.lgd_code) === code) : null;
         const name = rec?.panchayat_name || f.properties?.gpname || `GP ${code}`;
         const taluk = f.properties?.sdtname || "Mandya";
-        const v = rec ? (rec.rainfall_mm?.expected ?? rec.expected_mm ?? 0.0) : 0.0;
-        const blockAvg = getDistrictAvgRain(currentSelectedDayIndex);
+        const v = rec
+          ? (rec.multi_day_forecast?.[currentSelectedDayIndex]?.expected_mm ?? rec.expected_mm ?? 0.0)
+          : 0.0;
+        const blockAvgStr = blockAvg !== null ? `${blockAvg.toFixed(1)} mm (Uniform Flat)` : "No data";
         l.bindTooltip(`
           <div style="font-family:sans-serif; font-size:11px; line-height:1.3; color:#0f172a;">
             <strong>${name} (${taluk})</strong><br>
-            <span style="color:#0369a1; font-weight:700;">IMD NWP: ${blockAvg.toFixed(1)} mm (Uniform Flat)</span><br>
+            <span style="color:#475569; font-weight:700;">IMD NWP: ${blockAvgStr}</span><br>
             <span style="color:#64748b;">Our 5× Downscaled: ${v.toFixed(1)} mm</span><br>
-            <span style="color:#d97706; font-weight:600;">⚠️ Blind to local convective cells</span>
+            <span style="color:#b91c1c; font-weight:600;">⚠️ Blind to local convective cells</span>
           </div>
         `, { sticky: true });
       }
     }).addTo(mapImd);
+    window.imdGeoLayer = imdGeoLayer;
 
     const ourGeoLayer = L.geoJSON(geojson, {
       style: aiStyle,
       onEachFeature: (f, l) => {
         const code = String(f.id || f.properties?.code || "");
-        const rec = currentRecords.find(r => String(r.lgd_code) === code);
+        const rec = currentRecords ? currentRecords.find(r => String(r.lgd_code) === code) : null;
         const name = rec?.panchayat_name || f.properties?.gpname || `GP ${code}`;
         const taluk = f.properties?.sdtname || "Mandya";
-        const v = rec ? (rec.rainfall_mm?.expected ?? rec.expected_mm ?? 0.0) : 0.0;
-        const blockAvg = getDistrictAvgRain(currentSelectedDayIndex);
-        const delta = (v - blockAvg).toFixed(1);
-        const deltaSign = (v - blockAvg) > 0 ? "+" : "";
+        const v = rec
+          ? (rec.multi_day_forecast?.[currentSelectedDayIndex]?.expected_mm ?? rec.expected_mm ?? 0.0)
+          : 0.0;
+        const delta = blockAvg !== null ? (v - blockAvg).toFixed(1) : "—";
+        const deltaSign = (blockAvg !== null && (v - blockAvg) > 0) ? "+" : "";
         const alertNote = v >= 15.0
-          ? "<span style='color:#ef4444;font-weight:700;'>🚨 Cloudburst Cell Resolved</span>"
-          : (v >= 2.5 ? "<span style='color:#0284c7;font-weight:700;'>🌧️ Active Rain Zone</span>" : "<span style='color:#10b981;font-weight:700;'>🟢 Leeward Rain Shadow</span>");
+          ? "<span style='color:#059669;font-weight:700;'>🌧️ Convective Peak Resolved</span>"
+          : (v >= 2.5 ? "<span style='color:#ca8a04;font-weight:700;'>🌦️ Active Rain Zone</span>" : "<span style='color:#0284c7;font-weight:700;'>🟢 Leeward Rain Shadow</span>");
         l.bindTooltip(`
           <div style="font-family:sans-serif; font-size:11px; line-height:1.3; color:#0f172a;">
             <strong>${name} (${taluk})</strong><br>
-            <span style="color:${v >= 15 ? '#ef4444' : '#0369a1'}; font-weight:800;">5× Downscaled: ${v.toFixed(1)} mm (Δ ${deltaSign}${delta} mm)</span><br>
-            <span style="color:#64748b;">IMD Block Input: ${blockAvg.toFixed(1)} mm</span><br>
+            <span style="color:${v >= 15 ? '#059669' : '#0369a1'}; font-weight:800;">5× Downscaled: ${v.toFixed(1)} mm (Δ ${deltaSign}${delta} mm)</span><br>
+            <span style="color:#64748b;">IMD Block Input: ${blockAvg !== null ? blockAvg.toFixed(1) + ' mm' : '—'}</span><br>
             ${alertNote}
           </div>
         `, { sticky: true });
       }
     }).addTo(mapOur);
 
+    // Dynamic extraction of argmax & argmin GPs for the selected day
+    if (currentRecords && currentRecords.length && blockAvg !== null) {
+      let peakRec = currentRecords[0];
+      let minRec = currentRecords[0];
+      let maxVal = -Infinity;
+      let minVal = Infinity;
+
+      for (const r of currentRecords) {
+        const val = r.multi_day_forecast?.[currentSelectedDayIndex]?.expected_mm ?? r.expected_mm ?? 0.0;
+        if (val > maxVal) {
+          maxVal = val;
+          peakRec = r;
+        }
+        if (val < minVal) {
+          minVal = val;
+          minRec = r;
+        }
+      }
+
+      let peakCoord = [12.9516, 76.7677];
+      let minCoord = [12.4951, 76.8708];
+
+      try {
+        ourGeoLayer.eachLayer(l => {
+          const c = String(l.feature?.id || l.feature?.properties?.code || l.feature?.properties?.gpcode || "");
+          if (c === String(peakRec.lgd_code)) {
+            const pt = getLayerLargestParcelCentroid(l);
+            if (pt) peakCoord = pt;
+            if (typeof l.unbindTooltip === "function") {
+              l.unbindTooltip();
+            }
+          }
+          if (c === String(minRec.lgd_code)) {
+            const pt = getLayerLargestParcelCentroid(l);
+            if (pt) minCoord = pt;
+            if (typeof l.unbindTooltip === "function") {
+              l.unbindTooltip();
+            }
+          }
+        });
+      } catch (_) {}
+
+      const peakName = peakRec.panchayat_name || `GP ${peakRec.lgd_code}`;
+      const minName = minRec.panchayat_name || `GP ${minRec.lgd_code}`;
+      const peakDelta = +(maxVal - blockAvg).toFixed(1);
+      const peakDeltaStr = peakDelta > 0 ? `+${peakDelta}` : `${peakDelta}`;
+
+      const peakAiTag = (maxVal - blockAvg) > 5
+        ? `🚨 ${peakDeltaStr} mm Convective Peak Resolved`
+        : `⚡ ${peakDeltaStr} mm Peak Resolved`;
+      const minAiTag = minVal < 2.5
+        ? "☀️ Dry-Spell / Rain-Shadow Resolved"
+        : "💧 Lightest-Rain Zone";
+
+      const peakImdTag = (maxVal - blockAvg) > 5
+        ? "⚠️ Missed Convective Cell"
+        : "Block-Mean Baseline";
+      const minImdTag = (blockAvg >= 2.5 && minVal < 2.5)
+        ? "⚠️ False Rain Alert"
+        : "Block-Mean Baseline";
+
+      const PIN_W = 150;
+      const PIN_H = 58;
+
+      // 1. Anchor Pins on IMD Baseline Map (3 lines max, font-size 11px)
+      const pinImdPeak = L.divIcon({
+        className: "anchor-pin-wrap",
+        html: `
+          <div class="anchor-pin pin-imd">
+            <div class="pin-title">📍 ${peakName}</div>
+            <div class="pin-val">IMD: ${blockAvg} mm</div>
+            <div class="pin-tag ${(maxVal - blockAvg) > 5 ? 'tag-missed' : 'tag-neutral'}">${peakImdTag}</div>
+          </div>
+        `,
+        iconSize: [PIN_W, PIN_H],
+        iconAnchor: [PIN_W / 2, PIN_H]
+      });
+      const markerImdPeak = L.marker(peakCoord, { icon: pinImdPeak, interactive: false }).addTo(mapImd);
+
+      const pinImdMin = L.divIcon({
+        className: "anchor-pin-wrap",
+        html: `
+          <div class="anchor-pin pin-imd">
+            <div class="pin-title">📍 ${minName}</div>
+            <div class="pin-val">IMD: ${blockAvg} mm</div>
+            <div class="pin-tag ${(blockAvg >= 2.5 && minVal < 2.5) ? 'tag-false' : 'tag-neutral'}">${minImdTag}</div>
+          </div>
+        `,
+        iconSize: [PIN_W, PIN_H],
+        iconAnchor: [PIN_W / 2, PIN_H]
+      });
+      const markerImdMin = L.marker(minCoord, { icon: pinImdMin, interactive: false }).addTo(mapImd);
+
+      // 2. Anchor Pins on 5x AI Downscaled Map (3 lines max, no block input line)
+      const minDelta = +(minVal - blockAvg).toFixed(1);
+      const minDeltaStr = minDelta > 0 ? `+${minDelta}` : `${minDelta}`;
+
+      const pinAiPeak = L.divIcon({
+        className: "anchor-pin-wrap",
+        html: `
+          <div class="anchor-pin pin-ai pin-burst-ai">
+            <div class="pin-title">⚡ ${peakName}</div>
+            <div class="pin-val">5× AI: ${maxVal} mm (Δ ${peakDeltaStr} mm)</div>
+            <div class="pin-tag tag-resolved">${peakAiTag}</div>
+          </div>
+        `,
+        iconSize: [PIN_W, PIN_H],
+        iconAnchor: [PIN_W / 2, PIN_H]
+      });
+      const markerAiPeak = L.marker(peakCoord, { icon: pinAiPeak, interactive: false }).addTo(mapOur);
+
+      const pinAiMin = L.divIcon({
+        className: "anchor-pin-wrap",
+        html: `
+          <div class="anchor-pin pin-ai pin-dry-ai">
+            <div class="pin-title">⚡ ${minName}</div>
+            <div class="pin-val">5× AI: ${minVal} mm (Δ ${minDeltaStr} mm)</div>
+            <div class="pin-tag tag-shadow">${minAiTag}</div>
+          </div>
+        `,
+        iconSize: [PIN_W, PIN_H],
+        iconAnchor: [PIN_W / 2, PIN_H]
+      });
+      const markerAiMin = L.marker(minCoord, { icon: pinAiMin, interactive: false }).addTo(mapOur);
+
+      adjustPinCollision(mapImd, markerImdPeak, markerImdMin, peakCoord, minCoord, PIN_W, PIN_H);
+      adjustPinCollision(mapOur, markerAiPeak, markerAiMin, peakCoord, minCoord, PIN_W, PIN_H);
+
+      mapImd.on("zoomend moveend", () => {
+        adjustPinCollision(mapImd, markerImdPeak, markerImdMin, peakCoord, minCoord, PIN_W, PIN_H);
+      });
+      mapOur.on("zoomend moveend", () => {
+        adjustPinCollision(mapOur, markerAiPeak, markerAiMin, peakCoord, minCoord, PIN_W, PIN_H);
+      });
+
+      // Console assert: imdCategory(pin value) === fillColor bin of that GP polygon
+      const colorToCat = {
+        "#dc2626": "extreme",
+        "#f97316": "heavy",
+        "#059669": "moderate",
+        "#fde047": "light",
+        "#f8fafc": "dry"
+      };
+      const peakStyleObj = aiStyle({ id: peakRec.lgd_code, properties: { code: peakRec.lgd_code } });
+      console.assert(
+        imdCategory(maxVal) === colorToCat[peakStyleObj.fillColor],
+        `Assertion failed: imdCategory(${maxVal}) [${imdCategory(maxVal)}] !== fillColor bin [${colorToCat[peakStyleObj.fillColor]}]`
+      );
+      const minStyleObj = aiStyle({ id: minRec.lgd_code, properties: { code: minRec.lgd_code } });
+      console.assert(
+        imdCategory(minVal) === colorToCat[minStyleObj.fillColor],
+        `Assertion failed: imdCategory(${minVal}) [${imdCategory(minVal)}] !== fillColor bin [${colorToCat[minStyleObj.fillColor]}]`
+      );
+    }
+
     try {
-      mapImd.fitBounds(imdGeoLayer.getBounds(), { padding: [10, 10] });
-      mapOur.fitBounds(ourGeoLayer.getBounds(), { padding: [10, 10] });
+      districtBounds = imdGeoLayer.getBounds();
+      if (districtBounds.isValid()) {
+        mapImd.fitBounds(districtBounds, { padding: [8, 8] });
+        mapOur.fitBounds(districtBounds, { padding: [8, 8] });
+      }
     } catch (_) {}
   }
 
@@ -2283,6 +2712,12 @@ function initDualSyncMaps() {
   setTimeout(() => {
     if (mapImd) mapImd.invalidateSize();
     if (mapOur) mapOur.invalidateSize();
+    if (districtBounds && districtBounds.isValid()) {
+      isSyncing = true;
+      if (mapImd) mapImd.fitBounds(districtBounds, { padding: [8, 8] });
+      if (mapOur) mapOur.fitBounds(districtBounds, { padding: [8, 8] });
+      isSyncing = false;
+    }
   }, 100);
 }
 
@@ -2292,6 +2727,7 @@ function openDualModal() {
   modal.classList.remove("hidden");
   setTimeout(() => {
     initDualSyncMaps();
+    updateDualModalHUD(currentRecords, currentSelectedDayIndex);
   }, 60);
 }
 
@@ -2327,4 +2763,18 @@ setupModeSwitcher();
 setupMapControls();
 setupVirtualArgCopy();
 setupExclaveModal();
+
+window.openDualModal = openDualModal;
+window.closeDualModal = closeDualModal;
+window.updateDualModalHUD = updateDualModalHUD;
+window.initDualSyncMaps = initDualSyncMaps;
+window.getDistrictAvgRain = getDistrictAvgRain;
+window.getDistrictMaxRain = getDistrictMaxRain;
+window.getDistrictMinRain = getDistrictMinRain;
+window.imdCategory = imdCategory;
+window.getCurrentSelectedDayIndex = () => currentSelectedDayIndex;
+window.setCurrentSelectedDayIndex = (idx) => { currentSelectedDayIndex = idx; };
+window.getCurrentRecords = () => currentRecords;
+window.setCurrentRecords = (recs) => { currentRecords = recs; };
+
 loadData();

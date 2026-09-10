@@ -70,14 +70,14 @@
           <div class="mission-controls-bar">
             <div class="mission-demo-chips" aria-label="Demo Shortcuts">
               <span class="control-bar-label">DEMO CONTRAST:</span>
-              <button type="button" class="demo-chip chip-burst" data-code="219388" title="Nalligere: 53.7mm cloudburst under 7.9mm district average [Key: N]">
-                ⚡ Nalligere (53.7 mm Peak) [N]
+              <button type="button" class="demo-chip chip-burst" data-code="219388" title="Nalligere: Convective peak vs block average [Key: N]">
+                ⚡ Nalligere Peak [N]
               </button>
-              <button type="button" class="demo-chip chip-safe" data-code="215504" title="Banavasi: 12.0mm valley rainfall [Key: B]">
-                ⚡ Banavasi (12.0 mm Valley) [B]
+              <button type="button" class="demo-chip chip-safe" data-code="215504" title="Banavasi: Valley rainfall [Key: B]">
+                ⚡ Banavasi Valley [B]
               </button>
-              <button type="button" class="demo-chip chip-dry" data-code="219331" title="Dudda: 0.0mm dry rain shadow window">
-                ⚡ Dudda (0.0 mm Dry Shadow)
+              <button type="button" class="demo-chip chip-dry" data-code="219331" title="Dudda: Rain shadow window">
+                ⚡ Dudda (Dry Shadow)
               </button>
             </div>
             <div class="mission-search-wrap">
@@ -108,17 +108,17 @@
                 </div>
                 <div class="stat-card">
                   <span class="stat-label">District Avg</span>
-                  <span class="stat-val" id="stat-avg">7.9 mm</span>
+                  <span class="stat-val" id="stat-avg">—</span>
                   <span class="stat-foot">Conserved Mass</span>
                 </div>
                 <div class="stat-card">
                   <span class="stat-label">Max Rain</span>
-                  <span class="stat-val" id="stat-max">53.7 mm</span>
-                  <span class="stat-foot">Nalligere Cloudburst</span>
+                  <span class="stat-val" id="stat-max">—</span>
+                  <span class="stat-foot">Nalligere Convective Peak</span>
                 </div>
                 <div class="stat-card">
                   <span class="stat-label">Rain Status</span>
-                  <span class="stat-val" id="stat-wet">179/234 Wet</span>
+                  <span class="stat-val" id="stat-wet">—</span>
                   <span class="stat-foot">&gt; 2.5 mm Active</span>
                 </div>
               </div>
@@ -146,7 +146,7 @@
                 <!-- IMD Block Comparison Warning Banner -->
                 <div id="imd-comparison-banner" class="imd-comparison-banner hidden">
                   <span class="banner-icon">⚠️</span>
-                  <span><strong>IMD Block View:</strong> Uniform 7.9mm over all 234 GPs • Nalligere cloudburst (53.7mm) obscured • Zero intra-block resolution</span>
+                  <span><strong>IMD Block View:</strong> Uniform block-mean over all 234 GPs • Convective peaks obscured • Zero intra-block resolution</span>
                 </div>
 
                 <div class="map-container" id="map-container">
@@ -182,7 +182,7 @@
                     <div class="proof-card">
                       <div class="proof-badge badge-accent">OUTPUT: 0.05° (~5.5 km)</div>
                       <h5>5× Downscaled Panchayat Grid</h5>
-                      <p class="proof-card-desc">Resolves Nalligere 30.4mm peak vs Banavasi 1.7mm valley</p>
+                      <p class="proof-card-desc">Resolves localized convective peaks vs rain-shadow valleys</p>
                       <div class="canvas-wrap">
                         <canvas id="canvas-fine" width="220" height="220"></canvas>
                       </div>
@@ -230,35 +230,66 @@
                   <div class="dual-modal-title-wrap">
                     <span class="dual-modal-pill">🔬 SPATIAL BENCHMARK AUDIT</span>
                     <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#0f172a;">IMD Block vs 5× AI Downscaling - Spatial Resolution Proof</h3>
+                    <span id="dual-prov-chip" class="dual-modal-pill" style="background:#e0f2fe; color:#0369a1; font-weight:600;">—</span>
                   </div>
                   <button type="button" id="dual-modal-close" class="dual-modal-close" aria-label="Close Dual Map Modal">✕ Close</button>
                 </div>
+
+                <!-- Resolution HUD Scorecard Strip (Instant Operational Outcomes) -->
+                <div class="dual-modal-hud" aria-label="Operational Outcome Scorecard">
+                  <div class="hud-stat-box">
+                    <span class="hud-stat-label">SPATIAL GRANULARITY</span>
+                    <div class="hud-stat-compare">
+                      <span class="hud-val-imd" id="hud-imd-gran">—</span>
+                      <span class="hud-arrow">➔</span>
+                      <span class="hud-val-ai" id="hud-ai-gran">—</span>
+                    </div>
+                  </div>
+                  <div class="hud-stat-box">
+                    <span class="hud-stat-label">PEAK CONVECTIVE CAPTURE</span>
+                    <div class="hud-stat-compare">
+                      <span class="hud-val-imd" id="hud-imd-peak">—</span>
+                      <span class="hud-arrow">➔</span>
+                      <span class="hud-val-ai" id="hud-ai-peak">—</span>
+                    </div>
+                  </div>
+                  <div class="hud-stat-box">
+                    <span class="hud-stat-label">ACTIONABLE MICRO-CLIMATES</span>
+                    <div class="hud-stat-compare">
+                      <span class="hud-val-imd" id="hud-imd-zones">—</span>
+                      <span class="hud-arrow">➔</span>
+                      <span class="hud-val-ai" id="hud-ai-zones">—</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="dual-map-modal-body">
                   <div class="dual-map-pane">
                     <div class="dual-map-label">
-                      <span class="badge imd">IMD Mausamgram 0.25° • 27 km • 1 Value</span>
-                      <span class="label-desc">Uniform 1.8mm flat • Blind to cloudburst</span>
+                      <span class="badge imd">IMD Mausamgram 0.25° • 28 km • 1 Value</span>
+                      <span class="label-desc" id="dual-imd-sub">—</span>
                     </div>
                     <div id="map-imd" class="dual-leaflet-map"></div>
                   </div>
                   <div class="dual-map-pane">
                     <div class="dual-map-label">
                       <span class="badge ours">Fast & Curious 5× • 0.05° • 5.5 km • 234 Values</span>
-                      <span class="label-desc">1.7–30.4mm • Nalligere cloudburst resolved • 99.8% Conserved</span>
+                      <span class="label-desc" id="dual-ai-sub">—</span>
                     </div>
                     <div id="map-our" class="dual-leaflet-map"></div>
                   </div>
                 </div>
                 <div class="dual-map-legend">
                   <div class="legend-scale">
-                    <strong>Precipitation: </strong>
-                    <span class="legend-swatch-mini" style="background:#e3f2fd; color:#0f172a;">&lt;2.5 Dry</span>
-                    <span class="legend-swatch-mini" style="background:#90caf9; color:#0f172a;">2.5–15.5 Light</span>
-                    <span class="legend-swatch-mini" style="background:#1e88e5; color:white;">15.5–64.4 Mod</span>
-                    <span class="legend-swatch-mini" style="background:#0d47a1; color:white;">&gt;64.4 Heavy</span>
+                    <strong>Official IMD 24h Warning Scale: </strong>
+                    <span class="legend-swatch-mini" style="background:#f8fafc; color:#0f172a; border-color:#94a3b8;">&lt;2.5 mm Dry</span>
+                    <span class="legend-swatch-mini" style="background:#fde047; color:#713f12; border-color:#eab308;">2.5–15.5 mm Light</span>
+                    <span class="legend-swatch-mini" style="background:#059669; color:#ffffff; border-color:#047857;">15.6–64.4 mm Moderate</span>
+                    <span class="legend-swatch-mini" style="background:#f97316; color:#ffffff; border-color:#ea580c;">64.5–115.5 mm Heavy</span>
+                    <span class="legend-swatch-mini" style="background:#dc2626; color:#ffffff; border-color:#b91c1c;">&gt;115.5 mm Extreme</span>
                   </div>
                   <div class="legend-physics">
-                    <strong>Mass Invariant:</strong> <code>(1/25)∑ HR·cos(φ) = LR</code> • District conserved mean 1.8 mm identical
+                    <span id="dual-mass-footer">—</span>
                   </div>
                 </div>
               </div>
@@ -287,7 +318,7 @@
                       <tr>
                         <th>Method</th>
                         <th>Seasonal Discrepancy</th>
-                        <th>Worst Cloudburst</th>
+                        <th>Convective Peak Error</th>
                         <th>Physics Status</th>
                       </tr>
                     </thead>
@@ -365,12 +396,12 @@
                 <div class="dual-benchmark-grid">
                   <div class="benchmark-pane imd-pane">
                     <span class="benchmark-badge imd">IMD Mausamgram 0.25°</span>
-                    <div class="benchmark-value">1 Value • 1.8mm flat • 27km</div>
+                    <div class="benchmark-value">1 Value • Block-Mean Flat • 27km</div>
                     <div class="benchmark-color" style="background:#e3f2fd"></div>
                   </div>
                   <div class="benchmark-pane our-pane">
                     <span class="benchmark-badge ours">Fast & Curious 5×</span>
-                    <div class="benchmark-value">234 Values • 1.7-30.4mm • 5.5km • 99.8% Conserved</div>
+                    <div class="benchmark-value">234 Values • Panchayat Scale • 5.5km • 99.8% Conserved</div>
                     <div class="benchmark-color" style="background:linear-gradient(90deg,#e3f2fd,#1e88e5,#0d47a1)"></div>
                   </div>
                 </div>

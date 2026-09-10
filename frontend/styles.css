@@ -3132,6 +3132,188 @@ path.selected-gp-highlight,
   background: #dc2626;
 }
 
+/* ==========================================================================
+   DUAL MODAL RESOLUTION HUD SCORECARD (Operational Outcomes)
+   ========================================================================== */
+.dual-modal-hud {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.hud-stat-box {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hud-stat-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.hud-stat-compare {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.hud-val-imd {
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.hud-arrow {
+  color: #0b6e4f;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.hud-val-ai {
+  color: #047857;
+  background: #dcfce7;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  border: 1px solid #bbf7d0;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   PERMANENT ANCHOR PINS (Zero Hover Tax)
+   ========================================================================== */
+.anchor-pin-wrap {
+  pointer-events: none;
+  overflow: visible;
+}
+
+.anchor-pin {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  text-align: left;
+  width: 150px;
+  max-width: 150px;
+  height: 52px;
+  box-sizing: border-box;
+  font-size: 11px;
+  line-height: 1.2;
+  position: relative;
+  pointer-events: auto;
+}
+
+.anchor-pin::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #ffffff;
+}
+
+.anchor-pin .pin-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.anchor-pin .pin-val {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 1px 0;
+  white-space: nowrap;
+}
+
+.anchor-pin .pin-tag {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 1px 5px;
+  border-radius: 4px;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 134px;
+}
+
+/* Baseline IMD Pin */
+.anchor-pin.pin-imd {
+  border-left: 4px solid #94a3b8;
+}
+.anchor-pin.pin-imd .pin-val {
+  color: #475569;
+}
+.anchor-pin.pin-imd .tag-missed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.anchor-pin.pin-imd .tag-false {
+  background: #fef3c7;
+  color: #b45309;
+}
+.anchor-pin.pin-imd .tag-neutral {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* 5x AI Pin - Orographic Convective Peak */
+.anchor-pin.pin-ai.pin-burst-ai {
+  border-left: 4px solid #059669;
+  border-top: 1px solid #10b981;
+  background: #ffffff;
+}
+.anchor-pin.pin-ai.pin-burst-ai .pin-val {
+  color: #047857;
+}
+.anchor-pin.pin-ai.pin-burst-ai .tag-resolved {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+/* 5x AI Pin - Rain Shadow Valley */
+.anchor-pin.pin-ai.pin-dry-ai {
+  border-left: 4px solid #0284c7;
+}
+.anchor-pin.pin-ai.pin-dry-ai .pin-val {
+  color: #0369a1;
+}
+.anchor-pin.pin-ai.pin-dry-ai .tag-shadow {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
 .dual-map-modal-body {
   display: grid;
   grid-template-columns: 1fr 1fr;
