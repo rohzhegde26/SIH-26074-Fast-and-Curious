@@ -40,6 +40,78 @@ data/raw/*
 !data/raw/dem/
 data/raw/dem/*
 !data/raw/dem/provenance.json
+data/raw/geodata/*.parquet
+data/processed/
+*.zarr/
+*.zarr
+
+# -- Model Checkpoints (large binary files) ------------------------------------
+models/checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.safetensors
+
+# -- Logs ----------------------------------------------------------------------
+*.log
+logs/
+
+# -- Env / Secrets -------------------------------------------------------------
+.env
+.env.*
+!.env.example
+secrets/
+
+# -- Temporary / Scratch files -------------------------------------------------
+scratch/
+*.tmp
+*.part
+
+# -- Generated OpenAPI spec (auto-regenerated on startup) ----------------------
+# -- Python --------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+*.so
+
+# -- Virtual Environments -------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# -- Pytest / Coverage ----------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# -- IDE / Editor ---------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*~
+
+# -- OS ------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -- Large / Raw Data (do NOT commit raw satellite/IMD grids) ------------------
+data/raw/*
+!data/raw/dem/
+data/raw/dem/*
+!data/raw/dem/provenance.json
+data/raw/geodata/*.parquet
 data/processed/
 *.zarr/
 *.zarr
@@ -74,3 +146,5 @@ docs/openapi.json
 node_modules/
 .npm/
 .omo/
+# -- Temporary inventory files ----------------------------------------------
+_*.csv

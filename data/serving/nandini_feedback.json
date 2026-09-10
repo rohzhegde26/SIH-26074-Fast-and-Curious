@@ -724,5 +724,192 @@
     "observation_period": "LAST_12_HOURS",
     "recorded_at_utc": "2026-09-08T10:46:42.538190+00:00",
     "recalibration_flagged": false
+  },
+  {
+    "validation_id": "cd84fb13",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T04:59:13.319797+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "b620b2a4",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T06:52:16.041934+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "913093e8",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T06:53:41.204222+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "d0f43608",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T06:54:14.142484+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "43caa899",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T06:54:32.117647+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "4a16e6b2",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T07:06:35.745373+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "3b623329",
+    "lgd_code": "219409",
+    "panchayat_name": "LAKSHMI SAGARA",
+    "rained_bool": true,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2194",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T07:08:15.417425+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "d3c4ce85",
+    "lgd_code": "219409",
+    "panchayat_name": "LAKSHMI SAGARA",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2194",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T07:08:17.228809+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "50f5d423",
+    "lgd_code": "219409",
+    "panchayat_name": "LAKSHMI SAGARA",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2194",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T07:08:18.673884+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "86192d24",
+    "lgd_code": "219409",
+    "panchayat_name": "LAKSHMI SAGARA",
+    "rained_bool": true,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2194",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T07:08:19.546915+00:00",
+    "recalibration_flagged": true
+  },
+  {
+    "validation_id": "54b2b669",
+    "lgd_code": "219409",
+    "panchayat_name": "LAKSHMI SAGARA",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2194",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T07:08:20.043869+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "6f341e89",
+    "lgd_code": "219409",
+    "panchayat_name": "LAKSHMI SAGARA",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2194",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T07:08:20.624958+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "68d8b9cb",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T07:22:50.788121+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "8c2a1e93",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T07:24:44.445197+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "3f6425c5",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T07:25:21.068101+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "830b591f",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T08:20:11.240555+00:00",
+    "recalibration_flagged": false
+  },
+  {
+    "validation_id": "f6b4b751",
+    "lgd_code": "215504",
+    "panchayat_name": "BANAVASI",
+    "rained_bool": false,
+    "observer_role": "DAIRY_SECRETARY",
+    "milk_center_id": "KMF_MAN_2155",
+    "observation_period": "LAST_12_HOURS",
+    "recorded_at_utc": "2026-09-10T08:31:53.410596+00:00",
+    "recalibration_flagged": false
   }
 ]

@@ -217,5 +217,6 @@ class InferenceResponse(BaseModel):
     sample_downscaled_grid: list[list[float]] | None = None
     multivariate_fields: list[str] | None = None
     provenance: str | None = None
+    fine_grid_max_mm: float | None = None
 
 

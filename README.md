@@ -124,6 +124,13 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### Data Setup
+Download the LGD Panchayats geospatial boundaries before running the pipeline or GIS-dependent scripts:
+```bash
+python scripts/download_lgd_data.py
+```
+*(Fetches `LGD_panchayats.parquet` into `data/raw/geodata/`. Untracked by Git to maintain rapid repo clone times).*
+
 ### Running the Live Service
 ```bash
 # Start the FastAPI server with live frontend mounting on port 8000

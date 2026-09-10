@@ -1,7 +1,11 @@
+import asyncio
+import json
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 from src.advisory.engine import build_advisory
 from src.advisory.rules import compute_financial_risk
+import src.api.main as api_main
 from src.api.main import app
 
 client = TestClient(app)
@@ -87,3 +91,58 @@ def test_phenology_financial_cost_of_error():
     adv = build_advisory("ragi", "vegetative", expected_mm=8.0, likely_max_mm=14.0)
     assert adv.financial_risk is not None
     assert adv.financial_risk.cost_estimate_inr == 1800
+
+
+def test_concurrent_nandini_writes(tmp_path, monkeypatch):
+    """
+    Test 20 concurrent requests to /api/v1/validation/nandini using asyncio.gather.
+    Asserts all 20 successfully append without 500 errors or JSON corruption.
+    """
+    temp_feedback_file = tmp_path / "nandini_feedback_test.json"
+    monkeypatch.setattr(api_main, "FEEDBACK_PATH", temp_feedback_file)
+
+    async def _fire_concurrent_requests():
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as async_client:
+            tasks = [
+                async_client.post(
+                    "/api/v1/validation/nandini",
+                    json={
+                        "lgd_code": "215504",
+                        "panchayat_name": f"PANCHAYAT_{i:02d}",
+                        "rained_bool": (i % 2 == 0),
+                        "observer_role": "DAIRY_SECRETARY",
+                        "milk_center_id": f"KMF_KA_MAN_{i:04d}",
+                        "observation_period": "LAST_12_HOURS",
+                    },
+                )
+                for i in range(20)
+            ]
+            return await asyncio.gather(*tasks)
+
+    responses = asyncio.run(_fire_concurrent_requests())
+
+    # 1. Assert all 20 responses returned HTTP 200 without throwing 500 errors
+    assert len(responses) == 20
+    for idx, resp in enumerate(responses):
+        assert resp.status_code == 200, f"Request {idx} failed with status {resp.status_code}: {resp.text}"
+        payload = resp.json()
+        assert payload["status"] == "success"
+        assert payload["validation_id"]
+
+    # 2. Assert the feedback JSON exists and is valid, uncorrupted JSON
+    assert temp_feedback_file.exists(), "Target feedback JSON file should exist"
+    with open(temp_feedback_file, encoding="utf-8") as f:
+        data = json.load(f)
+
+    # 3. Assert all 20 writes were successfully appended and recorded
+    assert isinstance(data, list)
+    assert len(data) == 20, f"Expected 20 appended records, found {len(data)}"
+
+    validation_ids = [entry["validation_id"] for entry in data]
+    assert len(set(validation_ids)) == 20, "All validation IDs must be distinct"
+
+    panchayat_names = {entry["panchayat_name"] for entry in data}
+    expected_names = {f"PANCHAYAT_{i:02d}" for i in range(20)}
+    assert panchayat_names == expected_names
+

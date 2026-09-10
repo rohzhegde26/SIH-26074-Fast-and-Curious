@@ -25,12 +25,23 @@ from src.models.multivariate import (
 )
 from src.losses.conservation import log1p_transform, expm1_transform
 from src.api.schemas import GPInferenceSummary, InferenceResponse
+from src.eval.calibration import QuantileMapper
 
 ROOT = Path(__file__).resolve().parents[2]
 CKPT_V3_1 = ROOT / "models" / "checkpoints" / "best_5x_model_v3_1.pt"
 CHECKPOINT_PATH = CKPT_V3_1 if CKPT_V3_1.exists() else (ROOT / "models" / "checkpoints" / "best_5x_model.pt")
 CENTROIDS_PATH = ROOT / "data" / "serving" / "mandya_centroids.json"
 FORECASTS_PATH = ROOT / "data" / "serving" / "mandya_forecasts.json"
+QUANTILE_PARAMS_PATH = ROOT / "data" / "static" / "quantile_mapping_params.json"
+
+# Calibration & Ablation Flags: Toggle parametric quantile mapping on/off
+APPLY_QUANTILE_MAPPING: bool = True
+
+
+@lru_cache(maxsize=1)
+def get_quantile_mapper() -> QuantileMapper:
+    """Loads and caches the pre-computed QuantileMapper from static calibration file."""
+    return QuantileMapper.from_parameters(QUANTILE_PARAMS_PATH)
 
 
 @lru_cache(maxsize=1)
@@ -232,9 +243,18 @@ def run_live_inference(
     with torch.no_grad():
         pred_log = model(coarse_log)
         pred_phys = torch.clamp(torch.expm1(pred_log), min=0.0)
-        # Apply local mass conservation
-        pred_conserved = conservative_renorm_local(pred_phys, coarse_t)
 
+        # 1. Apply per-0.25°-cell quantile mapping strictly to precipitation channel before conservation
+        if APPLY_QUANTILE_MAPPING:
+            mapper = get_quantile_mapper()
+            pred_qm = mapper.transform(pred_phys)
+        else:
+            pred_qm = pred_phys
+
+        # 2. Enforce local 5x5 block mass conservation on the post-QM precipitation tensor
+        pred_conserved = conservative_renorm_local(pred_qm, coarse_t)
+
+    # Delivered final precipitation tensor (post-QM, post-conservation)
     pred_hr_np = pred_conserved.squeeze(1).cpu().numpy()  # [T, 80, 80]
     downscaled_mean = float(np.mean(pred_hr_np))
     mass_err = abs(downscaled_mean - coarse_mean) / (coarse_mean + 1e-8) * 100.0
@@ -324,6 +344,7 @@ def run_live_inference(
     elapsed_ms = (time.perf_counter() - t_start) * 1000.0
 
     sample_grid = pred_hr_np[0, ::10, ::10].round(2).tolist()
+    fine_max = round(float(np.max(pred_hr_np[0])), 2)
 
     return InferenceResponse(
         status="success",
@@ -341,4 +362,5 @@ def run_live_inference(
         sample_downscaled_grid=sample_grid,
         multivariate_fields=["rainfall", "tmax", "tmin", "rh", "wind"],
         provenance=multi_res.get("provenance", PROVENANCE_TAG),
+        fine_grid_max_mm=fine_max,
     )

@@ -174,3 +174,43 @@ def test_conserve_hr_deadlock_and_fp16_safety():
     assert isinstance(out_np, np.ndarray), "Expected numpy array output"
     assert np.isclose(out_np.mean(), 15.0, atol=1e-3), f"NumPy conserve_hr mean {out_np.mean()} != 15.0"
 
+
+def test_delivered_precipitation_conservation_with_qm():
+    """
+    Assert that the live inference pipeline with Quantile Mapping enabled strictly
+    satisfies coarse-block physical mass conservation with max relative error < 1e-6.
+    Pipeline order: UNet5x -> QM -> conservative_renorm_local -> Delivered.
+    """
+    import torch.nn.functional as F
+    from src.api.inference_service import (
+        load_inference_model,
+        get_quantile_mapper,
+        conservative_renorm_local,
+    )
+
+    model, device = load_inference_model()
+    mapper = get_quantile_mapper()
+
+    # Synthetic coarse grid with a 60mm convective cloudburst
+    coarse = np.full((1, 1, 16, 16), 1.5, dtype=np.float32)
+    coarse[0, 0, 8, 8] = 60.0
+    coarse_t = torch.from_numpy(coarse).to(device)
+    coarse_log = torch.log1p(coarse_t)
+
+    with torch.no_grad():
+        pred_phys = torch.clamp(torch.expm1(model(coarse_log)), min=0.0)
+        # 1. Quantile Mapping
+        pred_qm = mapper.transform(pred_phys)
+        # 2. Local mass conservation
+        delivered = conservative_renorm_local(pred_qm, coarse_t)
+
+    # Coarsen delivered 80x80 grid back to 16x16 coarse cells via 5x5 pooling
+    coarsened_delivered = F.avg_pool2d(delivered, kernel_size=5, stride=5)
+    max_block_err = float(torch.max(torch.abs(coarsened_delivered - coarse_t)).item())
+
+    # Machine precision for 60.0 in FP32 has ULP ~3.81e-6, relative error is < 1e-6
+    rel_block_err = max_block_err / 60.0
+    assert rel_block_err < 1e-6, f"Delivered grid coarse-block relative error {rel_block_err} >= 1e-6"
+    assert max_block_err < 2e-5, f"Delivered grid coarse-block absolute error {max_block_err} >= 2e-5"
+
+

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 import json
 from pathlib import Path
+import threading
 import uuid
 
 from typing import Optional
@@ -12,6 +13,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
 from src.advisory.engine import build_advisory, build_7day_forecast
 from src.api.forecast_repository import get_forecast, list_forecasts
@@ -47,6 +49,9 @@ def _centroids() -> dict[str, dict]:
     return {}
 
 
+_nandini_lock = threading.Lock()
+
+
 def _load_nandini_feedback() -> list[dict]:
     if FEEDBACK_PATH.exists():
         try:
@@ -57,12 +62,18 @@ def _load_nandini_feedback() -> list[dict]:
     return []
 
 
-def _append_nandini_feedback(entry: dict):
-    feedbacks = _load_nandini_feedback()
-    feedbacks.append(entry)
-    FEEDBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(FEEDBACK_PATH, "w", encoding="utf-8") as f:
-        json.dump(feedbacks, f, indent=2)
+def _sync_append_nandini(entry: dict) -> None:
+    """Thread-safe synchronous append of a validation feedback entry to disk."""
+    with _nandini_lock:
+        feedbacks = _load_nandini_feedback()
+        feedbacks.append(entry)
+        FEEDBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(FEEDBACK_PATH, "w", encoding="utf-8") as f:
+            json.dump(feedbacks, f, indent=2)
+
+
+def _append_nandini_feedback(entry: dict) -> None:
+    _sync_append_nandini(entry)
 
 
 @asynccontextmanager
@@ -315,7 +326,7 @@ def infer(req: Optional[InferenceRequest] = None) -> InferenceResponse:
     tags=["validation"],
     summary="[KMF NANDINI GROUND-TRUTH] 2-Tap Dairy Secretary binary rainfall verification",
 )
-def submit_nandini_validation(req: NandiniValidationRequest) -> NandiniValidationResponse:
+async def submit_nandini_validation(req: NandiniValidationRequest) -> NandiniValidationResponse:
     forecast_rec = get_forecast(req.lgd_code)
     model_predicted_rain = False
     if forecast_rec:
@@ -340,7 +351,7 @@ def submit_nandini_validation(req: NandiniValidationRequest) -> NandiniValidatio
         "recalibration_flagged": discrepancy,
     }
 
-    _append_nandini_feedback(entry)
+    await run_in_threadpool(_sync_append_nandini, entry)
 
     msg = (
         "Validation recorded! Model & field observation agreement confirmed."
@@ -365,7 +376,8 @@ def submit_nandini_validation(req: NandiniValidationRequest) -> NandiniValidatio
     summary="Summary statistics of KMF Dairy Secretary validation network",
 )
 def nandini_stats() -> NandiniStatsResponse:
-    feedbacks = _load_nandini_feedback()
+    with _nandini_lock:
+        feedbacks = _load_nandini_feedback()
     total = len(feedbacks)
     if total == 0:
         return NandiniStatsResponse(
