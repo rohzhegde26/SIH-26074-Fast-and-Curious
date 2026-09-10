@@ -46,3 +46,9 @@
 * **Remote Accelerator:** Kaggle Cloud GPU (Tesla T4, 16GB VRAM, AMP FP16 enabled).
 * **Memory Ceiling:** Micro-batches must maintain peak memory $< 2.5\text{ GB}$ to guarantee safety.
 * **Quota Tracking:** `scripts/kaggle/dispatch_kaggle.py` queries live quota after each run and updates this document.
+
+- **Cycle 1 Rejected:** Baseline Model Characterization (Mass conservation breach (42.04%)).
+
+- **Cycle 2 Rejected:** Differentiable Mass-Conserving Head (Blurry texture collapse (HF ratio=0.007)).
+
+- **Cycle 1 Rejected:** Baseline Model Characterization (Mass conservation breach (59.53%)).
