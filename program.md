@@ -193,3 +193,63 @@
 - **Round 4 Cycle 34 Rejected:** Top-3 Checkpoint Weight Averaging (Sub-optimal score).
 
 - **Round 4 Cycle 35 Rejected:** Calibrated Production Ensemble Checkpoint (Sub-optimal score).
+
+- **Round 5 Cycle 1 Rejected:** Round 4 Champion Calibrated Baseline (Sub-optimal score).
+
+- **Round 5 Cycle 2 Rejected:** Wavelet-Guided Convective Attention (W-GCA) (Sub-optimal score).
+
+- **Round 5 Cycle 3 Rejected:** W-GCA High-Pass Directional Tuning (Sub-optimal score).
+
+- **Round 5 Cycle 4 Rejected:** Gradient-Isolated Multivariate Co-Downscaling (Mass conservation breach (20.92%)).
+
+- **Round 5 Cycle 5 Rejected:** Isolated Multivariate Saturation Deficit (Mass conservation breach (99.61%)).
+
+- **Round 5 Cycle 6 Rejected:** Exact-Conserved Multi-Quantile P10/P50/P90 Head (Sub-optimal score).
+
+- **Round 5 Cycle 7 Rejected:** Conserved Quantile Asymmetric Tail Sharpening (Mass conservation breach (34.73%)).
+
+- **Round 5 Cycle 8 Rejected:** Cloudburst Vorticity & Streamline Dynamics (Mass conservation breach (16.26%)).
+
+- **Round 5 Cycle 9 Rejected:** Agent B Extreme Inversion Stress Probe (Sub-optimal score).
+
+- **Round 5 Cycle 10 Rejected:** Cyclic Cosine Annealing with Warm Restarts (SGDR) (Sub-optimal score).
+
+- **Round 5 Cycle 11 Rejected:** W-GCA + Cloudburst Vorticity Synthesis (Sub-optimal score).
+
+- **Round 5 Cycle 12 Rejected:** Isolated Multivariate Wind-Shear Flux (Mass conservation breach (22.19%)).
+
+- **Round 5 Cycle 13 Rejected:** Strict Monotonic Quantile Projection (Mass conservation breach (25.27%)).
+
+- **Round 5 Cycle 14 Rejected:** Harmonized Spectral-Quantile-Vorticity Loss (Sub-optimal score).
+
+- **Round 5 Cycle 15 Rejected:** Multi-Scale Atrous Convective Fusion (Mass conservation breach (21.64%)).
+
+- **Round 5 Cycle 16 Rejected:** Orographic Stagnation Barrier Dynamics (Sub-optimal score).
+
+- **Round 5 Cycle 17 Rejected:** Agent B Gradient Noise Injection Probe (Sub-optimal score).
+
+- **Round 5 Cycle 18 Rejected:** Stochastic Weight Averaging (SWA) Explorer (Mass conservation breach (34.39%)).
+
+- **Round 5 Cycle 19 Rejected:** Sub-Band Wavelet Energy Weighting (Sub-optimal score).
+
+- **Round 5 Cycle 20 Rejected:** Focal Convective Upper Quantile Loss (Mass conservation breach (27.26%)).
+
+- **Round 5 Cycle 21 Rejected:** Isolated Clausius-Clapeyron Moisture Limit (Sub-optimal score).
+
+- **Round 5 Cycle 22 Rejected:** Multi-Scale Energy Conservation at 5x (Mass conservation breach (17.08%)).
+
+- **Round 5 Cycle 23 Rejected:** Squeeze-and-Excitation Topographic Attention (Mass conservation breach (25.70%)).
+
+- **Round 5 Cycle 24 Rejected:** Katabatic Valley Drainage Flow Prior (Mass conservation breach (19.79%)).
+
+- **Round 5 Cycle 25 Rejected:** Lookahead Optimization Trajectory (Sub-optimal score).
+
+- **Round 5 Cycle 26 Rejected:** Agent B Anti-Topographic Inversion Probe (Mass conservation breach (58.26%)).
+
+- **Round 5 Cycle 27 Rejected:** Multi-Level Wavelet Decomposition Level 2 (Sub-optimal score).
+
+- **Round 5 Cycle 28 Rejected:** Conserved Extreme Upper Quantile Sharpening (Mass conservation breach (100.00%)).
+
+- **Round 5 Cycle 29 Rejected:** Residual Dense Topographic Aggregation (Sub-optimal score).
+
+- **Round 5 Cycle 30 Rejected:** W-GCA + Conserved Quantiles + Vorticity Super-Champion (Mass conservation breach (23.24%)).
