@@ -1162,16 +1162,27 @@ function setupMapLayerSelector() {
   });
 
   const btnAudit = document.querySelector("#btn-side-by-side-audit");
-  const modalClose = document.querySelector("#dual-modal-close");
+  const modalCloseBtns = document.querySelectorAll("#dual-modal-close, #btn-close-dual-modal, .dual-modal-close");
   const dualModal = document.querySelector("#dual-map-modal");
 
   if (btnAudit) btnAudit.addEventListener("click", openDualModal);
-  if (modalClose) modalClose.addEventListener("click", closeDualModal);
+  modalCloseBtns.forEach(btn => {
+    btn.addEventListener("click", closeDualModal);
+  });
   if (dualModal) {
     dualModal.addEventListener("click", (e) => {
       if (e.target === dualModal) closeDualModal();
     });
   }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const dm = document.querySelector("#dual-map-modal");
+      if (dm && !dm.classList.contains("hidden")) {
+        closeDualModal();
+      }
+    }
+  });
 
   setupLiveInference();
 }
