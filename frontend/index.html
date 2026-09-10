@@ -4,15 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0b6e4f">
-    <meta name="description" content="Dual-Mode Downscaled Weather Advisory: Mobile Village Cockpit for rural intermediaries & MoES Mission Control for meteorological command.">
+    <meta name="description" content="Hyper-Local Agrometeorological Downscaling Command Center: 5× Physics-Conserved Super-Resolution (0.25° → 0.05°) for Mandya District.">
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
     <link rel="stylesheet" href="/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/styles.css?v=23">
-    <title>Mandya Agro-Weather — Dual-Mode Downscaling Cockpit (SIH 26074)</title>
+    <link rel="stylesheet" href="/styles.css?v=25">
+    <title>Mandya Agro-Weather — MoES Agrometeorological Command Center (SIH 26074)</title>
   </head>
-  <body data-view="mission-control" data-operator-role="dairy">
+  <body data-view="mission-control">
     <!-- Top Offline Warning Banner (Sticky) -->
     <div id="offline-banner" class="banner hidden" role="alert" aria-live="assertive">
       <span class="banner-icon">⚠️</span>
@@ -32,26 +32,8 @@
           </div>
         </div>
 
-        <!-- Mode Switcher Tabs (SPA 0ms Toggle) -->
-        <nav class="mode-switch-nav" role="tablist" aria-label="Interface Surface Mode">
-          <button type="button" id="btn-mode-village" class="btn-mode" role="tab" aria-selected="false" data-mode="village" title="Switch to Mobile Village Cockpit (Key: M)">
-            <span class="mode-icon">📱</span>
-            <span class="mode-title">Village Cockpit</span>
-            <span class="mode-badge">Field PWA</span>
-          </button>
-          <button type="button" id="btn-mode-mission" class="btn-mode active" role="tab" aria-selected="true" data-mode="mission-control" title="Switch to MoES Mission Control (Key: M)">
-            <span class="mode-icon">🛰️</span>
-            <span class="mode-title">MoES Mission Control</span>
-            <span class="mode-badge">Jury Stage</span>
-          </button>
-        </nav>
-
-        <!-- Right Utilities: Language Toggle & Sync Badge -->
+        <!-- Right Utilities: Cycle & Sync Badges -->
         <div class="header-utilities">
-          <div class="lang-toggle-group" role="group" aria-label="Language selection">
-            <button class="lang-btn active" data-lang="en" title="English (Key: 1)">EN</button>
-            <button class="lang-btn" data-lang="kn" title="Kannada (Key: 2)">ಕನ್ನಡ</button>
-          </div>
           <div class="cycle-badge badge-green" id="cycle-badge" title="Operational NWP Ingestion Cycle">
             <span class="cycle-icon">🕒</span>
             <span id="cycle-badge-text">Cycle: 2026-09-10 (age 0d)</span>
@@ -66,94 +48,9 @@
 
     <main class="app-main">
       <!-- ==================================================================== -->
-      <!-- SURFACE A: VILLAGE COCKPIT (MOBILE-FIRST, SINGLE VIEWPORT HEIGHT)     -->
+      <!-- MoES MISSION CONTROL (DESKTOP / COMMAND DASHBOARD)                   -->
       <!-- ==================================================================== -->
-      <section id="view-village" class="view-surface hidden" role="tabpanel" aria-labelledby="btn-mode-village">
-        <div class="village-container">
-          <div class="village-left-pane">
-            <!-- Presentation Quick Demo Drawer (Collapsible on mobile, permanent sidebar on desktop) -->
-            <details class="demo-drawer" id="demo-drawer" aria-label="Presentation Controls">
-              <summary class="demo-drawer-summary" title="Toggle Stage Presentation & Role Controls">
-                <span class="drawer-pill">⚡ Presentation Quick Demo & Roles ▾</span>
-              </summary>
-              <div class="demo-drawer-body">
-                <!-- Role Switcher -->
-                <div class="drawer-row">
-                  <span class="drawer-label">INTERMEDIARY ROLE:</span>
-                  <div class="operator-role-pills" role="radiogroup" aria-label="Select Village Role">
-                    <button type="button" class="btn-role active" data-role="dairy">🥛 Dairy Secretary</button>
-                    <button type="button" class="btn-role" data-role="rsk">🌾 RSK Officer</button>
-                    <button type="button" class="btn-role" data-role="gp">🏛️ GP Secretary</button>
-                    <button type="button" class="btn-role" data-role="lead">👩‍🌾 Lead Farmer</button>
-                  </div>
-                </div>
-
-                <!-- Active Scenario Pill -->
-                <div class="drawer-row">
-                  <span class="drawer-label">METEOROLOGICAL SCENARIO:</span>
-                  <div class="scenario-pill-badge" style="font-size:0.8rem; font-weight:700; color:#38bdf8; background:rgba(2,132,199,0.15); border:1px solid rgba(56,189,248,0.3); padding:4px 10px; border-radius:6px; display:inline-flex; align-items:center; gap:6px;">
-                    <span>🌧️ Active Monsoon Spell Benchmark (High-Rain Event Resolved Across 234 GPs)</span>
-                  </div>
-                </div>
-
-                <!-- 60-Second Demo Contrast Chips (Instantly proves 0.25° blindspot) -->
-                <div class="drawer-row">
-                  <span class="drawer-label">DEMO CONTRAST:</span>
-                  <div class="demo-chips-row" aria-label="Stage Demo Shortcuts">
-                    <button type="button" class="demo-chip chip-burst" data-code="219388" title="Nalligere: 53.7mm cloudburst under 7.9mm district average [Key: N]">
-                      ⚡ Nalligere (53.7 mm Peak) [N]
-                    </button>
-                    <button type="button" class="demo-chip chip-safe" data-code="215504" title="Banavasi: 12.0mm valley rainfall [Key: B]">
-                      ⚡ Banavasi (12.0 mm Valley) [B]
-                    </button>
-                    <button type="button" class="demo-chip chip-dry" data-code="219331" title="Dudda: 0.0mm dry rain shadow window">
-                      ⚡ Dudda (0.0 mm Dry Shadow)
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Search Combobox -->
-                <div class="drawer-row">
-                  <span class="drawer-label">SEARCH ANY GP:</span>
-                  <div class="search-box-wrapper">
-                    <span class="search-icon">🔍</span>
-                    <input
-                      type="text"
-                      id="panchayat-search"
-                      class="search-input"
-                      placeholder="Search panchayat (e.g. Halaguru, Banavasi)... [Key: /]"
-                      autocomplete="off"
-                      aria-label="Search panchayat name or code"
-                    />
-                    <button type="button" id="search-clear-btn" class="search-clear-btn hidden" title="Clear search">✕</button>
-                    <div id="search-suggestions" class="search-suggestions hidden" role="listbox"></div>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <!-- Desktop Live Map Slot (Moves #main-map-card here when on desktop Village Cockpit) -->
-            <div id="village-desktop-map-slot" class="village-desktop-map-slot"></div>
-
-            <!-- Quick View Map Button (Mobile only) -->
-            <div class="village-map-action">
-              <button type="button" id="btn-open-map-modal" class="btn-map-launcher">
-                <span>🗺️ View Mandya 234-GP Choropleth Map</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Right Column: The Streamlined Field Advisory Engine -->
-          <div class="village-right-pane">
-            <div id="forecast-details" class="forecast-section" aria-live="polite"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================================================================== -->
-      <!-- SURFACE B: MoES MISSION CONTROL (DESKTOP / JURY STAGE DASHBOARD)     -->
-      <!-- ==================================================================== -->
-      <section id="view-mission-control" class="view-surface active" role="tabpanel" aria-labelledby="btn-mode-mission">
+      <section id="view-mission-control" class="view-surface active">
         <div class="mission-container">
           <!-- Command Dashboard Header -->
           <div class="mission-banner">
@@ -166,6 +63,35 @@
               <span class="meta-pill">Monsoon JJAS Ingestion</span>
               <span class="meta-pill pill-verified">GLO-30 DEM Conditioned</span>
               <span class="meta-pill pill-cqr">CQR 90% Calibrated</span>
+            </div>
+          </div>
+
+          <!-- Presentation Demo Contrast & Search Bar -->
+          <div class="mission-controls-bar">
+            <div class="mission-demo-chips" aria-label="Demo Shortcuts">
+              <span class="control-bar-label">DEMO CONTRAST:</span>
+              <button type="button" class="demo-chip chip-burst" data-code="219388" title="Nalligere: 53.7mm cloudburst under 7.9mm district average [Key: N]">
+                ⚡ Nalligere (53.7 mm Peak) [N]
+              </button>
+              <button type="button" class="demo-chip chip-safe" data-code="215504" title="Banavasi: 12.0mm valley rainfall [Key: B]">
+                ⚡ Banavasi (12.0 mm Valley) [B]
+              </button>
+              <button type="button" class="demo-chip chip-dry" data-code="219331" title="Dudda: 0.0mm dry rain shadow window">
+                ⚡ Dudda (0.0 mm Dry Shadow)
+              </button>
+            </div>
+            <div class="mission-search-wrap">
+              <span class="search-icon">🔍</span>
+              <input
+                type="text"
+                id="panchayat-search"
+                class="search-input"
+                placeholder="Search panchayat (e.g. Halaguru, Banavasi)... [Key: /]"
+                autocomplete="off"
+                aria-label="Search panchayat name or code"
+              />
+              <button type="button" id="search-clear-btn" class="search-clear-btn hidden" title="Clear search">✕</button>
+              <div id="search-suggestions" class="search-suggestions hidden" role="listbox"></div>
             </div>
           </div>
 
@@ -278,6 +204,23 @@
                   <div class="mission-inspection-text">
                     <strong>Panchayat Inspection:</strong> Click any panchayat on the map to inspect localized downscaled forecast & exclave variance.
                   </div>
+                </div>
+              </div>
+
+              <!-- 7-Day Agro-Meteorological NWP Progression Strip (Under GIS Map) -->
+              <div class="card mission-timeline-card" id="mission-timeline-card">
+                <div class="timeline-header">
+                  <div class="timeline-title-wrap">
+                    <span class="timeline-icon">📅</span>
+                    <div>
+                      <h4 class="timeline-title">7-Day Agro-Meteorological NWP Progression</h4>
+                      <span class="timeline-sub" id="mission-timeline-sub">Interactive Day Forecast for Selected Panchayat &amp; District Map</span>
+                    </div>
+                  </div>
+                  <div class="timeline-badge" id="mission-timeline-badge">NWP 7-Day Sequence</div>
+                </div>
+                <div class="timeline-scroll-strip" id="mission-timeline-strip" role="tablist" aria-label="7-Day Multi-Day Forecast">
+                  <!-- Dynamically populated by renderMissionTimeline(record) -->
                 </div>
               </div>
 
@@ -441,6 +384,8 @@
                     <pre id="varg-json-code" class="varg-pre"><code>Loading live IMD schema payload...</code></pre>
                   </div>
                 </details>
+              </div>
+
               <!-- Pillar 4: Thermodynamic Lapse Rates & Multi-Day NWP Engine -->
               <div class="card jury-card pillar-card">
                 <div class="pillar-header">
@@ -478,23 +423,21 @@
         </div>
       </section>
 
-      <!-- Map Modal Container for Village Cockpit Mobile View -->
-      <div id="map-modal" class="map-modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Mandya District Map">
-        <div class="map-modal-dialog">
-          <div class="map-modal-header">
-            <h3>🗺️ Mandya 234-Panchayat Choropleth</h3>
-            <button type="button" id="btn-close-map-modal" class="btn-close-modal" aria-label="Close Map">✕</button>
-          </div>
-          <div class="map-modal-body" id="modal-map-mount">
-            <!-- Modal SVG map container -->
-            <div class="modal-map-box" id="modal-map-container"></div>
-            <div class="choropleth-legend modal-legend">
-              <span class="legend-title">Precipitation:</span>
-              <div class="legend-item"><span class="legend-swatch band-dry"></span> &lt; 2.5 mm</div>
-              <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5–15.5 mm</div>
-              <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5–64.4 mm</div>
-              <div class="legend-item"><span class="legend-swatch band-heavy"></span> &gt; 64.5 mm</div>
+      <!-- Exclave & Sub-Grid Inspection Modal (Popup) -->
+      <div id="exclave-modal" class="exclave-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="exclave-modal-title">
+        <div class="exclave-modal-dialog">
+          <div class="exclave-modal-header">
+            <div class="exclave-modal-title-wrap">
+              <span class="exclave-modal-icon">🔬</span>
+              <h3 id="exclave-modal-title" class="exclave-modal-title">Geographic Exclave &amp; Sub-Grid Inspection</h3>
             </div>
+            <button type="button" id="btn-close-exclave-modal" class="exclave-close-btn btn-close-modal" aria-label="Close Exclave Modal">
+              <span class="close-symbol">✕</span>
+              <span class="close-label">Close</span>
+            </button>
+          </div>
+          <div class="exclave-modal-body" id="exclave-modal-content">
+            <!-- Dynamically populated with variance alert, parcel chips, and constituent grid table -->
           </div>
         </div>
       </div>
@@ -515,6 +458,6 @@
     <!-- Leaflet GIS Library (Cached locally for offline PWA) -->
     <script src="/leaflet/leaflet.js"></script>
     <!-- App Engine JavaScript -->
-    <script type="module" src="/app.js?v=23"></script>
+    <script type="module" src="/app.js?v=25"></script>
   </body>
 </html>

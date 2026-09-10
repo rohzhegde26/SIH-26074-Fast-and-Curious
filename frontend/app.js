@@ -315,778 +315,69 @@ function getFinancialRisk(stage, exp, lMax, lang) {
 }
 
 // -------------------------------------------------------------
-// Dual-Mode View Switcher (Village Cockpit vs MoES Mission Control)
+// MoES Mission Control View Controller
 // -------------------------------------------------------------
 function switchView(viewName) {
-  currentView = viewName === "mission-control" ? "mission-control" : "village";
+  currentView = "mission-control";
   document.body.setAttribute("data-view", currentView);
   localStorage.setItem("mandya_surface_view", currentView);
-  window.location.hash = currentView;
-
-  // Toggle Header Nav Tabs
-  document.querySelectorAll(".btn-mode").forEach(btn => {
-    const isActive = btn.dataset.mode === currentView;
-    btn.classList.toggle("active", isActive);
-    btn.setAttribute("aria-selected", String(isActive));
-  });
-
-  // Toggle Surfaces
-  const villagePanel = document.querySelector("#view-village");
-  const missionPanel = document.querySelector("#view-mission-control");
-
-  if (villagePanel && missionPanel) {
-    if (currentView === "village") {
-      villagePanel.classList.remove("hidden");
-      villagePanel.classList.add("active");
-      missionPanel.classList.add("hidden");
-      missionPanel.classList.remove("active");
-      const drawer = document.querySelector("#demo-drawer");
-      if (drawer && window.innerWidth >= 1025) {
-        drawer.open = true;
-      }
-      // On desktop, embed the 234-GP map right into Village Cockpit slot
-      const mapCard = document.querySelector("#main-map-card");
-      if (window.innerWidth >= 1025) {
-        const slot = document.querySelector("#village-desktop-map-slot");
-        if (mapCard && slot && !slot.contains(mapCard)) {
-          slot.appendChild(mapCard);
-        }
-      }
-      if (leafletMap) {
-        setTimeout(() => leafletMap.invalidateSize(), 150);
-      }
-    } else {
-      missionPanel.classList.remove("hidden");
-      missionPanel.classList.add("active");
-      villagePanel.classList.add("hidden");
-      villagePanel.classList.remove("active");
-      // Return map to mission control
-      const mapCard = document.querySelector("#main-map-card");
-      const missionLeft = document.querySelector(".mission-left-col");
-      if (mapCard && missionLeft && !missionLeft.contains(mapCard)) {
-        missionLeft.appendChild(mapCard);
-      }
-      if (leafletMap) {
-        setTimeout(() => leafletMap.invalidateSize(), 150);
-      }
-      loadVirtualArgPayload();
-    }
-  }
+  window.location.hash = "mission-control";
 }
 
 function setupModeSwitcher() {
-  document.querySelectorAll(".btn-mode").forEach(btn => {
-    btn.onclick = () => switchView(btn.dataset.mode);
-  });
-
-  // Handle window resizing between mobile and desktop layouts
-  window.addEventListener("resize", () => {
-    const mapCard = document.querySelector("#main-map-card");
-    if (currentView === "village") {
-      if (window.innerWidth >= 1025) {
-        const slot = document.querySelector("#village-desktop-map-slot");
-        if (mapCard && slot && !slot.contains(mapCard)) slot.appendChild(mapCard);
-        const drawer = document.querySelector("#demo-drawer");
-        if (drawer) drawer.open = true;
-      } else {
-        const missionLeft = document.querySelector(".mission-left-col");
-        if (mapCard && missionLeft && !missionLeft.contains(mapCard)) missionLeft.appendChild(mapCard);
-      }
-    }
-    if (leafletMap) {
-      setTimeout(() => leafletMap.invalidateSize(), 150);
-    }
-  });
-
-  // Smart Viewport Routing & Preference Restoration
-  const hash = window.location.hash.replace("#", "");
-  const hasValidHash = hash === "village" || hash === "mission-control";
-  const saved = localStorage.getItem("mandya_surface_view");
-
-  let initialMode = "mission-control";
-  if (hasValidHash) {
-    initialMode = hash;
-  } else if (saved && (saved === "village" || saved === "mission-control")) {
-    initialMode = saved;
-  } else {
-    initialMode = window.innerWidth >= 1024 ? "mission-control" : "village";
-  }
-
-  const drawer = document.querySelector("#demo-drawer");
-  if (drawer && window.innerWidth >= 1025) {
-    drawer.open = true;
-  }
-
-  switchView(initialMode);
+  switchView("mission-control");
 }
 
 // -------------------------------------------------------------
-// Render Localized Forecast Details (Village Cockpit)
+// Mission Control 7-Day Multi-Day NWP Progression (Under GIS Map)
 // -------------------------------------------------------------
-let activeCrop = "ragi"; // 'ragi' | 'paddy' | 'sugarcane'
+function renderMissionTimeline(record) {
+  const strip = document.querySelector("#mission-timeline-strip");
+  const sub = document.querySelector("#mission-timeline-sub");
+  if (!strip || !record) return;
 
-function renderForecastDetails(record) {
-  if (!record) return;
-  selectedLgdCode = String(record.lgd_code);
-
-  // Synchronize Leaflet map layer selection styling
-  if (leafletLayers.size > 0) {
-    leafletLayers.forEach((layer, code) => {
-      const isSelected = String(code) === String(record.lgd_code);
-      layer.setStyle(getFeatureStyle(layer.feature, isSelected));
-      const el = layer.getElement ? layer.getElement() : null;
-      if (el) {
-        el.classList.toggle("selected-gp-highlight", isSelected);
-      }
-      if (isSelected) {
-        layer.bringToFront();
-        if (leafletMap && layer.getBounds && !leafletMap.getBounds().contains(layer.getBounds().getCenter())) {
-          leafletMap.panTo(layer.getBounds().getCenter(), { animate: true });
-        }
-      }
-    });
+  if (sub) {
+    sub.textContent = `${record.panchayat_name} (${record.taluk || 'Mandya'}) • Tap day to inspect map & localized forecast`;
   }
 
-  // Highlight selected map polygon cleanly without SVG filter corruption
-  mapPaths.forEach((path, code) => {
-    const isSelected = String(code) === String(record.lgd_code);
-    path.classList.toggle("selected", isSelected);
-    if (isSelected && path.parentNode) {
-      path.parentNode.appendChild(path);
-    }
-  });
-
-  const container = document.querySelector("#forecast-details");
-  if (!container) return;
-
-  const spVar = record.spatial_variance;
-  let activeParcel = null;
-  if (spVar && spVar.parcels && spVar.parcels.length > 1) {
-    const selectedParcelId = activeParcelMap.get(String(record.lgd_code));
-    if (selectedParcelId) {
-      activeParcel = spVar.parcels.find(p => p.parcel_id === selectedParcelId) || spVar.parcels[0];
-    } else {
-      activeParcel = spVar.parcels[0];
-    }
-  }
-
-  // Multi-day forecast day resolution
   const mdf = (record.multi_day_forecast && record.multi_day_forecast.length > 0)
     ? record.multi_day_forecast
     : null;
-  const activeDay = (mdf && mdf[currentSelectedDayIndex]) ? mdf[currentSelectedDayIndex] : (mdf ? mdf[0] : null);
-  const baselineDay0Exp = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
-  const selectedDayExp = activeDay ? activeDay.expected_mm : baselineDay0Exp;
-
-  // Day-to-baseline scaling ratio (for exclave parcels)
-  const dayRatio = (baselineDay0Exp > 0.1)
-    ? (selectedDayExp / baselineDay0Exp)
-    : (selectedDayExp > 0 ? selectedDayExp : 1.0);
-
-  // If a specific exclave parcel is active:
-  // On Day 0 ("Today"), show its exact baseline exclave rain.
-  // On subsequent forecast days (Tomorrow, Day 2..6), scale parcel rain by the day's meteorological trajectory.
-  let exp = selectedDayExp;
-  let lMin = activeDay ? activeDay.likely_min_mm : (record.rainfall_mm?.likely_min ?? record.likely_min_mm ?? 0.0);
-  let lMax = activeDay ? activeDay.likely_max_mm : (record.rainfall_mm?.likely_max ?? record.likely_max_mm ?? 0.0);
-
-  if (activeParcel) {
-    if (currentSelectedDayIndex === 0) {
-      exp = activeParcel.expected_mm;
-      lMin = activeParcel.likely_min_mm;
-      lMax = activeParcel.likely_max_mm;
-    } else {
-      // Scaled parcel micro-climate for future forecast days
-      exp = +(activeParcel.expected_mm * dayRatio).toFixed(1);
-      lMin = +(activeParcel.likely_min_mm * dayRatio).toFixed(1);
-      lMax = +(activeParcel.likely_max_mm * dayRatio).toFixed(1);
-    }
+  if (!mdf) {
+    strip.innerHTML = `<div style="padding:0.75rem; color:#64748b; font-size:0.85rem;">Single-day forecast active. Multi-day NWP loading...</div>`;
+    return;
   }
 
-  const isRainRisk = lMax > 5.0 || exp >= 2.5;
-  const hasLookaheadAlert = Boolean(activeDay && activeDay.lookahead_warning_en);
-
-  // Crop advisories text
-  const ragiAdv = currentLanguage === "kn"
-    ? (record.advisory?.ragi?.action_kn || "ರಾಗಿ ಬೆಳೆ ಮುನ್ನೆಚ್ಚರಿಕೆಗಳನ್ನು ಪಾಲಿಸಿ.")
-    : (record.advisory?.ragi?.action_en || "Follow routine ragi crop management.");
-  const paddyAdv = currentLanguage === "kn"
-    ? (record.advisory?.paddy?.action_kn || "ಭತ್ತದ ಗದ್ದೆಯಲ್ಲಿ ನೀರು ನಿಲ್ಲದಂತೆ ನೋಡಿಕೊಳ್ಳಿ.")
-    : (record.advisory?.paddy?.action_en || "Ensure adequate drainage in paddy field.");
-  const sugarcaneAdv = record.advisory?.sugarcane
-    ? (currentLanguage === "kn" ? record.advisory.sugarcane.action_kn : record.advisory.sugarcane.action_en)
-    : (currentLanguage === "kn" ? "ವಾಡಿಕೆಯಂತೆ ಕಬ್ಬಿನ ಬೆಳೆ ನಿರ್ವಹಣೆ ಮುಂದುವರಿಸಿ." : "Maintain scheduled cane tillering and irrigation.");
-
-  // Role tag display
-  const roleLabels = {
-    dairy: currentLanguage === "kn" ? "🥛 ಡೈರಿ" : "🥛 Dairy",
-    rsk: currentLanguage === "kn" ? "🌾 ಕೃಷಿ ಅಧಿಕಾರಿ" : "🌾 RSK",
-    gp: currentLanguage === "kn" ? "🏛️ ಗ್ರಾ.ಪಂ." : "🏛️ GP",
-    lead: currentLanguage === "kn" ? "👩‍🌾 ರೈತ" : "👩‍🌾 Farmer"
-  };
-  const roleTagText = roleLabels[currentRole] || "🥛 Dairy";
-
-  // ZONE 1: HERO VERDICT (Always visible, presentation scale)
-  const parcelSuffix = activeParcel
-    ? `<span style="font-size:0.85rem; font-weight:700; color:#b45309; margin-left:0.35rem;">(${currentLanguage === 'kn' ? activeParcel.name_kn : activeParcel.name_en})</span>`
-    : "";
-
-  let timelineHtml = "";
-  if (mdf && mdf.length > 0) {
-    timelineHtml = `
-      <div class="timeline-strip-wrapper">
-        <div class="timeline-strip-header">
-          <span class="timeline-title">📅 ${currentLanguage === "kn" ? "೭ ದಿನಗಳ ಕೃಷಿ-ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ" : "7-Day Agro-Weather Forecast"}</span>
-          <span class="timeline-subtitle">${currentLanguage === "kn" ? "ದಿನವನ್ನು ಟ್ಯಾಪ್ ಮಾಡಿ" : "Tap any day to inspect"}</span>
-        </div>
-        <div class="timeline-scroll-strip" role="tablist" aria-label="7-Day Agro Forecast">
-          ${mdf.map((day, idx) => {
-            const isDayActive = idx === currentSelectedDayIndex;
-            const dayLabel = currentLanguage === "kn" ? day.day_label_kn : day.day_label_en;
-            const bandIcon = day.rainfall_band === "dry" ? "☀️" : (day.rainfall_band === "light" ? "🌦️" : (day.rainfall_band === "moderate" ? "🌧️" : "⛈️"));
-            const washoffChip = day.lookahead_warning_en ? `<span class="pill-washoff-alert" title="Leaching risk tomorrow">⚠️</span>` : "";
-            return `
-              <button type="button" 
-                      class="timeline-day-pill ${isDayActive ? 'active' : ''}" 
-                      data-day-idx="${idx}"
-                      role="tab"
-                      aria-selected="${isDayActive}">
-                <span class="pill-day-label">${dayLabel}</span>
-                <span class="pill-weather-icon">${bandIcon}</span>
-                <span class="pill-rain-val">${day.expected_mm.toFixed(1)} <small>mm</small></span>
-                <span class="pill-temp-val" style="font-size:0.7rem; color:#f97316; font-weight:700;">${(day.tmax_c || 31.5).toFixed(0)}° / ${(day.tmin_c || 21.0).toFixed(0)}°</span>
-                ${washoffChip}
-                ${day.disease_risk_flag ? `<span class="pill-disease-chip" title="Fungal disease risk" style="font-size:0.75rem;">🍄</span>` : ''}
-                ${day.heat_stress_level && day.heat_stress_level !== 'NONE' ? `<span class="pill-heat-chip" title="Heat stress" style="font-size:0.75rem;">🔥</span>` : ''}
-              </button>
-            `;
-          }).join("")}
-        </div>
-      </div>
+  strip.innerHTML = mdf.map((day, idx) => {
+    const isDayActive = idx === currentSelectedDayIndex;
+    const dayLabel = day.day_label_en || `Day ${idx}`;
+    const bandIcon = day.rainfall_band === "dry" ? "☀️" : (day.rainfall_band === "light" ? "🌦️" : (day.rainfall_band === "moderate" ? "🌧️" : "⛈️"));
+    const washoffChip = day.lookahead_warning_en ? `<span class="pill-washoff-alert" title="Chemical wash-off / leaching risk: ${day.lookahead_warning_en}">⚠️</span>` : "";
+    return `
+      <button type="button" 
+              class="timeline-day-pill ${isDayActive ? 'active' : ''}" 
+              data-day-idx="${idx}"
+              role="tab"
+              aria-selected="${isDayActive}">
+        <span class="pill-day-label">${dayLabel}</span>
+        <span class="pill-weather-icon">${bandIcon}</span>
+        <span class="pill-rain-val">${day.expected_mm.toFixed(1)} <small>mm</small></span>
+        <span class="pill-temp-val" style="font-size:0.7rem; color:#f97316; font-weight:700;">${(day.tmax_c || 31.5).toFixed(0)}° / ${(day.tmin_c || 21.0).toFixed(0)}°</span>
+        ${washoffChip}
+        ${day.disease_risk_flag ? `<span class="pill-disease-chip" title="Fungal disease risk" style="font-size:0.75rem;">🍄</span>` : ''}
+        ${day.heat_stress_level && day.heat_stress_level !== 'NONE' ? `<span class="pill-heat-chip" title="Heat stress" style="font-size:0.75rem;">🔥</span>` : ''}
+      </button>
     `;
-  }
+  }).join("");
 
-  let lookaheadHazardHtml = "";
-  if (hasLookaheadAlert) {
-    lookaheadHazardHtml = `
-      <div class="lookahead-hazard-card">
-        <div class="lookahead-hazard-header">
-          <span class="hazard-icon">⚠️</span>
-          <span>${currentLanguage === "kn" ? "48 ಗಂಟೆಗಳ ರಸಗೊಬ್ಬರ ಕೊಚ್ಚಿಹೋಗುವ ಎಚ್ಚರಿಕೆ" : "48-Hour Chemical Wash-off & Leaching Hazard"}</span>
-        </div>
-        <p class="hazard-text">
-          ${currentLanguage === "kn" ? activeDay.lookahead_warning_kn : activeDay.lookahead_warning_en}
-        </p>
-      </div>
-    `;
-  }
-
-  let opWindowsHtml = "";
-  if (activeDay) {
-    const spraySafe = activeDay.spray_window === "SAFE";
-    const sprayHold = activeDay.spray_window === "HOLD";
-    const sprayClass = spraySafe ? "op-safe" : (sprayHold ? "op-hold" : "op-risky");
-    const sprayText = spraySafe
-      ? (currentLanguage === "kn" ? "🟢 ಸೂಕ್ತ ದಿನ (Safe)" : "🟢 Safe Window")
-      : (sprayHold ? (currentLanguage === "kn" ? "🚨 ನಿಲ್ಲಿಸಿ (Hold)" : "🚨 Hold Spray") : (currentLanguage === "kn" ? "🟡 ಎಚ್ಚರಿಕೆ" : "🟡 Risky"));
-
-    const harvestSafe = activeDay.harvest_window === "SAFE";
-    const harvestClass = harvestSafe ? "op-safe" : "op-hold";
-    const harvestText = harvestSafe
-      ? (currentLanguage === "kn" ? "🟢 ಸೂಕ್ತ ದಿನ (Safe)" : "🟢 Safe Window")
-      : (currentLanguage === "kn" ? "🚨 ಬೇಡ (Hold)" : "🚨 Hold Harvest");
-
-    const irrClass = activeDay.irrigation_window === "IRRIGATE" ? "op-safe" : (activeDay.irrigation_window === "POSTPONE" ? "op-postpone" : "op-hold");
-    const irrText = activeDay.irrigation_window === "IRRIGATE"
-      ? (currentLanguage === "kn" ? "🚿 ನೀರುಣಿಸಿ" : "🚿 Irrigate")
-      : (activeDay.irrigation_window === "POSTPONE" ? (currentLanguage === "kn" ? "⏸️ ಮುಂದೂಡಿ" : "⏸️ Postpone") : (currentLanguage === "kn" ? "🌊 ಬಸಿದುಹೋಗಲು ಬಿಡಿ" : "🌊 Drain Fields"));
-
-    opWindowsHtml = `
-      <div class="operational-windows-grid">
-        <div class="op-window-card ${sprayClass}">
-          <span class="op-icon">🚜</span>
-          <div class="op-info">
-            <span class="op-label">${currentLanguage === "kn" ? "ಸಿಂಪರಣೆ (Spray 48h)" : "Spray (48h)"}</span>
-            <span class="op-val">${sprayText}</span>
-          </div>
-        </div>
-        <div class="op-window-card ${harvestClass}">
-          <span class="op-icon">🌾</span>
-          <div class="op-info">
-            <span class="op-label">${currentLanguage === "kn" ? "ಕೊಯ್ಲು (Harvest 72h)" : "Harvest (72h)"}</span>
-            <span class="op-val">${harvestText}</span>
-          </div>
-        </div>
-        <div class="op-window-card ${irrClass}">
-          <span class="op-icon">💧</span>
-          <div class="op-info">
-            <span class="op-label">${currentLanguage === "kn" ? "ನೀರಾವರಿ (Irrigation)" : "Irrigation"}</span>
-            <span class="op-val">${irrText}</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  const selectedDayLabel = activeDay
-    ? (currentLanguage === "kn" ? activeDay.day_label_kn : activeDay.day_label_en)
-    : "";
-
-  const heroHtml = `
-    ${timelineHtml}
-    <div class="village-hero-header">
-      <div class="village-name-block">
-        <span class="village-pin">📍</span>
-        <h2 class="village-title">${record.panchayat_name} ${record.taluk ? `<span style="font-size:0.82rem; color:#94a3b8; font-weight:normal;">(${record.taluk})</span>` : ""} ${parcelSuffix} ${selectedDayLabel ? `<small style="font-size:0.85rem; font-weight:700; color:#059669;">[${selectedDayLabel}]</small>` : ''}</h2>
-        <span class="village-role-tag">${roleTagText}</span>
-      </div>
-      <div class="village-rain-block">
-        <span class="village-rain-val">${exp.toFixed(1)} <small>mm</small></span>
-        <span class="village-rain-range">${currentLanguage === "kn" ? "ಸಂಭಾವ್ಯ:" : "Likely:"} ${lMin.toFixed(1)}–${lMax.toFixed(1)} mm</span>
-      </div>
-    </div>
-
-    <!-- Unified Decision Verdict Card -->
-    <div class="hero-verdict-card ${isRainRisk || hasLookaheadAlert ? "verdict-hold" : "verdict-safe"}" role="region" aria-label="Field Action Verdict">
-      <div class="verdict-badge-row">
-        <span class="verdict-pill ${isRainRisk || hasLookaheadAlert ? "badge-hold" : "badge-safe"}">
-          ${isRainRisk 
-            ? (currentLanguage === "kn" ? "🚨 ಕೂಲಿ & ಗೊಬ್ಬರ ಬೇಡ (HOLD)" : "🚨 HOLD LABOUR & UREA") 
-            : (hasLookaheadAlert
-                ? (currentLanguage === "kn" ? "⚠️ ನಾಳೆ ಮಳೆ - ಗೊಬ್ಬರ ಬೇಡ (HOLD)" : "⚠️ RAIN TOMORROW - HOLD UREA")
-                : (currentLanguage === "kn" ? "🟢 ಕೆಲಸಕ್ಕೆ ಸೂಕ್ತ ದಿನ (SAFE)" : "🟢 SAFE TO WORK TODAY"))}
-        </span>
-        <span class="verdict-save-badge ${isRainRisk || hasLookaheadAlert ? "" : "badge-save-zero"}">
-          ${isRainRisk || hasLookaheadAlert 
-            ? (currentLanguage === "kn" ? "₹2,600 ಉಳಿತಾಯ" : "SAVE ₹2,600 / acre") 
-            : (currentLanguage === "kn" ? "₹0 ನಷ್ಟ ಅಪಾಯ" : "₹0 Loss Risk")}
-        </span>
-      </div>
-      <p class="verdict-summary">
-        ${isRainRisk 
-          ? (currentLanguage === "kn" 
-              ? "ತೀವ್ರ ಮಳೆ ಮುನ್ಸೂಚನೆ. ರಸಗೊಬ್ಬರ ಕೊಚ್ಚಿಹೋಗುವುದು ಮತ್ತು ಕೂಲಿ ಹಣ ವ್ಯರ್ಥವಾಗುವುದನ್ನು ತಕ್ಷಣ ತಪ್ಪಿಸಿ." 
-              : "Heavy rain risk expected. Withholding urea top-dressing and field labour saves ₹1,800 fertilizer leaching + ₹800 wages.") 
-          : (hasLookaheadAlert
-              ? (currentLanguage === "kn"
-                  ? activeDay.lookahead_warning_kn
-                  : activeDay.lookahead_warning_en)
-              : (currentLanguage === "kn" 
-                  ? "ಒಣ ಹವೆ ಮತ್ತು ಅನುಕೂಲಕರ ಹವಾಮಾನ. ಕಳೆ ಕೀಳಲು ಮತ್ತು ರಸಗೊಬ್ಬರ ಸಿಂಪಡಿಸಲು ಧೈರ್ಯವಾಗಿ ಕೂಲಿ ಕರೆಯಬಹುದು." 
-                  : "Dry and favorable weather window. Safe to contract agricultural labour for spraying, weeding, and nutrient management."))}
-      </p>
-    </div>
-
-    ${lookaheadHazardHtml}
-
-    <!-- Agromet Multi-Variable Parameters Strip (PS 26074 Multi-Variable Requirement) -->
-    <div class="agromet-multi-strip" role="region" aria-label="Agro-Meteorological Parameters">
-      <div class="agromet-var-card">
-        <span class="agromet-var-label">${currentLanguage === "kn" ? "ಮಳೆ" : "Rainfall"}</span>
-        <span class="agromet-var-val text-primary">${exp.toFixed(1)} mm</span>
-        <span class="agromet-var-source tag-downscaled">5× Downscaled</span>
-      </div>
-      <div class="agromet-var-card">
-        <span class="agromet-var-label">${currentLanguage === "kn" ? "ತಾಪಮಾನ" : "Temperature"}</span>
-        <span class="agromet-var-val">${(activeDay?.tmax_c ?? record.tmax_c ?? 31.5).toFixed(1)}° / ${(activeDay?.tmin_c ?? record.tmin_c ?? 21.0).toFixed(1)}°C</span>
-        <span class="agromet-var-source tag-downscaled">Lapse Rate</span>
-      </div>
-      <div class="agromet-var-card">
-        <span class="agromet-var-label">${currentLanguage === "kn" ? "ಆರ್ದ್ರತೆ" : "Humidity (RH)"}</span>
-        <span class="agromet-var-val">${(activeDay?.rh_pct ?? record.rh_pct ?? 68.0).toFixed(0)}%</span>
-        <span class="agromet-var-source tag-downscaled">Psychrometric</span>
-      </div>
-      <div class="agromet-var-card">
-        <span class="agromet-var-label">${currentLanguage === "kn" ? "ಗಾಳಿಯ ವೇಗ" : "Wind Speed"}</span>
-        <span class="agromet-var-val">${(activeDay?.wind_kph ?? record.wind_kph ?? 8.5).toFixed(1)} km/h</span>
-        <span class="agromet-var-source tag-downscaled">Ridge Boost</span>
-      </div>
-    </div>
-
-    ${opWindowsHtml}
-
-    <!-- Big Spoken Voice Button (56px tall) -->
-    <button id="btn-voice" class="btn-hero-audio" aria-label="Listen to voice advisory">
-      <span class="audio-icon">🔊</span>
-      <span id="voice-btn-text">${currentLanguage === "kn" ? "ಕನ್ನಡ ಧ್ವನಿಯಲ್ಲಿ ಕೇಳಿ (Listen Audio)" : "Listen Voice Advisory (ಕನ್ನಡ)"}</span>
-    </button>
-  `;
-
-  // ADAPTIVE SPATIAL VARIANCE & EXCLAVE INSPECTOR CARD
-  let spatialVarianceHtml = "";
-  if (spVar && (spVar.has_exclaves || spVar.is_high_variance)) {
-    const deltaMm = spVar.spatial_variance_mm;
-    const isExclave = spVar.has_exclaves;
-    const alertTitle = currentLanguage === "kn"
-      ? (isExclave ? "⚠️ ಭೌಗೋಳಿಕ ಪ್ರತ್ಯೇಕ ಭಾಗಗಳ ಎಚ್ಚರಿಕೆ (Exclave Alert)" : "⚠️ ಸ್ಥಳೀಯ ಮಳೆ ವ್ಯತ್ಯಾಸ ಎಚ್ಚರಿಕೆ (Intra-GP Variance)")
-      : (isExclave ? "⚠️ Geographic Exclave Alert (Disconnected Parcels)" : "⚠️ Intra-Panchayat Micro-Climate Variance");
-
-    const alertDesc = currentLanguage === "kn"
-      ? (isExclave 
-          ? `ಈ ಪಂಚಾಯಿತಿ ${spVar.exclave_count} ಪ್ರತ್ಯೇಕ ಭಾಗಗಳನ್ನು ಹೊಂದಿದ್ದು (${spVar.max_exclave_span_km} ಕಿ.ಮೀ ಅಂತರ), ಮಳೆ ${deltaMm.toFixed(1)} ಮಿ.ಮೀ ವ್ಯತ್ಯಾಸವಿದೆ. ನಿಖರ ಹವಾಮಾನಕ್ಕಾಗಿ ಕೆಳಗಿನ ಭಾಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ:` 
-          : `ಪಂಚಾಯಿತಿಯ ವಿವಿಧ ಭಾಗಗಳಲ್ಲಿ ಮಳೆ ${deltaMm.toFixed(1)} ಮಿ.ಮೀ ವ್ಯತ್ಯಾಸವಿದೆ (${spVar.min_mm.toFixed(1)}–${spVar.max_mm.toFixed(1)} ಮಿ.ಮೀ).`)
-      : (isExclave 
-          ? `This Panchayat contains ${spVar.exclave_count} disconnected exclaves (${spVar.max_exclave_span_km} km span) with ${deltaMm.toFixed(1)} mm rainfall difference. Select your local parcel below:` 
-          : `Rainfall varies by ${deltaMm.toFixed(1)} mm across constituent 5km cells (${spVar.min_mm.toFixed(1)}–${spVar.max_mm.toFixed(1)} mm).`);
-
-    let parcelTabsHtml = "";
-    if (spVar.parcels && spVar.parcels.length > 1) {
-      parcelTabsHtml = `
-        <div class="parcel-selector-wrap" role="tablist" aria-label="Select Panchayat Parcel">
-          <span class="parcel-selector-title">${currentLanguage === "kn" ? "📍 ನಿಮ್ಮ ಗ್ರಾಮ/ಭಾಗ ಆಯ್ಕೆಮಾಡಿ:" : "📍 Select Village Parcel:"}</span>
-          <div class="parcel-tabs-row">
-            ${spVar.parcels.map((p, idx) => {
-              const isSelected = activeParcel ? (activeParcel.parcel_id === p.parcel_id) : (idx === 0);
-              const pName = currentLanguage === "kn" ? p.name_kn : p.name_en;
-              const pRain = currentSelectedDayIndex === 0
-                ? p.expected_mm
-                : +(p.expected_mm * dayRatio).toFixed(1);
-              return `
-                <button type="button" 
-                        class="btn-parcel-tab ${isSelected ? 'active' : ''}" 
-                        data-parcel-id="${p.parcel_id}" 
-                        data-lgd="${record.lgd_code}"
-                        role="tab" 
-                        aria-selected="${isSelected}">
-                  <span class="parcel-tab-icon">${idx === 0 ? "⭐" : "📍"}</span>
-                  <span class="parcel-tab-name">${pName}</span>
-                  <span class="parcel-tab-val">${pRain.toFixed(1)} mm <small>(${p.area_share_pct}%)</small></span>
-                </button>
-              `;
-            }).join("")}
-          </div>
-        </div>
-      `;
-    }
-
-    let cellsInspectorHtml = "";
-    if (spVar.constituent_cells && spVar.constituent_cells.length > 1) {
-      const showExpanded = (currentRole === "rsk" || currentRole === "gp" || currentView === "mission-control");
-      cellsInspectorHtml = `
-        <details class="constituent-cells-details" ${showExpanded ? "open" : ""}>
-          <summary class="constituent-cells-summary">
-            <span>🔬 ${currentLanguage === "kn" ? `5×5 ಕಿ.ಮೀ ಉಪ-ಗ್ರಿಡ್ ಪರಿಶೀಲಕ (${spVar.cell_count} ಗ್ರಿಡ್ ಕೋಶಗಳು)` : `5×5 km Constituent Grid Inspector (${spVar.cell_count} Cells)`}</span>
-            <span class="constituent-summary-badge">${currentLanguage === "kn" ? `ವ್ಯತ್ಯಾಸ: ${deltaMm.toFixed(1)} mm` : `Spread: Δ ${deltaMm.toFixed(1)} mm`}</span>
-          </summary>
-          <div class="constituent-cells-table-wrap">
-            <table class="constituent-cells-table">
-              <thead>
-                <tr>
-                  <th>${currentLanguage === "kn" ? "ದಿಕ್ಕು / ವಲಯ" : "Bearing"}</th>
-                  <th>${currentLanguage === "kn" ? "ಸ್ಥಳ (ಅಕ್ಷಾಂಶ/ರೇಖಾಂಶ)" : "Location (Lat/Lon)"}</th>
-                  <th>${currentLanguage === "kn" ? "ಮಳೆ (ಮಿ.ಮೀ)" : "Rainfall"}</th>
-                  <th>${currentLanguage === "kn" ? "ವಿಸ್ತೀರ್ಣ ಪಾಲು" : "Area Share"}</th>
-                  <th>${currentLanguage === "kn" ? "ಕೊಚ್ಚಿಹೋಗುವ ಅಪಾಯ" : "Leaching Risk"}</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${spVar.constituent_cells.map(c => {
-                  const dir = currentLanguage === "kn" ? c.cardinal_dir_kn : c.cardinal_dir_en;
-                  const leachClass = c.leach_risk === "High" ? "risk-tag-high" : (c.leach_risk === "Moderate" ? "risk-tag-mod" : "risk-tag-low");
-                  const leachLabel = currentLanguage === "kn" 
-                    ? (c.leach_risk === "High" ? "ಹೆಚ್ಚು (ತಡೆಹಿಡಿಯಿರಿ)" : (c.leach_risk === "Moderate" ? "ಮಧ್ಯಮ" : "ಕಡಿಮೆ (ಸುರಕ್ಷಿತ)"))
-                    : c.leach_risk;
-                  return `
-                    <tr>
-                      <td><span class="bearing-badge">🧭 ${dir}</span></td>
-                      <td class="cell-coords-mono">${c.lat.toFixed(3)}°N, ${c.lon.toFixed(3)}°E</td>
-                      <td class="cell-rain-val"><strong>${c.rainfall_mm.toFixed(1)}</strong> mm</td>
-                      <td>${c.weight_pct.toFixed(1)}%</td>
-                      <td><span class="leach-pill ${leachClass}">${leachLabel}</span></td>
-                    </tr>
-                  `;
-                }).join("")}
-              </tbody>
-            </table>
-          </div>
-        </details>
-      `;
-    }
-
-    spatialVarianceHtml = `
-      <div class="spatial-variance-card ${isExclave ? "exclave-mode" : "variance-mode"}" role="region" aria-label="Micro-Climate Variance Card">
-        <div class="variance-alert-header">
-          <div class="variance-title-row">
-            <span class="variance-alert-icon">⚠️</span>
-            <div>
-              <h4 class="variance-alert-title">${alertTitle}</h4>
-              <p class="variance-alert-desc">${alertDesc}</p>
-            </div>
-          </div>
-          <span class="variance-delta-badge">Δ ${deltaMm.toFixed(1)} mm</span>
-        </div>
-        ${parcelTabsHtml}
-        ${cellsInspectorHtml}
-      </div>
-    `;
-  }
-
-  // DESKTOP FULL-SCREEN GRIDS (Visible only on desktop screens >= 1025px)
-  const desktopCropGridHtml = `
-    <div class="desktop-only village-desktop-crop-grid" aria-label="3-Crop Advisory Grid">
-      <div class="crop-card-item">
-        <div class="crop-card-header">
-          <span class="crop-card-title">🌱 ${currentLanguage === "kn" ? "ರಾಗಿ" : "Ragi"}</span>
-          <span class="crop-card-stage">${currentCropStage.toUpperCase()}</span>
-        </div>
-        <p class="crop-card-text">${ragiAdv}</p>
-      </div>
-      <div class="crop-card-item">
-        <div class="crop-card-header">
-          <span class="crop-card-title">🌾 ${currentLanguage === "kn" ? "ಭತ್ತ" : "Paddy"}</span>
-          <span class="crop-card-stage">${(record.advisory?.paddy?.stage || "SOWING").toUpperCase()}</span>
-        </div>
-        <p class="crop-card-text">${paddyAdv}</p>
-      </div>
-      <div class="crop-card-item">
-        <div class="crop-card-header">
-          <span class="crop-card-title">🎋 ${currentLanguage === "kn" ? "ಕಬ್ಬು" : "Sugarcane"}</span>
-          <span class="crop-card-stage">${(record.advisory?.sugarcane?.stage || "GROWTH").toUpperCase()}</span>
-        </div>
-        <p class="crop-card-text">${sugarcaneAdv}</p>
-      </div>
-    </div>
-  `;
-
-  const desktopOpsGridHtml = `
-    <div class="desktop-only village-desktop-ops-grid" aria-label="Operations and Notice Board">
-      <!-- KMF Dairy Loop -->
-      <div class="card nandini-context-card" aria-label="KMF Dairy Verification Loop">
-        <div class="nandini-context-header">
-          <span class="nandini-title">🥛 ${record.panchayat_name} KMF Dairy</span>
-          <span class="nandini-stat-pill nandini-stat-pill-desktop">57.6% Agreement</span>
-        </div>
-        <p class="nandini-prompt">
-          ${currentLanguage === "kn"
-            ? `ಕಳೆದ 12 ಗಂಟೆಗಳಲ್ಲಿ ${record.panchayat_name}ದಲ್ಲಿ ಮಳೆ ಬಿದ್ದಿದೆಯೇ? (2-ಟ್ಯಾಪ್ ದೃಢೀಕರಣ)`
-            : `Did it rain in ${record.panchayat_name} during the last 12 hours? (Secretary 2-Tap)`}
-        </p>
-        <div class="nandini-btn-group">
-          <button class="btn-nandini btn-nandini-yes btn-nandini-yes-desktop" aria-label="Confirm rain fell">
-            <span>🟢 ಹೌದು (Yes, Rained)</span>
-          </button>
-          <button class="btn-nandini btn-nandini-no btn-nandini-no-desktop" aria-label="Confirm no rain">
-            <span>🔴 ಇಲ್ಲ (No Rain)</span>
-          </button>
-        </div>
-        <div class="nandini-alert hidden nandini-feedback-alert-desktop" role="status"></div>
-      </div>
-
-      <!-- Village Chalkboard Notice -->
-      <div class="katte-inline-board" role="region" aria-label="Official Chalkboard Notice">
-        <div class="katte-top">
-          <span>🏛️ ${record.panchayat_name} NOTICE BOARD</span>
-          <span>${record.forecast_date}</span>
-        </div>
-        <div class="katte-symbol ${isRainRisk ? "katte-x" : "katte-check"}">
-          ${isRainRisk ? "✕" : "✓"}
-        </div>
-        <div class="katte-action">
-          ${isRainRisk 
-            ? (currentLanguage === "kn" ? "ಕೂಲಿ ಬೇಡ / ಸಿಂಪಡಣೆ ಬೇಡ (HOLD)" : "NO SPRAY / HOLD LABOUR") 
-            : (currentLanguage === "kn" ? "ಕೆಲಸ ಮುಂದುವರಿಸಿ (PROCEED)" : "SAFE FOR FIELD WORK")}
-        </div>
-      </div>
-    </div>
-  `;
-
-  const desktopTechGridHtml = `
-    <div class="desktop-only village-desktop-tech-grid" aria-label="Scientific Calibration and WhatsApp Dispatch">
-      <!-- CQR Calibration Summary -->
-      <div class="tech-card-box">
-        <div class="tech-card-title">📊 Statistical Calibration & Mass Invariant</div>
-        <div class="cqr-mini-grid">
-          <div class="cqr-mini-box">
-            <span class="cqr-mini-val text-success">90.2%</span>
-            <span class="cqr-mini-lbl">CQR Coverage</span>
-          </div>
-          <div class="cqr-mini-box">
-            <span class="cqr-mini-val">${lMin.toFixed(1)}–${lMax.toFixed(1)} mm</span>
-            <span class="cqr-mini-lbl">Empirical Range</span>
-          </div>
-          <div class="cqr-mini-box">
-            <span class="cqr-mini-val text-success">99.8%</span>
-            <span class="cqr-mini-lbl">L_cons Conserved</span>
-          </div>
-        </div>
-        <p class="cqr-mini-note">
-          Zero-hallucination guarantee: mass conservation invariant enforced via FP32 expm1 loss. LGD code: ${record.lgd_code}.
-        </p>
-      </div>
-
-      <!-- WhatsApp Community Broadcast & eGramSwaraj -->
-      <div class="tech-card-box">
-        <div class="tech-card-title">💬 Community Broadcast & e-GramSwaraj Ingest</div>
-        <p style="font-size:0.84rem; color:var(--text-muted); margin:0;">
-          One-click localized advisory broadcast to registered Mandya farmer WhatsApp & Telegram community groups.
-        </p>
-        <button id="btn-share-whatsapp-desktop" class="btn-action btn-whatsapp" style="width:100%; border:none; padding:0.75rem; border-radius:var(--radius-sm); font-weight:800; cursor:pointer; font-size:0.95rem;">
-          <span>💬</span>
-          <span>${currentLanguage === "kn" ? "ಗ್ರಾಮಸ್ಥರಿಗೆ ವಾಟ್ಸಾಪ್ ಸಂದೇಶ ಕಳುಹಿಸಿ" : "Dispatch WhatsApp Advisory to Farmers"}</span>
-        </button>
-      </div>
-    </div>
-  `;
-
-  // MOBILE-ONLY STREAMLINED SECTIONS (Visible only on < 1025px)
-  let mobileZone2Html = "";
-  if (currentRole === "dairy") {
-    mobileZone2Html = `
-      <div class="card nandini-context-card" id="nandini-section" aria-label="KMF Nandini Dairy Ground-Truth Loop">
-        <div class="nandini-context-header">
-          <span class="nandini-title">🥛 ${record.panchayat_name} KMF Dairy</span>
-          <span class="nandini-stat-pill" id="nandini-stat-text">Verified</span>
-        </div>
-        <p class="nandini-prompt" id="nandini-prompt-text">
-          ${currentLanguage === "kn"
-            ? `ಕಳೆದ 12 ಗಂಟೆಗಳಲ್ಲಿ ${record.panchayat_name}ದಲ್ಲಿ ಮಳೆ ಬಿದ್ದಿದೆಯೇ? (2-ಟ್ಯಾಪ್ ದೃಢೀಕರಣ)`
-            : `Did it rain in ${record.panchayat_name} during the last 12 hours? (Secretary 2-Tap)`}
-        </p>
-        <div class="nandini-btn-group">
-          <button id="btn-nandini-yes" class="btn-nandini btn-nandini-yes" aria-label="Confirm rain fell">
-            <span>🟢 ಹೌದು (Yes, Rained)</span>
-          </button>
-          <button id="btn-nandini-no" class="btn-nandini btn-nandini-no" aria-label="Confirm no rain">
-            <span>🔴 ಇಲ್ಲ (No Rain)</span>
-          </button>
-        </div>
-        <div id="nandini-feedback-alert" class="nandini-alert hidden" role="status"></div>
-      </div>
-    `;
-  } else if (currentRole === "gp") {
-    mobileZone2Html = `
-      <div class="katte-inline-board" role="region" aria-label="Notice Board Chalkboard Template">
-        <div class="katte-top">
-          <span>🏛️ ${record.panchayat_name} NOTICE BOARD</span>
-          <span>${record.forecast_date}</span>
-        </div>
-        <div class="katte-symbol ${isRainRisk ? "katte-x" : "katte-check"}">
-          ${isRainRisk ? "✕" : "✓"}
-        </div>
-        <div class="katte-action">
-          ${isRainRisk 
-            ? (currentLanguage === "kn" ? "ಕೂಲಿ ಬೇಡ / ಸಿಂಪಡಣೆ ಬೇಡ (HOLD)" : "NO SPRAY / HOLD LABOUR") 
-            : (currentLanguage === "kn" ? "ಕೆಲಸ ಮುಂದುವರಿಸಿ (PROCEED)" : "SAFE FOR FIELD WORK")}
-        </div>
-      </div>
-    `;
-  } else {
-    const cropTextMap = {
-      ragi: { name: currentLanguage === "kn" ? "ರಾಗಿ (Ragi)" : "Ragi", stage: currentCropStage.toUpperCase(), text: ragiAdv },
-      paddy: { name: currentLanguage === "kn" ? "ಭತ್ತ (Paddy)" : "Paddy", stage: record.advisory?.paddy?.stage || "SOWING", text: paddyAdv },
-      sugarcane: { name: currentLanguage === "kn" ? "ಕಬ್ಬು (Sugarcane)" : "Sugarcane", stage: record.advisory?.sugarcane?.stage || "GROWTH", text: sugarcaneAdv || "Routine growth maintenance." }
-    };
-    const activeCropData = cropTextMap[activeCrop] || cropTextMap.ragi;
-
-    mobileZone2Html = `
-      <div class="crop-segmented-section" aria-label="Crop Advisory Selector">
-        <div class="crop-segmented-tabs" role="tablist">
-          <button type="button" class="btn-crop-tab ${activeCrop === "ragi" ? "active" : ""}" data-crop="ragi">🌱 ${currentLanguage === "kn" ? "ರಾಗಿ" : "Ragi"}</button>
-          <button type="button" class="btn-crop-tab ${activeCrop === "paddy" ? "active" : ""}" data-crop="paddy">🌾 ${currentLanguage === "kn" ? "ಭತ್ತ" : "Paddy"}</button>
-          ${sugarcaneAdv ? `<button type="button" class="btn-crop-tab ${activeCrop === "sugarcane" ? "active" : ""}" data-crop="sugarcane">🎋 ${currentLanguage === "kn" ? "ಕಬ್ಬು" : "Cane"}</button>` : ""}
-        </div>
-        <div class="crop-advice-single-card" id="active-crop-card">
-          <div class="crop-advice-title-row">
-            <span class="crop-advice-name">${activeCropData.name}</span>
-            <span class="crop-advice-stage">${activeCropData.stage}</span>
-          </div>
-          <p class="crop-advice-text">${activeCropData.text}</p>
-        </div>
-      </div>
-    `;
-  }
-
-  const mobileDetailsHtml = `
-    <div class="collapsible-details-group" aria-label="Supplementary Information">
-      <details class="detail-accordion" id="acc-science">
-        <summary class="detail-summary">
-          <span>📊 Scientific Calibration & CQR Details</span>
-          <span class="acc-chevron">▾</span>
-        </summary>
-        <div class="detail-content">
-          <div class="cqr-mini-grid">
-            <div class="cqr-mini-box">
-              <span class="cqr-mini-val">90.2%</span>
-              <span class="cqr-mini-lbl">CQR Coverage</span>
-            </div>
-            <div class="cqr-mini-box">
-              <span class="cqr-mini-val">${lMin.toFixed(1)}–${lMax.toFixed(1)} mm</span>
-              <span class="cqr-mini-lbl">Empirical Range</span>
-            </div>
-            <div class="cqr-mini-box">
-              <span class="cqr-mini-val">${record.lgd_code}</span>
-              <span class="cqr-mini-lbl">LGD Code</span>
-            </div>
-          </div>
-          <p class="cqr-mini-note">
-            Calibrated via per-cell quantile mapping against IMD gauge network on unseen 2023 test data. Strict mass conservation $L_{cons}$ preserved.
-          </p>
-        </div>
-      </details>
-
-      ${currentRole !== "gp" ? `
-      <details class="detail-accordion" id="acc-chalkboard">
-        <summary class="detail-summary">
-          <span>📋 Village Notice Board (ಕಟ್ಟೆ ಚೀಟಿ)</span>
-          <span class="acc-chevron">▾</span>
-        </summary>
-        <div class="detail-content">
-          <div class="katte-inline-board">
-            <div class="katte-top">
-              <span>🏛️ ${record.panchayat_name}</span>
-              <span>${record.forecast_date}</span>
-            </div>
-            <div class="katte-symbol ${isRainRisk ? "katte-x" : "katte-check"}">
-              ${isRainRisk ? "✕" : "✓"}
-            </div>
-            <div class="katte-action">
-              ${isRainRisk 
-                ? (currentLanguage === "kn" ? "ಕೂಲಿ ಬೇಡ / ಸಿಂಪಡಣೆ ಬೇಡ (HOLD)" : "NO SPRAY / HOLD LABOUR") 
-                : (currentLanguage === "kn" ? "ಕೆಲಸ ಮುಂದುವರಿಸಿ (PROCEED)" : "SAFE FOR FIELD WORK")}
-            </div>
-          </div>
-        </div>
-      </details>
-      ` : ""}
-
-      <details class="detail-accordion" id="acc-whatsapp">
-        <summary class="detail-summary">
-          <span>💬 WhatsApp Community Dispatch</span>
-          <span class="acc-chevron">▾</span>
-        </summary>
-        <div class="detail-content">
-          <button id="btn-share-whatsapp" class="btn-action btn-whatsapp" style="width:100%; border:none; padding:0.6rem; border-radius:4px; font-weight:700; cursor:pointer;">
-            <span>💬</span>
-            <span>${currentLanguage === "kn" ? "ಗ್ರಾಮಸ್ಥರಿಗೆ ವಾಟ್ಸಾಪ್ ಸಂದೇಶ ಕಳುಹಿಸಿ" : "Dispatch WhatsApp Advisory"}</span>
-          </button>
-        </div>
-      </details>
-    </div>
-  `;
-
-  container.innerHTML = `
-    <article class="forecast-card-streamlined">
-      ${heroHtml}
-      ${spatialVarianceHtml}
-      ${desktopCropGridHtml}
-      ${desktopOpsGridHtml}
-      ${desktopTechGridHtml}
-      <div class="mobile-only">
-        ${mobileZone2Html}
-        ${mobileDetailsHtml}
-      </div>
-    </article>
-  `;
-
-  // 7-Day Agromet Timeline Day-Pill Handlers
-  container.querySelectorAll(".timeline-day-pill").forEach(pill => {
+  strip.querySelectorAll(".timeline-day-pill").forEach(pill => {
     pill.onclick = (e) => {
       e.stopPropagation();
       const idx = parseInt(pill.dataset.dayIdx, 10);
       if (!isNaN(idx) && idx !== currentSelectedDayIndex) {
         currentSelectedDayIndex = idx;
-        triggerCockpitFeedback(container.querySelector(".village-rain-val"));
-        renderForecastDetails(record);
+        triggerCockpitFeedback();
+        renderMissionTimeline(record);
         if (typeof updateStatsBar === "function" && currentRecords) {
           updateStatsBar(currentRecords, currentSelectedDayIndex);
         }
@@ -1096,93 +387,20 @@ function renderForecastDetails(record) {
             layerObj.setStyle(getFeatureStyle(layerObj.feature, isSelected));
           });
         }
-      }
-    };
-  });
-
-  // Parcel Selector Tab Handlers with Map Spotlighting & Tactile Pulse
-  container.querySelectorAll(".btn-parcel-tab").forEach(tab => {
-    tab.onclick = () => {
-      const pId = tab.dataset.parcelId;
-      const lgd = tab.dataset.lgd;
-      if (pId && lgd) {
-        tab.classList.add("tab-clicked");
-        activeParcelMap.set(String(lgd), pId);
-
-        // Find parcel metadata for map centering and toast
-        const targetParcel = spVar?.parcels?.find(p => p.parcel_id === pId);
-        const pName = currentLanguage === "kn" ? (targetParcel?.name_kn || "ಭಾಗ") : (targetParcel?.name_en || "Parcel");
-        const pRain = currentSelectedDayIndex === 0
-          ? (targetParcel?.expected_mm ?? 0)
-          : +((targetParcel?.expected_mm ?? 0) * dayRatio).toFixed(1);
-
-        // Trigger micro-progress shimmer bar and toast confirmation
-        triggerCockpitFeedback(container.querySelector(".village-rain-val"));
-        showToast(`📍 ${record.panchayat_name} — ${pName} (${pRain.toFixed(1)} mm)`);
-
-        // Re-render Cockpit view with pulse animation
-        renderForecastDetails(record);
-
-        // Smooth Leaflet Pan/Zoom to Sub-Parcel Centroid
-        if (leafletMap && targetParcel?.centroid && Array.isArray(targetParcel.centroid)) {
-          leafletMap.flyTo(targetParcel.centroid, 12, {
-            animate: true,
-            duration: 0.6
-          });
-        }
-
-        // On mobile, smoothly scroll up slightly to ensure updated verdict is in direct view
-        if (window.innerWidth < 1025) {
-          const heroHeader = container.querySelector(".village-hero-header");
-          if (heroHeader) {
-            heroHeader.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          }
+        renderMissionInspectionStrip(record);
+        const modal = document.querySelector("#exclave-modal");
+        if (modal && !modal.classList.contains("hidden")) {
+          renderExclaveModalContent(record);
         }
       }
     };
   });
+}
 
-  // Pulse animation on the rainfall metric block
-  const rainBlock = container.querySelector(".village-rain-block");
-  if (rainBlock) {
-    rainBlock.classList.remove("data-updating-pulse");
-    void rainBlock.offsetWidth;
-    rainBlock.classList.add("data-updating-pulse");
-  }
-
-  // Attach Event Handlers
-  const voiceBtn = container.querySelector("#btn-voice");
-  if (voiceBtn) voiceBtn.onclick = () => playVoiceAdvisory(record);
-
-  const shareBtn = container.querySelector("#btn-share-whatsapp");
-  if (shareBtn) shareBtn.onclick = () => broadcastToWhatsApp(record);
-
-  const shareBtnDesktop = container.querySelector("#btn-share-whatsapp-desktop");
-  if (shareBtnDesktop) shareBtnDesktop.onclick = () => broadcastToWhatsApp(record);
-
-  // Nandini Secretary Handlers (desktop & mobile)
-  container.querySelectorAll(".btn-nandini-yes").forEach(btn => {
-    btn.onclick = () => submitNandiniValidation(true);
-  });
-  container.querySelectorAll(".btn-nandini-no").forEach(btn => {
-    btn.onclick = () => submitNandiniValidation(false);
-  });
-
-  // Crop Tab Switches (mobile)
-  container.querySelectorAll(".btn-crop-tab").forEach(tab => {
-    tab.onclick = () => {
-      activeCrop = tab.dataset.crop;
-      renderForecastDetails(record);
-    };
-  });
-
-  // Update Nandini Secretary Stats
-  fetchNandiniStats();
-
-  // Synchronize Virtual ARG payload in Mission Control
-  if (currentView === "mission-control") {
-    loadVirtualArgPayload();
-  }
+function renderForecastDetails(record) {
+  if (!record) return;
+  renderMissionTimeline(record);
+  renderMissionInspectionStrip(record);
 }
 
 // -------------------------------------------------------------
@@ -2279,99 +1497,227 @@ function setupVirtualArgCopy() {
 }
 
 // -------------------------------------------------------------
-// Map Modal Handler (for Village Cockpit Mobile View)
+// Exclave & Constituent Sub-Grid Modal Inspector
 // -------------------------------------------------------------
-function setupMapModal() {
-  const openBtn = document.querySelector("#btn-open-map-modal");
-  const modal = document.querySelector("#map-modal");
-  const closeBtn = document.querySelector("#btn-close-map-modal");
-  const modalMapMount = document.querySelector("#modal-map-container");
-
-  if (!openBtn || !modal || !closeBtn) return;
-
-  openBtn.onclick = () => {
-    modal.classList.remove("hidden");
-    // Switch map to modal if in village mode
-    const mapCard = document.querySelector("#main-map-card");
-    if (mapCard && modalMapMount && !modalMapMount.contains(mapCard)) {
-      modalMapMount.appendChild(mapCard);
-    }
-    if (leafletMap) {
-      setTimeout(() => leafletMap.invalidateSize(), 150);
-    }
-  };
-
-  closeBtn.onclick = () => {
+function closeExclaveModal() {
+  const modal = document.querySelector("#exclave-modal");
+  if (modal) {
     modal.classList.add("hidden");
-    // Return map card to mission control
-    const missionLeft = document.querySelector(".mission-left-col");
-    const mapCard = document.querySelector("#main-map-card");
-    if (mapCard && missionLeft && !missionLeft.contains(mapCard)) {
-      missionLeft.appendChild(mapCard);
+  }
+}
+window.closeExclaveModal = closeExclaveModal;
+
+function renderExclaveModalContent(record) {
+  const content = document.querySelector("#exclave-modal-content");
+  if (!content || !record) return;
+
+  const spVar = record.spatial_variance;
+  const mdf = (record.multi_day_forecast && record.multi_day_forecast.length > 0)
+    ? record.multi_day_forecast
+    : null;
+  const activeDay = (mdf && mdf[currentSelectedDayIndex]) ? mdf[currentSelectedDayIndex] : (mdf ? mdf[0] : null);
+  const baselineDay0Exp = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
+  const selectedDayExp = activeDay ? activeDay.expected_mm : baselineDay0Exp;
+
+  const dayRatio = (baselineDay0Exp > 0.1)
+    ? (selectedDayExp / baselineDay0Exp)
+    : (selectedDayExp > 0 ? selectedDayExp : 1.0);
+
+  let activeParcel = null;
+  if (spVar && spVar.parcels && spVar.parcels.length > 1) {
+    const selectedParcelId = activeParcelMap.get(String(record.lgd_code));
+    if (selectedParcelId) {
+      activeParcel = spVar.parcels.find(p => p.parcel_id === selectedParcelId) || spVar.parcels[0];
+    } else {
+      activeParcel = spVar.parcels[0];
     }
-    if (leafletMap) {
-      setTimeout(() => leafletMap.invalidateSize(), 150);
+  }
+
+  const deltaMm = spVar ? spVar.spatial_variance_mm : 0.0;
+  const isExclave = spVar ? spVar.has_exclaves : false;
+  const isHighVar = spVar ? spVar.is_high_variance : false;
+
+  const alertTitle = isExclave
+    ? "⚠️ Geographic Exclave Alert (Disconnected Parcels)"
+    : (isHighVar ? "⚠️ Intra-Panchayat Micro-Climate Variance" : "ℹ️ Constituent Grid Downscaling");
+
+  const alertDesc = isExclave
+    ? `This Panchayat contains ${spVar.exclave_count} disconnected exclaves (${spVar.max_exclave_span_km} km span) with ${deltaMm.toFixed(1)} mm rainfall variance. Select your constituent parcel below to focus coordinates and inspect localized downscaling:`
+    : (isHighVar
+        ? `Rainfall varies by ${deltaMm.toFixed(1)} mm across constituent 5×5 km cells (${spVar.min_mm.toFixed(1)}–${spVar.max_mm.toFixed(1)} mm).`
+        : `Uniform 5×5 km downscaling distribution across single contiguous parcel.`);
+
+  let parcelTabsHtml = "";
+  if (spVar && spVar.parcels && spVar.parcels.length > 1) {
+    parcelTabsHtml = `
+      <div class="parcel-selector-wrap" role="tablist" aria-label="Select Panchayat Parcel">
+        <span class="parcel-selector-title">📍 Select Village Parcel:</span>
+        <div class="parcel-tabs-row">
+          ${spVar.parcels.map((p, idx) => {
+            const isSelected = activeParcel ? (activeParcel.parcel_id === p.parcel_id) : (idx === 0);
+            const pRain = currentSelectedDayIndex === 0
+              ? p.expected_mm
+              : +(p.expected_mm * dayRatio).toFixed(1);
+            return `
+              <button type="button" 
+                      class="btn-parcel-tab ${isSelected ? 'active' : ''}" 
+                      data-parcel-id="${p.parcel_id}" 
+                      data-lgd="${record.lgd_code}"
+                      role="tab" 
+                      aria-selected="${isSelected}">
+                <span class="parcel-tab-icon">${idx === 0 ? "⭐" : "📍"}</span>
+                <span class="parcel-tab-name">${p.name_en}</span>
+                <span class="parcel-tab-val">${pRain.toFixed(1)} mm <small>(${p.area_share_pct}%)</small></span>
+              </button>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  let cellsInspectorHtml = "";
+  if (spVar && spVar.constituent_cells && spVar.constituent_cells.length > 0) {
+    cellsInspectorHtml = `
+      <div class="constituent-cells-details-box" style="margin-top: 1rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.65rem;">
+          <h5 style="margin:0; font-size:0.92rem; font-weight:700; color:#0f172a;">
+            🔬 5×5 km Constituent Grid Inspector (${spVar.cell_count || spVar.constituent_cells.length} Cells)
+          </h5>
+          <span class="constituent-summary-badge">Spread: Δ ${deltaMm.toFixed(1)} mm</span>
+        </div>
+        <div class="constituent-cells-table-wrap">
+          <table class="constituent-cells-table">
+            <thead>
+              <tr>
+                <th>Bearing</th>
+                <th>Location (Lat/Lon)</th>
+                <th>Rainfall</th>
+                <th>Area Share</th>
+                <th>Leaching Risk</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${spVar.constituent_cells.map(c => {
+                const dir = c.cardinal_dir_en;
+                const leachClass = c.leach_risk === "High" ? "risk-tag-high" : (c.leach_risk === "Moderate" ? "risk-tag-mod" : "risk-tag-low");
+                const cellRain = currentSelectedDayIndex === 0
+                  ? c.rainfall_mm
+                  : +(c.rainfall_mm * dayRatio).toFixed(1);
+                return `
+                  <tr>
+                    <td><span class="bearing-badge">🧭 ${dir}</span></td>
+                    <td class="cell-coords-mono">${c.lat.toFixed(3)}°N, ${c.lon.toFixed(3)}°E</td>
+                    <td class="cell-rain-val"><strong>${cellRain.toFixed(1)}</strong> mm</td>
+                    <td>${c.weight_pct.toFixed(1)}%</td>
+                    <td><span class="leach-pill ${leachClass}">${c.leach_risk}</span></td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  content.innerHTML = `
+    <div class="exclave-modal-gp-header">
+      <div>
+        <div class="exclave-modal-gp-name">📍 ${record.panchayat_name}</div>
+        <div class="exclave-modal-gp-meta">LGD Code: ${record.lgd_code} • Taluk: ${record.taluk || "Mandya"} • Day: ${activeDay ? activeDay.day_label_en : "Today"}</div>
+      </div>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <span class="variance-delta-badge" style="font-size:0.85rem; padding:0.35rem 0.75rem;">Δ ${deltaMm.toFixed(1)} mm Spread</span>
+      </div>
+    </div>
+
+    <div class="spatial-variance-card ${isExclave ? "exclave-mode" : "variance-mode"}" style="margin:0;">
+      <div class="variance-alert-header">
+        <div class="variance-title-row">
+          <span class="variance-alert-icon">⚠️</span>
+          <div>
+            <h4 class="variance-alert-title">${alertTitle}</h4>
+            <p class="variance-alert-desc">${alertDesc}</p>
+          </div>
+        </div>
+      </div>
+      ${parcelTabsHtml}
+      ${cellsInspectorHtml}
+    </div>
+  `;
+
+  content.querySelectorAll(".btn-parcel-tab").forEach(tab => {
+    tab.onclick = () => {
+      const pId = tab.dataset.parcelId;
+      const lgd = tab.dataset.lgd;
+      if (pId && lgd) {
+        activeParcelMap.set(String(lgd), pId);
+        renderExclaveModalContent(record);
+        const targetParcel = spVar?.parcels?.find(p => p.parcel_id === pId);
+        if (targetParcel && targetParcel.centroid_lat && targetParcel.centroid_lon && leafletMap) {
+          leafletMap.panTo([targetParcel.centroid_lat, targetParcel.centroid_lon], { animate: true });
+        }
+        showToast(`📍 Selected ${targetParcel?.name_en || 'Parcel'}: ${targetParcel?.expected_mm?.toFixed(1) || 0} mm`);
+      }
+    };
+  });
+}
+
+function openExclaveModal(lgdCode, parcelId) {
+  const modal = document.querySelector("#exclave-modal");
+  if (!modal) return;
+
+  const rec = (currentRecords || []).find(r => String(r.lgd_code) === String(lgdCode));
+  if (!rec) return;
+
+  if (parcelId) {
+    activeParcelMap.set(String(lgdCode), parcelId);
+  }
+
+  if (String(selectedLgdCode) !== String(lgdCode) && typeof selectPanchayat === "function") {
+    selectPanchayat(rec);
+  }
+
+  renderExclaveModalContent(rec);
+  modal.classList.remove("hidden");
+
+  if (parcelId && rec.spatial_variance?.parcels) {
+    const p = rec.spatial_variance.parcels.find(x => x.parcel_id === parcelId);
+    if (p && p.centroid_lat && p.centroid_lon && leafletMap) {
+      leafletMap.panTo([p.centroid_lat, p.centroid_lon], { animate: true });
     }
-  };
-
-  modal.onclick = (e) => {
-    if (e.target === modal) closeBtn.click();
-  };
-}
-
-// -------------------------------------------------------------
-// Operator Roles Setup (Village Mode)
-// -------------------------------------------------------------
-const ROLE_DESCRIPTIONS = {
-  dairy: {
-    en: "🥛 Dairy Secretary: 06:00 AM Rain Verification & Milk Center Broadcast prioritised.",
-    kn: "🥛 ಡೈರಿ ಕಾರ್ಯದರ್ಶಿ: ಹಾಲು ಅಳೆಯುವ ಸಮಯದ 2-ಟ್ಯಾಪ್ ಮಳೆ ದೃಢೀಕರಣ ಮತ್ತು ಬ್ರಾಡ್‌ಕಾಸ್ಟ್ ಮೊದಲ ಪ್ರಾಶಸ್ತ್ಯ."
-  },
-  rsk: {
-    en: "🌾 RSK Officer: Crop phenology stage & ₹ cost-of-error financial risk prioritised.",
-    kn: "🌾 ಕೃಷಿ ಅಧಿಕಾರಿ: ಬೆಳೆಯ ಬೆಳವಣಿಗೆ ಹಂತ ಮತ್ತು ₹ ಆರ್ಥಿಕ ನಷ್ಟ ಅಪಾಯ ವಿಶ್ಲೇಷಣೆ ಮೊದಲ ಪ್ರಾಶಸ್ತ್ಯ."
-  },
-  gp: {
-    en: "🏛️ GP Secretary: Notice Board / Chalkboard template & Virtual ARG data prioritised.",
-    kn: "🏛️ ಗ್ರಾ.ಪಂ. ಅಧಿಕಾರಿ: ಗ್ರಾಮ ಪಂಚಾಯತಿ ನೋಟಿಸ್ ಬೋರ್ಡ್ ಚೀಟಿ ಮತ್ತು ವರ್ಚುವಲ್ ರೇನ್ ಗೇಜ್ ಡಾಟಾ."
-  },
-  lead: {
-    en: "👩‍🌾 Lead Farmer: High-contrast today/tomorrow field action decision only.",
-    kn: "👩‍🌾 ಪ್ರಗತಿಪರ ರೈತ: ಇಂದಿನ ಮತ್ತು ನಾಳೆಯ ನೇರ ಕೃಷಿ ನಿರ್ಧಾರ (ಸರಳ ನೋಟ)."
-  }
-};
-
-function setOperatorRole(role) {
-  if (!role) return;
-  currentRole = role;
-  localStorage.setItem("mandya_operator_role", role);
-  document.body.setAttribute("data-operator-role", role);
-
-  document.querySelectorAll(".btn-role").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.role === role);
-  });
-
-  const banner = document.querySelector("#role-purpose-banner");
-  if (banner) {
-    const desc = ROLE_DESCRIPTIONS[role];
-    banner.textContent = currentLanguage === "kn" ? desc.kn : desc.en;
-  }
-
-  // Update Zone 2 immediately for the active panchayat
-  if (currentRecords && currentRecords.length) {
-    const current = currentRecords.find(r => String(r.lgd_code) === String(selectedLgdCode)) || currentRecords[0];
-    if (current) renderForecastDetails(current);
   }
 }
+window.openExclaveModal = openExclaveModal;
+window.inspectCockpitForRecord = openExclaveModal;
 
-function setupOperatorRoles() {
-  const savedRole = localStorage.getItem("mandya_operator_role") || "dairy";
-  setOperatorRole(savedRole);
+function setupExclaveModal() {
+  const modal = document.querySelector("#exclave-modal");
+  const closeBtn = document.querySelector("#btn-close-exclave-modal");
 
-  document.querySelectorAll(".btn-role").forEach(btn => {
-    btn.onclick = () => setOperatorRole(btn.dataset.role);
+  if (closeBtn) {
+    closeBtn.onclick = () => closeExclaveModal();
+  }
+
+  if (modal) {
+    modal.onclick = (e) => {
+      if (e.target === modal) closeExclaveModal();
+    };
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const m = document.querySelector("#exclave-modal");
+      if (m && !m.classList.contains("hidden")) {
+        closeExclaveModal();
+      }
+    }
   });
 }
+
+function setupOperatorRoles() {}
+function setOperatorRole() {}
 
 // -------------------------------------------------------------
 // Cycle Badge Helper (Rural Offline Age-Bucketed SOP)
@@ -2471,8 +1817,7 @@ async function loadData() {
 
   selectPanchayat = function(record) {
     if (!record) return;
-    selectedLgdCode = record.lgd_code;
-    currentSelectedDayIndex = 0;
+    selectedLgdCode = String(record.lgd_code);
     triggerCockpitFeedback();
     if (searchInput) {
       searchInput.value = record.panchayat_name;
@@ -2482,34 +1827,36 @@ async function loadData() {
       suggestionsBox.classList.add("hidden");
       suggestionsBox.replaceChildren();
     }
-    renderForecastDetails(record);
+
+    // Synchronize Leaflet map layer selection styling
+    if (leafletLayers && leafletLayers.size > 0) {
+      leafletLayers.forEach((layer, code) => {
+        const isSelected = String(code) === String(record.lgd_code);
+        layer.setStyle(getFeatureStyle(layer.feature, isSelected));
+        const el = layer.getElement ? layer.getElement() : null;
+        if (el) {
+          el.classList.toggle("selected-gp-highlight", isSelected);
+        }
+        if (isSelected) {
+          layer.bringToFront();
+          if (leafletMap && layer.getBounds && !leafletMap.getBounds().contains(layer.getBounds().getCenter())) {
+            leafletMap.panTo(layer.getBounds().getCenter(), { animate: true });
+          }
+        }
+      });
+    }
+
+    renderMissionTimeline(record);
     renderMissionInspectionStrip(record);
+    loadVirtualArgPayload();
   };
   window.selectPanchayat = selectPanchayat;
 
+  window.openExclaveModal = function(lgdCode, parcelId) {
+    openExclaveModal(lgdCode, parcelId);
+  };
   window.inspectCockpitForRecord = function(lgdCode, parcelId) {
-    const rec = records.find(r => String(r.lgd_code) === String(lgdCode));
-    if (rec) {
-      if (parcelId) {
-        activeParcelMap.set(String(lgdCode), parcelId);
-      }
-      selectPanchayat(rec);
-    }
-    switchView("village");
-    setTimeout(() => {
-      const exclaveCard = document.querySelector(".spatial-variance-card");
-      if (exclaveCard) {
-        exclaveCard.scrollIntoView({ behavior: "smooth", block: "center" });
-        exclaveCard.style.transition = "box-shadow 0.4s ease";
-        exclaveCard.style.boxShadow = "0 0 0 3px #f59e0b, 0 8px 24px rgba(245, 158, 11, 0.35)";
-        setTimeout(() => {
-          exclaveCard.style.boxShadow = "";
-        }, 1800);
-      } else {
-        const forecastEl = document.querySelector("#forecast-details");
-        if (forecastEl) forecastEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 120);
+    openExclaveModal(lgdCode, parcelId);
   };
 
   function renderMissionInspectionStrip(record) {
@@ -2544,8 +1891,8 @@ async function loadData() {
             ${chipsHtml}
           </div>
         </div>
-        <button type="button" class="mission-inspection-btn" onclick="window.inspectCockpitForRecord('${record.lgd_code}', '${highestRiskParcel?.parcel_id || ''}')">
-          <span>Inspect Exclaves 📱</span>
+        <button type="button" class="mission-inspection-btn" onclick="window.openExclaveModal('${record.lgd_code}', '${highestRiskParcel?.parcel_id || ''}')">
+          <span>Inspect Exclaves 🔬</span>
         </button>
       `;
     } else if (spVar && spVar.is_high_variance) {
@@ -2562,8 +1909,8 @@ async function loadData() {
             <span style="font-size:0.75rem; color:#94a3b8;">(${spVar.cell_count || 4} constituent 5km cells)</span>
           </div>
         </div>
-        <button type="button" class="mission-inspection-btn" onclick="window.inspectCockpitForRecord('${record.lgd_code}')">
-          <span>Inspect Cells 📱</span>
+        <button type="button" class="mission-inspection-btn" onclick="window.openExclaveModal('${record.lgd_code}')">
+          <span>Inspect Cells 🔬</span>
         </button>
       `;
     } else {
@@ -2580,8 +1927,8 @@ async function loadData() {
           </div>
           <span style="font-size:0.76rem; color:#94a3b8;">Uniform 5km downscaling distribution across single contiguous parcel.</span>
         </div>
-        <button type="button" class="mission-inspection-btn" onclick="window.inspectCockpitForRecord('${record.lgd_code}')">
-          <span>View Cockpit 📱</span>
+        <button type="button" class="mission-inspection-btn" onclick="window.openExclaveModal('${record.lgd_code}')">
+          <span>Constituent Grid 🔬</span>
         </button>
       `;
     }
@@ -2725,31 +2072,10 @@ async function loadData() {
     };
   });
 
-  // Language Toggles
-  document.querySelectorAll(".lang-btn").forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll(".lang-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentLanguage = btn.dataset.lang;
-      setOperatorRole(currentRole);
-      const current = records.find(r => String(r.lgd_code) === String(selectedLgdCode)) || records[0];
-      if (current) renderForecastDetails(current);
-    };
-  });
-
   // Keyboard Shortcuts
   window.addEventListener("keydown", (e) => {
     const activeEl = document.activeElement;
     const isEditing = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.tagName === "SELECT");
-
-    // Shortcut: 'm' or 'M' to toggle between Village Cockpit and MoES Mission Control
-    if (e.key.toLowerCase() === "m" && !isEditing) {
-      e.preventDefault();
-      const nextView = currentView === "village" ? "mission-control" : "village";
-      switchView(nextView);
-      showToast(`Switched to ${nextView === "village" ? "📱 Village Cockpit" : "🛰️ MoES Mission Control"}`);
-      return;
-    }
 
     // Shortcut: '/' focuses search
     if (e.key === "/" && !isEditing) {
@@ -2771,14 +2097,6 @@ async function loadData() {
         const nextIdx = (currentIdx + delta + records.length) % records.length;
         selectPanchayat(records[nextIdx]);
       }
-      return;
-    }
-
-    // Language switch: '1' for EN, '2' for KN
-    if ((e.key === "1" || e.key === "2") && !isEditing) {
-      const targetLang = e.key === "1" ? "en" : "kn";
-      const targetBtn = document.querySelector(`.lang-btn[data-lang="${targetLang}"]`);
-      if (targetBtn) targetBtn.click();
       return;
     }
 
@@ -3006,10 +2324,7 @@ if ("serviceWorker" in navigator) {
 }
 
 setupModeSwitcher();
-setupOperatorRoles();
-setupNandiniModule();
 setupMapControls();
 setupVirtualArgCopy();
-setupMapModal();
-fetchNandiniStats();
+setupExclaveModal();
 loadData();

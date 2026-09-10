@@ -1949,88 +1949,7 @@ path.selected-gp-highlight,
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* ==========================================================================
-   Map Modal (For Mobile Village Cockpit)
-   ========================================================================== */
-.map-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(4px);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
 
-.map-modal-dialog {
-  background: #ffffff;
-  border-radius: var(--radius-md);
-  width: 100%;
-  max-width: 650px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-}
-
-.map-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.map-modal-header h3 {
-  font-size: 0.95rem;
-  font-weight: 700;
-}
-
-.btn-close-modal {
-  background: #f1f5f9;
-  border: none;
-  color: #64748b;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.map-modal-body {
-  padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.modal-map-box {
-  width: 100%;
-  height: auto;
-  min-height: 380px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.modal-map-box .map-card {
-  padding: 0.5rem;
-  border: none;
-  box-shadow: none;
-}
-
-.modal-map-box .map-container {
-  height: 360px;
-}
-
-.modal-legend {
-  margin-top: 0.25rem;
-  font-size: 0.72rem;
-}
 
 /* ==========================================================================
    Integration Prototype Footer
@@ -3323,6 +3242,358 @@ path.selected-gp-highlight,
     min-height: 300px;
   }
 }
+
+/* ==========================================================================
+   MISSION CONTROLS BAR (Search & Demo Contrast Chips)
+   ========================================================================== */
+.mission-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #ffffff;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-md, 10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1rem;
+}
+
+.mission-demo-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.control-bar-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.demo-chip {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.demo-chip.chip-burst {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.demo-chip.chip-burst:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+.demo-chip.chip-safe {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+.demo-chip.chip-safe:hover {
+  background: #dbeafe;
+  border-color: #3b82f6;
+}
+
+.demo-chip.chip-dry {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+.demo-chip.chip-dry:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.mission-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 280px;
+  flex: 1;
+  max-width: 440px;
+}
+
+.mission-search-wrap .search-icon {
+  position: absolute;
+  left: 0.75rem;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.mission-search-wrap .search-input {
+  width: 100%;
+  padding: 0.45rem 2.2rem 0.45rem 2.2rem;
+  border-radius: 20px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.85rem;
+  background: #f8fafc;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.18s ease;
+}
+
+.mission-search-wrap .search-input:focus {
+  background: #ffffff;
+  border-color: #0b6e4f;
+  box-shadow: 0 0 0 3px rgba(11, 110, 79, 0.15);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 2px 5px;
+}
+
+.search-clear-btn:hover {
+  color: #334155;
+}
+
+.search-suggestions {
+  position: absolute;
+  top: 105%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* ==========================================================================
+   MISSION TIMELINE CARD (Under GIS Map)
+   ========================================================================== */
+.mission-timeline-card {
+  margin-top: 1rem;
+  background: #ffffff;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid #e2e8f0;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.mission-timeline-card .timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mission-timeline-card .timeline-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.mission-timeline-card .timeline-icon {
+  font-size: 1.25rem;
+}
+
+.mission-timeline-card .timeline-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mission-timeline-card .timeline-sub {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.mission-timeline-card .timeline-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.25rem 0.65rem;
+  border-radius: 12px;
+}
+
+.mission-timeline-card .timeline-scroll-strip {
+  display: flex;
+  gap: 0.65rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+}
+
+/* ==========================================================================
+   EXCLAVE & CONSTITUENT GRID INSPECTOR MODAL
+   ========================================================================== */
+.exclave-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.exclave-modal-backdrop.hidden {
+  display: none !important;
+}
+
+.exclave-modal-dialog {
+  background: #ffffff;
+  border-radius: var(--radius-lg, 14px);
+  width: 100%;
+  max-width: 840px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  animation: modalScaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.exclave-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: #0f172a;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.exclave-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.exclave-modal-icon {
+  font-size: 1.25rem;
+}
+
+.exclave-modal-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.exclave-close-btn,
+.btn-close-modal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #f8fafc;
+  padding: 0.42rem 0.95rem;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  line-height: 1;
+  white-space: nowrap;
+  width: auto !important;
+  height: auto !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.exclave-close-btn .close-symbol,
+.btn-close-modal .close-symbol {
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.exclave-close-btn:hover,
+.btn-close-modal:hover {
+  background: #ef4444;
+  border-color: #dc2626;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+}
+
+.exclave-close-btn:hover .close-symbol,
+.btn-close-modal:hover .close-symbol {
+  transform: rotate(90deg);
+}
+
+.exclave-close-btn:active,
+.btn-close-modal:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+.exclave-modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.exclave-modal-gp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.exclave-modal-gp-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.exclave-modal-gp-meta {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalScaleUp {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 
 
 
