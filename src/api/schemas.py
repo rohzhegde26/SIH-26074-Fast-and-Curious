@@ -89,6 +89,7 @@ class DailyForecastItem(BaseModel):
     advisory_summary_en: str = ""
     advisory_summary_kn: str = ""
     provenance: str = "IMD_OBSERVATION_DOWNSCALED"
+    parcels: list[ParcelDetailSchema] = []
 
 
 class AgrometVariables(BaseModel):

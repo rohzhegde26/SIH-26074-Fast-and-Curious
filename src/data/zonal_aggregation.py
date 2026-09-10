@@ -26,6 +26,7 @@ import geopandas as gpd
 import numpy as np
 import pyproj
 from shapely.geometry import MultiPolygon, Polygon, box
+from shapely.ops import unary_union
 
 
 # Earth radius in meters (WGS84 authalic sphere)
@@ -152,84 +153,102 @@ class ZonalAggregator:
 
             if poly.geom_type == "MultiPolygon" and len(poly.geoms) > 1:
                 parts = list(poly.geoms)
-                clusters = []
-                for p in parts:
-                    assigned = False
-                    for c in clusters:
-                        if any(p.distance(other) < 0.035 for other in c):
-                            c.append(p)
-                            assigned = True
-                            break
-                    if not assigned:
-                        clusters.append([p])
+                # Sort parts by area descending: part 0 is always the largest (Main Cluster)
+                parts.sort(key=lambda p: p.area, reverse=True)
 
-                if len(clusters) > 1:
-                    clusters.sort(key=lambda c: sum(p.area for p in c), reverse=True)
-                    main_c = clusters[0]
-                    main_area = sum(p.area for p in main_c)
-                    main_lat = float(sum(p.centroid.y * p.area for p in main_c) / main_area)
-                    main_lon = float(sum(p.centroid.x * p.area for p in main_c) / main_area)
+                main_p = parts[0]
+                main_lat = float(main_p.centroid.y)
+                main_lon = float(main_p.centroid.x)
 
-                    cluster_spans = []
-                    for c in clusters:
-                        c_area = sum(p.area for p in c)
-                        c_lat = float(sum(p.centroid.y * p.area for p in c) / c_area)
-                        c_lon = float(sum(p.centroid.x * p.area for p in c) / c_area)
-                        span = float(math.hypot(c_lat - main_lat, c_lon - main_lon) * 111.0)
-                        cluster_spans.append((c, c_area, c_lat, c_lon, span))
+                total_poly_area = poly.area if poly.area > 0 else 1.0
+                K = len(parts)
 
-                    max_span = max(s[4] for s in cluster_spans)
-                    if max_span >= 3.0:
-                        has_exclaves = True
-                        max_exclave_span_km = round(max_span, 1)
+                # Rule C3: If K > 4, top 4 by area + one summary parcel for remaining
+                selected_parcels = []
+                if K <= 4:
+                    for i, p in enumerate(parts):
+                        selected_parcels.append((i, p, False))
+                else:
+                    for i in range(4):
+                        selected_parcels.append((i, parts[i], False))
+                    remaining_union = unary_union(parts[4:])
+                    selected_parcels.append((4, remaining_union, True))
 
-                        total_poly_area = poly.area if poly.area > 0 else 1.0
-                        for i, (c, c_area, c_lat, c_lon, span) in enumerate(cluster_spans):
-                            area_pct = round((c_area / total_poly_area) * 100.0, 1)
-                            if i == 0:
-                                label_en = "Main Cluster"
-                                label_kn = "ಮುಖ್ಯ ಭಾಗ"
-                            else:
-                                b_en, b_kn = compute_cardinal_bearing(c_lat, c_lon, main_lat, main_lon)
-                                label_en = f"{b_en} Exclave ({span:.0f} km {b_en})"
-                                label_kn = f"{b_kn} ಪ್ರತ್ಯೇಕ ಭಾಗ ({span:.0f} ಕಿ.ಮೀ {b_kn})"
+                has_exclaves = True
+                max_span = 0.0
 
-                            c_union = c[0] if len(c) == 1 else MultiPolygon(c)
-                            c_bounds = c_union.bounds
-                            c_lon_min = np.floor(c_bounds[0] / self.hr_step) * self.hr_step
-                            c_lon_max = np.ceil(c_bounds[2] / self.hr_step) * self.hr_step
-                            c_lat_min = np.floor(c_bounds[1] / self.hr_step) * self.hr_step
-                            c_lat_max = np.ceil(c_bounds[3] / self.hr_step) * self.hr_step
+                for i, p_geom, is_summary in selected_parcels:
+                    p_area = p_geom.area
+                    area_pct = round((p_area / total_poly_area) * 100.0, 1)
+                    c_lat = float(p_geom.centroid.y)
+                    c_lon = float(p_geom.centroid.x)
+                    span = float(math.hypot(c_lat - main_lat, c_lon - main_lon) * 111.0)
+                    if span > max_span:
+                        max_span = span
 
-                            c_lons = np.arange(c_lon_min, c_lon_max + 1e-6, self.hr_step)
-                            c_lats = np.arange(c_lat_min, c_lat_max + 1e-6, self.hr_step)
+                    if i == 0:
+                        label_en = "Main Cluster"
+                        label_kn = "ಮುಖ್ಯ ಭಾಗ"
+                    elif is_summary:
+                        rem_count = K - 4
+                        label_en = f"+{rem_count} More Parcels"
+                        label_kn = f"+{rem_count} ಇತರೆ ಭಾಗಗಳು"
+                    else:
+                        b_en, b_kn = compute_cardinal_bearing(c_lat, c_lon, main_lat, main_lon)
+                        dist_str = f"{span:.1f}" if span < 10 else f"{span:.0f}"
+                        label_en = f"{b_en} Parcel ({dist_str} km {b_en})"
+                        label_kn = f"{b_kn} ಪ್ರತ್ಯೇಕ ಭಾಗ ({dist_str} ಕಿ.ಮೀ {b_kn})"
 
-                            p_cell_coords = []
-                            p_weights = []
-                            for lat in c_lats:
-                                for lon in c_lons:
-                                    box_elem = box(lon, lat, lon + self.hr_step, lat + self.hr_step)
-                                    if c_union.intersects(box_elem):
-                                        c_inter = c_union.intersection(box_elem)
-                                        if not c_inter.is_empty:
-                                            c_area_m2 = compute_spherical_cell_area_m2(
-                                                lat + self.hr_step / 2.0, self.hr_step, self.hr_step
-                                            )
-                                            w = (c_inter.area / box_elem.area) * c_area_m2
-                                            p_cell_coords.append((float(lat + self.hr_step / 2.0), float(lon + self.hr_step / 2.0)))
-                                            p_weights.append(w)
+                    # Compute grid cells intersecting p_geom
+                    p_bounds = p_geom.bounds
+                    c_lon_min = np.floor(p_bounds[0] / self.hr_step) * self.hr_step
+                    c_lon_max = np.ceil(p_bounds[2] / self.hr_step) * self.hr_step
+                    c_lat_min = np.floor(p_bounds[1] / self.hr_step) * self.hr_step
+                    c_lat_max = np.ceil(p_bounds[3] / self.hr_step) * self.hr_step
 
-                            p_total_w = sum(p_weights) if p_weights else 1.0
-                            parcels_data.append({
-                                "parcel_id": f"{gpcode}_p{i}",
-                                "name_en": label_en,
-                                "name_kn": label_kn,
-                                "centroid": [round(c_lat, 4), round(c_lon, 4)],
-                                "area_share_pct": area_pct,
-                                "cell_coords": p_cell_coords,
-                                "weights": p_weights,
-                                "total_weight": p_total_w,
-                            })
+                    c_lons = np.arange(c_lon_min, c_lon_max + 1e-6, self.hr_step)
+                    c_lats = np.arange(c_lat_min, c_lat_max + 1e-6, self.hr_step)
+
+                    p_cell_coords = []
+                    p_weights = []
+                    for lat in c_lats:
+                        for lon in c_lons:
+                            box_elem = box(lon, lat, lon + self.hr_step, lat + self.hr_step)
+                            if p_geom.intersects(box_elem):
+                                c_inter = p_geom.intersection(box_elem)
+                                if not c_inter.is_empty:
+                                    c_area_m2 = compute_spherical_cell_area_m2(
+                                        lat + self.hr_step / 2.0, self.hr_step, self.hr_step
+                                    )
+                                    w = (c_inter.area / box_elem.area) * c_area_m2
+                                    p_cell_coords.append((float(lat + self.hr_step / 2.0), float(lon + self.hr_step / 2.0)))
+                                    p_weights.append(w)
+
+                    if not p_cell_coords:
+                        r_lat = np.round(c_lat / self.hr_step) * self.hr_step
+                        r_lon = np.round(c_lon / self.hr_step) * self.hr_step
+                        p_cell_coords.append((float(r_lat), float(r_lon)))
+                        p_weights.append(1.0)
+
+                    p_total_w = sum(p_weights) if p_weights else 1.0
+                    parcels_data.append({
+                        "parcel_id": f"{gpcode}_p{i}",
+                        "name_en": label_en,
+                        "name_kn": label_kn,
+                        "centroid": [round(c_lat, 4), round(c_lon, 4)],
+                        "area_share_pct": area_pct,
+                        "cell_coords": p_cell_coords,
+                        "weights": p_weights,
+                        "total_weight": p_total_w,
+                    })
+
+                # Normalize area_share_pct to strictly sum to 100.0
+                sum_pct = sum(p["area_share_pct"] for p in parcels_data)
+                if sum_pct > 0:
+                    for p in parcels_data:
+                        p["area_share_pct"] = round((p["area_share_pct"] / sum_pct) * 100.0, 1)
+
+                max_exclave_span_km = round(max_span, 1)
 
             self.weights_cache[gpcode] = {
                 "gpname": row.get("gpname", ""),

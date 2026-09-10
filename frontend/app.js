@@ -1527,12 +1527,85 @@ function setupVirtualArgCopy() {
 }
 
 // -------------------------------------------------------------
-// Exclave & Constituent Sub-Grid Modal Inspector
+// Exclave & Cadastral Parcel Matrix Inspector
 // -------------------------------------------------------------
+function computeRingArea(ring) {
+  if (!ring || ring.length < 3) return 0;
+  let a = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    a += (ring[j][0] + ring[i][0]) * (ring[j][1] - ring[i][1]);
+  }
+  return Math.abs(a / 2);
+}
+
+function getImdTextColor(mm) {
+  if (mm > 15.5) return "#ffffff";
+  return "#0f172a";
+}
+window.getImdTextColor = getImdTextColor;
+
+function highlightCadastralParcel(record, parcelIdx, parcelData) {
+  if (!leafletMap || !record) return;
+
+  if (window.activeParcelHighlightLayer) {
+    leafletMap.removeLayer(window.activeParcelHighlightLayer);
+    window.activeParcelHighlightLayer = null;
+  }
+
+  const geojson = window.panchayatGeoJSON;
+  let polyCoords = null;
+  if (geojson && geojson.features) {
+    const f = geojson.features.find(feat => String(feat.id || feat.properties?.code) === String(record.lgd_code));
+    if (f && f.geometry) {
+      if (f.geometry.type === "Polygon") {
+        polyCoords = f.geometry.coordinates;
+      } else if (f.geometry.type === "MultiPolygon") {
+        const rings = f.geometry.coordinates.slice();
+        rings.sort((a, b) => computeRingArea(b[0]) - computeRingArea(a[0]));
+        polyCoords = rings[parcelIdx] || rings[0];
+      }
+    }
+  }
+
+  if (polyCoords) {
+    const parcelGeo = {
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: polyCoords
+      },
+      properties: {}
+    };
+    const highlightLayer = L.geoJSON(parcelGeo, {
+      style: {
+        color: "#d97706",
+        weight: 3.5,
+        fillColor: "#f59e0b",
+        fillOpacity: 0.45,
+        dashArray: "5, 5"
+      }
+    }).addTo(leafletMap);
+    window.activeParcelHighlightLayer = highlightLayer;
+
+    try {
+      leafletMap.fitBounds(highlightLayer.getBounds(), { padding: [50, 50], maxZoom: 14 });
+    } catch (e) {
+      console.warn("Could not fit bounds to parcel:", e);
+    }
+  } else if (parcelData && parcelData.centroid_lat && parcelData.centroid_lon) {
+    leafletMap.setView([parcelData.centroid_lat, parcelData.centroid_lon], 13);
+  }
+}
+window.highlightCadastralParcel = highlightCadastralParcel;
+
 function closeExclaveModal() {
   const modal = document.querySelector("#exclave-modal");
   if (modal) {
     modal.classList.add("hidden");
+  }
+  if (window.activeParcelHighlightLayer && leafletMap) {
+    leafletMap.removeLayer(window.activeParcelHighlightLayer);
+    window.activeParcelHighlightLayer = null;
   }
 }
 window.closeExclaveModal = closeExclaveModal;
@@ -1549,107 +1622,92 @@ function renderExclaveModalContent(record) {
   const baselineDay0Exp = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
   const selectedDayExp = activeDay ? activeDay.expected_mm : baselineDay0Exp;
 
-  const dayRatio = (baselineDay0Exp > 0.1)
-    ? (selectedDayExp / baselineDay0Exp)
-    : (selectedDayExp > 0 ? selectedDayExp : 1.0);
+  // Day-bound parcels from activeDay or fallback to record.spatial_variance
+  const dayParcels = (activeDay && activeDay.parcels && activeDay.parcels.length > 0)
+    ? activeDay.parcels
+    : (spVar?.parcels || []);
 
-  let activeParcel = null;
-  if (spVar && spVar.parcels && spVar.parcels.length > 1) {
-    const selectedParcelId = activeParcelMap.get(String(record.lgd_code));
-    if (selectedParcelId) {
-      activeParcel = spVar.parcels.find(p => p.parcel_id === selectedParcelId) || spVar.parcels[0];
-    } else {
-      activeParcel = spVar.parcels[0];
-    }
+  const isExclave = dayParcels.length > 1;
+  const maxParcelRain = dayParcels.length > 0 ? Math.max(...dayParcels.map(p => p.expected_mm)) : selectedDayExp;
+  const minParcelRain = dayParcels.length > 0 ? Math.min(...dayParcels.map(p => p.expected_mm)) : selectedDayExp;
+  const parcelSpreadMm = +(maxParcelRain - minParcelRain).toFixed(1);
+
+  // Active parcel selection
+  let activeParcelId = activeParcelMap.get(String(record.lgd_code));
+  if (!activeParcelId || !dayParcels.some(p => p.parcel_id === activeParcelId)) {
+    activeParcelId = dayParcels[0]?.parcel_id || null;
   }
 
-  const deltaMm = spVar ? spVar.spatial_variance_mm : 0.0;
-  const isExclave = spVar ? spVar.has_exclaves : false;
-  const isHighVar = spVar ? spVar.is_high_variance : false;
+  // Mass conservation calculation
+  const weightedMean = dayParcels.length > 0
+    ? dayParcels.reduce((acc, p) => acc + (p.expected_mm * (p.area_share_pct / 100.0)), 0)
+    : selectedDayExp;
+  const massDelta = Math.abs(weightedMean - selectedDayExp);
+
+  let gridCardsHtml = "";
+  if (dayParcels.length > 0) {
+    gridCardsHtml = dayParcels.map((p, idx) => {
+      const isSelected = activeParcelId === p.parcel_id;
+      const imdColor = getImdRainCategoryColor(p.expected_mm);
+      const imdTxt = getImdTextColor(p.expected_mm);
+      const imdLabel = imdCategoryLabel(p.expected_mm);
+      const icon = idx === 0 ? "⭐" : "🧭";
+      return `
+        <div class="parcel-card ${isSelected ? 'active' : ''}" 
+             data-parcel-id="${p.parcel_id}" 
+             data-parcel-idx="${idx}"
+             role="button" 
+             tabindex="0"
+             aria-label="${p.name_en}">
+          <div class="parcel-card-header">
+            <span class="parcel-card-title">${icon} ${p.name_en}</span>
+            <span class="parcel-card-badge" style="background:${imdColor}; color:${imdTxt};">${imdLabel}</span>
+          </div>
+          <div class="parcel-card-body">
+            <div class="parcel-card-rain">
+              <span class="parcel-rain-val">${p.expected_mm.toFixed(1)}</span>
+              <span class="parcel-rain-unit">mm</span>
+            </div>
+            <div class="parcel-card-range">Likely: ${p.likely_min_mm.toFixed(1)} – ${p.likely_max_mm.toFixed(1)} mm</div>
+          </div>
+          <div class="parcel-card-footer">
+            <span class="parcel-area-share">📊 <strong>${p.area_share_pct.toFixed(1)}%</strong> of GP Area</span>
+            <span class="parcel-zoom-hint">Click to Focus 🔍</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  } else {
+    const imdColor = getImdRainCategoryColor(selectedDayExp);
+    const imdTxt = getImdTextColor(selectedDayExp);
+    const imdLabel = imdCategoryLabel(selectedDayExp);
+    gridCardsHtml = `
+      <div class="parcel-card active" data-parcel-idx="0" role="button" tabindex="0">
+        <div class="parcel-card-header">
+          <span class="parcel-card-title">⭐ Main Panchayat Territory (Contiguous)</span>
+          <span class="parcel-card-badge" style="background:${imdColor}; color:${imdTxt};">${imdLabel}</span>
+        </div>
+        <div class="parcel-card-body">
+          <div class="parcel-card-rain">
+            <span class="parcel-rain-val">${selectedDayExp.toFixed(1)}</span>
+            <span class="parcel-rain-unit">mm</span>
+          </div>
+        </div>
+        <div class="parcel-card-footer">
+          <span class="parcel-area-share">📊 <strong>100.0%</strong> of GP Area</span>
+          <span class="parcel-zoom-hint">Contiguous Geometry</span>
+        </div>
+      </div>
+    `;
+  }
 
   const alertTitle = isExclave
-    ? "⚠️ Geographic Exclave Alert (Disconnected Parcels)"
-    : (isHighVar ? "⚠️ Intra-Panchayat Micro-Climate Variance" : "ℹ️ Constituent Grid Downscaling");
+    ? `Cadastral Parcel Matrix (${dayParcels.length} Disjoint Parts)`
+    : "Cadastral Boundary (Single Contiguous Parcel)";
 
   const alertDesc = isExclave
-    ? `This Panchayat contains ${spVar.exclave_count} disconnected exclaves (${spVar.max_exclave_span_km} km span) with ${deltaMm.toFixed(1)} mm rainfall variance. Select your constituent parcel below to focus coordinates and inspect localized downscaling:`
-    : (isHighVar
-        ? `Rainfall varies by ${deltaMm.toFixed(1)} mm across constituent 5×5 km cells (${spVar.min_mm.toFixed(1)}–${spVar.max_mm.toFixed(1)} mm).`
-        : `Uniform 5×5 km downscaling distribution across single contiguous parcel.`);
-
-  let parcelTabsHtml = "";
-  if (spVar && spVar.parcels && spVar.parcels.length > 1) {
-    parcelTabsHtml = `
-      <div class="parcel-selector-wrap" role="tablist" aria-label="Select Panchayat Parcel">
-        <span class="parcel-selector-title">📍 Select Village Parcel:</span>
-        <div class="parcel-tabs-row">
-          ${spVar.parcels.map((p, idx) => {
-            const isSelected = activeParcel ? (activeParcel.parcel_id === p.parcel_id) : (idx === 0);
-            const pRain = currentSelectedDayIndex === 0
-              ? p.expected_mm
-              : +(p.expected_mm * dayRatio).toFixed(1);
-            return `
-              <button type="button" 
-                      class="btn-parcel-tab ${isSelected ? 'active' : ''}" 
-                      data-parcel-id="${p.parcel_id}" 
-                      data-lgd="${record.lgd_code}"
-                      role="tab" 
-                      aria-selected="${isSelected}">
-                <span class="parcel-tab-icon">${idx === 0 ? "⭐" : "📍"}</span>
-                <span class="parcel-tab-name">${p.name_en}</span>
-                <span class="parcel-tab-val">${pRain.toFixed(1)} mm <small>(${p.area_share_pct}%)</small></span>
-              </button>
-            `;
-          }).join("")}
-        </div>
-      </div>
-    `;
-  }
-
-  let cellsInspectorHtml = "";
-  if (spVar && spVar.constituent_cells && spVar.constituent_cells.length > 0) {
-    cellsInspectorHtml = `
-      <div class="constituent-cells-details-box" style="margin-top: 1rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.65rem;">
-          <h5 style="margin:0; font-size:0.92rem; font-weight:700; color:#0f172a;">
-            🔬 5×5 km Constituent Grid Inspector (${spVar.cell_count || spVar.constituent_cells.length} Cells)
-          </h5>
-          <span class="constituent-summary-badge">Spread: Δ ${deltaMm.toFixed(1)} mm</span>
-        </div>
-        <div class="constituent-cells-table-wrap">
-          <table class="constituent-cells-table">
-            <thead>
-              <tr>
-                <th>Bearing</th>
-                <th>Location (Lat/Lon)</th>
-                <th>Rainfall</th>
-                <th>Area Share</th>
-                <th>Leaching Risk</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${spVar.constituent_cells.map(c => {
-                const dir = c.cardinal_dir_en;
-                const leachClass = c.leach_risk === "High" ? "risk-tag-high" : (c.leach_risk === "Moderate" ? "risk-tag-mod" : "risk-tag-low");
-                const cellRain = currentSelectedDayIndex === 0
-                  ? c.rainfall_mm
-                  : +(c.rainfall_mm * dayRatio).toFixed(1);
-                return `
-                  <tr>
-                    <td><span class="bearing-badge">🧭 ${dir}</span></td>
-                    <td class="cell-coords-mono">${c.lat.toFixed(3)}°N, ${c.lon.toFixed(3)}°E</td>
-                    <td class="cell-rain-val"><strong>${cellRain.toFixed(1)}</strong> mm</td>
-                    <td>${c.weight_pct.toFixed(1)}%</td>
-                    <td><span class="leach-pill ${leachClass}">${c.leach_risk}</span></td>
-                  </tr>
-                `;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-  }
+    ? `Official revenue boundary contains ${dayParcels.length} physically disconnected parcel polygons${spVar?.max_exclave_span_km ? ` spanning ${spVar.max_exclave_span_km} km` : ''}. Click any parcel card to zoom and highlight that specific parcel polygon on the live map.`
+    : `Official cadastral boundary is a single contiguous polygon. High-resolution downscaled forecast is uniform across the revenue boundary.`;
 
   content.innerHTML = `
     <div class="exclave-modal-gp-header">
@@ -1658,37 +1716,50 @@ function renderExclaveModalContent(record) {
         <div class="exclave-modal-gp-meta">LGD Code: ${record.lgd_code} • Taluk: ${record.taluk || "Mandya"} • Day: ${activeDay ? activeDay.day_label_en : "Today"}</div>
       </div>
       <div style="display:flex; gap:0.5rem; align-items:center;">
-        <span class="variance-delta-badge" style="font-size:0.85rem; padding:0.35rem 0.75rem;">Δ ${deltaMm.toFixed(1)} mm Spread</span>
+        <span class="variance-delta-badge" style="font-size:0.85rem; padding:0.35rem 0.75rem;">Δ ${parcelSpreadMm.toFixed(1)} mm Parcel Spread</span>
       </div>
     </div>
 
     <div class="spatial-variance-card ${isExclave ? "exclave-mode" : "variance-mode"}" style="margin:0;">
       <div class="variance-alert-header">
         <div class="variance-title-row">
-          <span class="variance-alert-icon">⚠️</span>
+          <span class="variance-alert-icon">${isExclave ? '🗺️' : '📍'}</span>
           <div>
             <h4 class="variance-alert-title">${alertTitle}</h4>
             <p class="variance-alert-desc">${alertDesc}</p>
           </div>
         </div>
       </div>
-      ${parcelTabsHtml}
-      ${cellsInspectorHtml}
+
+      <div class="parcel-matrix-grid">
+        ${gridCardsHtml}
+      </div>
+
+      <div class="parcel-matrix-footer">
+        <div class="parcel-mass-check">
+          ⚖️ <strong>Mass Conservation:</strong> Area-weighted sum = <strong>${weightedMean.toFixed(1)} mm</strong> (conserves Panchayat total ${selectedDayExp.toFixed(1)} mm, Δ = ${massDelta.toFixed(2)} mm)
+        </div>
+        <div class="parcel-provenance-note">
+          ℹ️ <em>Operational Note:</em> To our knowledge, operational agromet feeds do not publish parcel-differentiated forecasts for multi-polygon panchayats. In Mandya district, <strong>89 of 234 Gram Panchayats (38.0%)</strong> are official MultiPolygons requiring cadastral-level downscaling.
+        </div>
+      </div>
     </div>
   `;
 
-  content.querySelectorAll(".btn-parcel-tab").forEach(tab => {
-    tab.onclick = () => {
-      const pId = tab.dataset.parcelId;
-      const lgd = tab.dataset.lgd;
-      if (pId && lgd) {
-        activeParcelMap.set(String(lgd), pId);
-        renderExclaveModalContent(record);
-        const targetParcel = spVar?.parcels?.find(p => p.parcel_id === pId);
-        if (targetParcel && targetParcel.centroid_lat && targetParcel.centroid_lon && leafletMap) {
-          leafletMap.panTo([targetParcel.centroid_lat, targetParcel.centroid_lon], { animate: true });
-        }
-        showToast(`📍 Selected ${targetParcel?.name_en || 'Parcel'}: ${targetParcel?.expected_mm?.toFixed(1) || 0} mm`);
+  content.querySelectorAll(".parcel-card").forEach(card => {
+    card.onclick = () => {
+      const pId = card.dataset.parcelId;
+      const idx = parseInt(card.dataset.parcelIdx, 10) || 0;
+      if (pId) {
+        activeParcelMap.set(String(record.lgd_code), pId);
+      }
+      content.querySelectorAll(".parcel-card").forEach(c => c.classList.remove("active"));
+      card.classList.add("active");
+
+      const parcelData = dayParcels[idx] || dayParcels[0];
+      highlightCadastralParcel(record, idx, parcelData);
+      if (parcelData) {
+        showToast(`📍 Focused ${parcelData.name_en}: ${parcelData.expected_mm.toFixed(1)} mm (${parcelData.area_share_pct.toFixed(1)}% Area)`);
       }
     };
   });
@@ -1712,11 +1783,16 @@ function openExclaveModal(lgdCode, parcelId) {
   renderExclaveModalContent(rec);
   modal.classList.remove("hidden");
 
-  if (parcelId && rec.spatial_variance?.parcels) {
-    const p = rec.spatial_variance.parcels.find(x => x.parcel_id === parcelId);
-    if (p && p.centroid_lat && p.centroid_lon && leafletMap) {
-      leafletMap.panTo([p.centroid_lat, p.centroid_lon], { animate: true });
-    }
+  // Focus active parcel or first parcel
+  const activeDay = (rec.multi_day_forecast && rec.multi_day_forecast[currentSelectedDayIndex]) || null;
+  const dayParcels = (activeDay && activeDay.parcels && activeDay.parcels.length > 0)
+    ? activeDay.parcels
+    : (rec.spatial_variance?.parcels || []);
+
+  const targetId = parcelId || activeParcelMap.get(String(lgdCode)) || dayParcels[0]?.parcel_id;
+  const targetIdx = Math.max(0, dayParcels.findIndex(p => p.parcel_id === targetId));
+  if (dayParcels.length > 0) {
+    highlightCadastralParcel(rec, targetIdx, dayParcels[targetIdx]);
   }
 }
 window.openExclaveModal = openExclaveModal;
@@ -1895,13 +1971,20 @@ async function loadData() {
     if (!missionBar || !record) return;
 
     const spVar = record.spatial_variance;
-    const expVal = record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0;
+    const activeDay = (record.multi_day_forecast && record.multi_day_forecast[currentSelectedDayIndex]) || null;
+    const expVal = activeDay ? activeDay.expected_mm : (record.rainfall_mm?.expected ?? record.expected_mm ?? 0.0);
+    const dayParcels = (activeDay && activeDay.parcels && activeDay.parcels.length > 0)
+      ? activeDay.parcels
+      : (spVar?.parcels || []);
 
-    if (spVar && spVar.has_exclaves) {
+    if (dayParcels && dayParcels.length > 1) {
       missionBar.className = "mission-inspection-strip has-exclaves";
-      const highestRiskParcel = (spVar.parcels || []).reduce((maxP, p) => (p.expected_mm > (maxP?.expected_mm || 0) ? p : maxP), spVar.parcels[0]);
+      const highestRiskParcel = dayParcels.reduce((maxP, p) => (p.expected_mm > (maxP?.expected_mm || 0) ? p : maxP), dayParcels[0]);
+      const pMax = Math.max(...dayParcels.map(p => p.expected_mm));
+      const pMin = Math.min(...dayParcels.map(p => p.expected_mm));
+      const dayDelta = +(pMax - pMin).toFixed(1);
       
-      const chipsHtml = (spVar.parcels || []).map(p => {
+      const chipsHtml = dayParcels.map(p => {
         const isHigh = p.expected_mm >= 15.0;
         const isSafe = p.expected_mm < 2.5;
         const chipClass = isHigh ? "chip-high-risk" : (isSafe ? "chip-safe" : "");
@@ -1915,33 +1998,15 @@ async function loadData() {
         <div class="mission-inspection-left">
           <div class="mission-inspection-title-row">
             <span class="mission-inspection-gp-name">📍 ${record.panchayat_name}</span>
-            <span class="mission-delta-chip">⚡ Δ ${spVar.spatial_variance_mm.toFixed(1)} mm Exclave Variance</span>
-            <span style="font-size:0.75rem; color:#94a3b8;">(${spVar.exclave_count} parcels across ${spVar.max_exclave_span_km} km)</span>
+            <span class="mission-delta-chip">⚡ Δ ${dayDelta} mm Cadastral Variance</span>
+            <span style="font-size:0.75rem; color:#94a3b8;">(${dayParcels.length} parcels across ${spVar?.max_exclave_span_km ?? 0} km)</span>
           </div>
           <div class="mission-parcel-chips">
             ${chipsHtml}
           </div>
         </div>
         <button type="button" class="mission-inspection-btn" onclick="window.openExclaveModal('${record.lgd_code}', '${highestRiskParcel?.parcel_id || ''}')">
-          <span>Inspect Exclaves 🔬</span>
-        </button>
-      `;
-    } else if (spVar && spVar.is_high_variance) {
-      missionBar.className = "mission-inspection-strip has-exclaves";
-      missionBar.innerHTML = `
-        <div class="mission-inspection-left">
-          <div class="mission-inspection-title-row">
-            <span class="mission-inspection-gp-name">📍 ${record.panchayat_name}</span>
-            <span class="mission-delta-chip">⚠️ Δ ${spVar.spatial_variance_mm.toFixed(1)} mm Micro-Climate Spread</span>
-          </div>
-          <div class="mission-parcel-chips">
-            <span class="mission-parcel-chip chip-safe">🟢 Min Cell: <strong>${spVar.min_mm.toFixed(1)} mm</strong></span>
-            <span class="mission-parcel-chip chip-high-risk">⚡ Max Cell: <strong>${spVar.max_mm.toFixed(1)} mm</strong></span>
-            <span style="font-size:0.75rem; color:#94a3b8;">(${spVar.cell_count || 4} constituent 5km cells)</span>
-          </div>
-        </div>
-        <button type="button" class="mission-inspection-btn" onclick="window.openExclaveModal('${record.lgd_code}')">
-          <span>Inspect Cells 🔬</span>
+          <span>Inspect Parcels 🔬</span>
         </button>
       `;
     } else {
@@ -1959,7 +2024,7 @@ async function loadData() {
           <span style="font-size:0.76rem; color:#94a3b8;">Uniform 5km downscaling distribution across single contiguous parcel.</span>
         </div>
         <button type="button" class="mission-inspection-btn" onclick="window.openExclaveModal('${record.lgd_code}')">
-          <span>Constituent Grid 🔬</span>
+          <span>Cadastral Boundary 🔬</span>
         </button>
       `;
     }

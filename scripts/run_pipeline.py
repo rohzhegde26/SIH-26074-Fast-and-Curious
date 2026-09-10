@@ -244,9 +244,7 @@ def run_pipeline(
         agg_rh = aggregator.aggregate_grid(hr_rh, hr_lats, hr_lons)
         agg_wind = aggregator.aggregate_grid(hr_wind, hr_lats, hr_lons)
 
-        agg_detailed = None
-        if d == 0:
-            agg_detailed = aggregator.aggregate_grid_detailed(hr_mean, hr_lo, hr_hi, hr_lats, hr_lons)
+        agg_detailed = aggregator.aggregate_grid_detailed(hr_mean, hr_lo, hr_hi, hr_lats, hr_lons)
 
         daily_results.append({
             "day_offset": d,
@@ -368,6 +366,7 @@ def run_pipeline(
                 "advisory_summary_en": sum_en,
                 "advisory_summary_kn": sum_kn,
                 "provenance": d_res["provenance"],
+                "parcels": (d_res["agg_detailed"].get(gpcode) or {}).get("parcels", []),
             })
 
         day0 = multi_day_items[0]
