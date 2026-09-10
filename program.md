@@ -13,8 +13,8 @@
 > you have at most ~67 candidate iterations left before quota exhaustion!
 ## 1. Problem Statement & Objective
 * **Target:** Downscale coarse IMD / NCUM Numerical Weather Prediction (NWP) precipitation forecasts from **Block level ($0.25^\circ \approx 27\text{ km}$, $16\times 16$ grid)** to **Panchayat level ($0.05^\circ \approx 5.5\text{ km}$, $80\times 80$ grid)**.
-* **Pilot:** Mandya District, Karnataka (234–258 Gram Panchayats).
-* **End Goal:** High-resolution precipitation, temperature, relative humidity, and wind fields for localized agro-meteorological advisories (Paddy, Ragi, Sugarcane).
+* **Pilot:** Mandya District, Karnataka (234 active Gram Panchayats in the current Mandya pilot dataset, filtered from 258 in the source cadastral listing).
+* **End Goal:** High-resolution precipitation combined with physics-based thermodynamic refinement for localized agro-meteorological advisories (Paddy, Ragi, Sugarcane).
 
 ---
 

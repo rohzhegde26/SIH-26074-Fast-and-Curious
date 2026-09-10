@@ -1,7 +1,7 @@
 /**
  * frontend/app.js
- * Mandya Weather Advisory PWA — Dual-Mode Client Engine (SIH PS 26074)
- * Modes: Village Cockpit (Mobile/Field) & MoES Mission Control (Widescreen/Jury)
+ * Mandya Weather Advisory PWA — Interactive Downscaling Engine (SIH PS 26074)
+ * Modes: Interactive Downscaled Map & Spatial Benchmark Audit
  */
 
 const DB_NAME = "mandya-weather-db";

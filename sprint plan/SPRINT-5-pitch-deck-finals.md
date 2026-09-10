@@ -16,7 +16,7 @@ Produce an unassailable pitch deck, a crisp 2-minute demonstration video, and co
 | Role | Sprint 5 Deliverables |
 |---|---|
 | **Domain/Product + Pitch Lead** | Author pitch deck (`docs/pitch_deck.pdf`), write and record the 2-minute demo video script, lead jury rehearsal, enforce the 11 "What We Will NOT Claim" boundaries, ensure honest framing of the spatial holdout and resolution ceiling. |
-| **Data/GIS Lead** | Generate high-resolution map graphics for slides (coarse vs. downscaled vs. reference; Mandya 258 GP boundaries; orographic rainfall profiles). |
+| **Data/GIS Lead** | Generate high-resolution map graphics for slides (coarse vs. downscaled vs. reference; Mandya GP boundaries (258 in source cadastral listing; 234 active in current Mandya pilot dataset); orographic rainfall profiles). |
 | **ML/Eval Engineer** | Prepare calibration and uncertainty figures (`docs/calibration_curve.png`, `docs/cqr_coverage.png`, `docs/hill_vs_plains.png`), format headline comparison tables. |
 | **Backend & Frontend Leads** | Polish live demo environment, ensure one-command local reproduction, execute the offline airplane-mode live test. |
 | **Whole Team** | Code cleanup, final README and LICENSE review, data attribution audit, 2 live dry-runs. |
@@ -48,7 +48,7 @@ Produce an unassailable pitch deck, a crisp 2-minute demonstration video, and co
 4. Will **NOT** present raw MC-dropout as calibrated probabilities (we present CQR 90% empirical coverage intervals: *"Expected X mm, likely Y–Z mm"*).
 5. Will **NOT** claim architectural novelty for the downscaling neural network itself (novelty is system-level: all-India training with spatial holdout, clean polygon aggregation with correct gates, terrain conditioning, mass-conserving kernel=5 pooling, grid registration assert, quantile calibration, and CQR uncertainty).
 6. Will **NOT** claim Tier 2 or Tier 3 operational readiness (these are roadmap items using IMERG Early/Late and BharatFS).
-7. Will **NOT** claim 30,416 Karnataka GPs (official active count is ~5,788–6,376; Mandya has 258 GPs).
+7. Will **NOT** claim 30,416 Karnataka GPs (official active count is ~5,788–6,376; Mandya has 258 GPs in source cadastral listing, 234 active in current pilot dataset).
 8. Will **NOT** claim statewide Cartosat DEM mosaicking in 10 days on Bhuvan (quota is 10 tiles/day; we used terrain-conditioned downscaling with zero quota).
 9. Will **NOT** claim IMD temperature exists at 0.25° (IMD rainfall is 0.25°; temperature is 1.0°).
 10. Will **NOT** claim Bangalore Urban as a pilot district (Bangalore Urban has 0 GPs under BBMP wards).

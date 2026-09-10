@@ -81,7 +81,7 @@ $$\mathcal{L}_{\text{cons}} = \text{MSE}(\mathcal{C}[\text{HR}], \text{LR})$$
   - Complete `scripts/download_chirps.py` for JJAS monsoon (1,708 days, 2010–2023). If bandwidth constrained, apply fallback to 2014–2023 (1,100 days).
   - Prepare terrain DEM for India domain and compute slope/aspect channels.
 - [ ] **Panchayat Filtering & Spatial Holdout Creation:**
-  - Filter `india-geodata` to Mandya (258 GPs) and backup Mysuru using DuckDB.
+  - Filter `india-geodata` to Mandya (258 GPs in source cadastral listing; 234 active in current Mandya pilot dataset) and backup Mysuru using DuckDB.
   - Generate holdout polygon: `Mandya.buffer(0.5)`.
   - Save holdout mask in `src/data/pinned_district.json`.
 - [ ] **Implement `src/data/loaders.py`:**
@@ -111,7 +111,7 @@ $$\mathcal{L}_{\text{cons}} = \text{MSE}(\mathcal{C}[\text{HR}], \text{LR})$$
 The following automated test suite in `tests/` must pass by End of Day 2:
 
 - [ ] **`tests/test_gis.py`:**
-  - Assert Mandya GP count is $258$ (within $[80, 300]$).
+  - Assert Mandya GP count is $258$ in source cadastral listing ($234$ active in current Mandya pilot dataset, within $[80, 300]$).
   - Assert valid geometry fraction $> 98\%$.
   - Assert `patch_index ∩ Mandya_buffer_0.5 == ∅`.
   - Assert all indexed patches have land fraction $\ge 70\%$.

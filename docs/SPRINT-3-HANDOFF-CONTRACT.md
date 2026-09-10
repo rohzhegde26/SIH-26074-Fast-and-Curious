@@ -31,5 +31,4 @@ Rules:
 - Backend aggregation uses `mandya_full.geojson`; the browser uses only the simplified TopoJSON.
 
 Current GIS validation: the supplied simplified TopoJSON contains 235 geometries, of
-which 234 have a non-empty unique `gpcode`. Confirm whether this is the intended
-Mandya scope before claiming the planned count of 258 panchayats.
+which 234 have a non-empty unique `gpcode`. The canonical count is: 234 active Gram Panchayats in the current Mandya pilot dataset (filtered from the 258 source cadastral listing).

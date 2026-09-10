@@ -25,7 +25,7 @@ Establish environment scaffolding, verify cloud/data account credentials with li
 
 ## 3. Pinned Decisions Relevant to Day 0
 
-* **Pilot Scope:** Karnataka, **MANDYA primary** (4,961 km² / 258 GPs = 19.2 km² avg = ~165 HR pixels at 0.05°; bbox ~20×26 pixels ≈ 520 HR pixels). Backup: **MYSURU**. **FORBIDDEN: Bangalore Urban / BBMP (0 GPs)**.
+* **Pilot Scope:** Karnataka, **MANDYA primary** (4,961 km² / 258 source cadastral GPs (234 active in current Mandya pilot dataset) = 19.2 km² avg = ~165 HR pixels at 0.05°; bbox ~20×26 pixels ≈ 520 HR pixels). Backup: **MYSURU**. **FORBIDDEN: Bangalore Urban / BBMP (0 GPs)**.
 * **Spatial Holdout:** Mandya + 0.5° buffer (~50–100 km) strictly excluded from training; buffer excluded from patch index.
 * **LR-HR Pair:** LR = IMD 0.25° native (centers 6.5 + 0.25k, ~752 km²/cell) = block/taluk scale. HR = CHIRPS 0.05° (centers +0.025° offset, ~30.1 km²/cell) = panchayat scale (5× downscaling, kernel=5).
 * **DEM Choice:** Primary terrain-conditioned DEM (synthetic pilot; operational deployment will use real spaceborne DEM from authorized Data Space access). Fallback: SRTM via open-data bucket. **Bhuvan is dropped** (10 tiles/day quota blocks 10-day timeline).
@@ -70,7 +70,7 @@ Establish environment scaffolding, verify cloud/data account credentials with li
   - Execute DuckDB pushdown: `SELECT * FROM read_parquet('panchayats.parquet') WHERE stname='KARNATAKA' AND dtname='MANDYA'` (<1 sec, <5 MB RAM).
   - Apply `shapely.validation.make_valid()`.
   - Assertions:
-    - GP count is between 80 and 300 (Mandya has 258 GPs).
+    - GP count is between 80 and 300 (Mandya has 258 GPs in source cadastral listing; 234 active in current Mandya pilot dataset).
     - Valid geometries > 98%.
     - Coordinate system: EPSG:4326 for analysis, EPSG:7755 for display/viz only.
     - Generate spatial holdout mask: Mandya boundary + 0.5° buffer (~50–100 km).
@@ -122,7 +122,7 @@ Establish environment scaffolding, verify cloud/data account credentials with li
 - [ ] Terrain DEM generator script retrieves and produces test elevation grid without quota error.
 - [ ] `CDS` test retrieve `test.nc` passes (conditional, only if ERA5 is used).
 - [ ] `src/data/pinned_district.json` created with Mandya parameters and Bangalore Urban explicitly forbidden.
-- [ ] `scripts/validate_panchayat.py` runs in <5 seconds using DuckDB, asserts 80–300 GPs (Mandya = 258), valid > 98%, exports spatial holdout buffer mask (0.5°), and strictly generates both `mandya_full.geojson` (math/audits) and `mandya_simplified.topojson` (PWA display <400KB).
+- [ ] `scripts/validate_panchayat.py` runs in <5 seconds using DuckDB, asserts 80–300 GPs (Mandya = 258 in source cadastral listing; 234 active in current Mandya pilot dataset), valid > 98%, exports spatial holdout buffer mask (0.5°), and strictly generates both `mandya_full.geojson` (math/audits) and `mandya_simplified.topojson` (PWA display <400KB).
 - [ ] `scripts/check_registration.py` created to assert cell edge coincidence and catch 2.7 km offset.
 - [ ] `scripts/download_chirps.py` executed and actively downloading monsoon 2010–2023 (or fallback 2014–2023).
 - [ ] `.gitignore`, `.env.example`, `CODEOWNERS`, and data-attribution block committed to repository.

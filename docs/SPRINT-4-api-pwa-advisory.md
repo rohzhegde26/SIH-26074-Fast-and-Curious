@@ -18,7 +18,7 @@ Deliver an integration-ready FastAPI backend serving calibrated forecasts and CQ
 | **Backend Engineer** | Implement FastAPI application in `src/api/`, connect quantile mapping and CQR inference pipelines, implement `/api/forecast/{lgd_code}` and `/api/egramswaraj/mock` (strictly labeled as mock), export OpenAPI documentation. |
 | **Frontend/PWA Engineer** | Build mobile-responsive frontend in `frontend/`, implement Service Worker caching (Network-First for forecast data, Cache-First for map tiles), configure IndexedDB persistence, build airplane-mode offline detection banner, integrate Mandya panchayat choropleth map. |
 | **Domain/Product Lead** | Author bilingual agricultural decision rules in `src/advisory/` for Ragi and Paddy across phenological stages, verify Kannada translation naturalness and clarity for farmers. |
-| **Data/GIS Lead** | Export optimized GeoJSON/TopoJSON for Mandya's 258 panchayats for client-side rendering in the PWA. |
+| **Data/GIS Lead** | Export optimized GeoJSON/TopoJSON for Mandya's panchayats (258 in source cadastral listing; 234 active in current Mandya pilot dataset) for client-side rendering in the PWA. |
 
 ---
 
@@ -99,14 +99,14 @@ Deliver an integration-ready FastAPI backend serving calibrated forecasts and CQ
 ### C. Frontend Progressive Web App (`frontend/`)
 ### C. Frontend Progressive Web App (`frontend/`)
 - [ ] **Interactive Panchayat Map Interface:**
-  - Render Mandya's 258 panchayat polygons using Leaflet / MapLibre, loading strictly from `data/processed/mandya_simplified.topojson` (<400 KB payload) for instant rural rendering and zero lag.
+  - Render Mandya's panchayat polygons (258 in source cadastral listing; 234 active in current Mandya pilot dataset) using Leaflet / MapLibre, loading strictly from `data/processed/mandya_simplified.topojson` (<400 KB payload) for instant rural rendering and zero lag.
   - Color choropleth reflecting expected rainfall intensity.
   - Tap/click polygon to view localized forecast, CQR uncertainty card, and bilingual advisory toggle.
 - [ ] **PWA Service Worker & Offline Storage:**
   - Register Service Worker with two caching strategies:
     - **Cache-First:** Static assets, map styling, base vector tiles.
     - **Network-First with IndexedDB Fallback:** `/api/forecast/*` data.
-  - On first sync, cache all 258 Mandya panchayat forecasts for offline use.
+  - On first sync, cache all 234 active Gram Panchayats in the current Mandya pilot dataset (from 258 source cadastral listing) for offline use.
 - [ ] **Offline Airplane-Mode Indicator:**
   - Listen to `window.addEventListener('online')` and `'offline'`.
   - When offline: display warning banner:  

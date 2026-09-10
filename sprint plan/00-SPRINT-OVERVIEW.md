@@ -51,7 +51,7 @@
 | - IMD 0.25° Daily Rainfall (Native LR coarse input, 1901-2024, 135x129 grid)       |
 | - CHIRPS 0.05° Daily Rainfall (Native HR target, 1981-present, free no login)       |
 | - Terrain-Conditioned DEM (elevation, slope & aspect derived; synthetic pilot)     |
-| - India-Geodata Parquet (319k LGD panchayats -> DuckDB Mandya 258 GPs filtered)    |
+| - India-Geodata Parquet (319k LGD panchayats -> DuckDB Mandya 258 source cadastral GPs (234 active in pilot dataset)) |
 +-----------------------------------------+------------------------------------------+
                                           |
                                           v
@@ -114,7 +114,7 @@
 * **Claim 4:** Will **NOT** present raw MC-dropout as calibrated probabilities — we present CQR calibrated intervals (*"Expected X mm, likely Y–Z mm, 90% empirical coverage on test"*).
 * **Claim 5:** Will **NOT** claim architectural novelty for the downscaling neural network itself — novelty is system-level (all-India training with spatial holdout, clean polygon aggregation, physical conservation, registration assert, quantile calibration, and CQR uncertainty).
 * **Claim 6:** Will **NOT** claim Tier 2 or Tier 3 operational status — roadmap only (IMERG Early/Late, BharatFS).
-* **Claim 7:** Will **NOT** claim 30,416 Karnataka GPs — official active count is ~5,788–6,376; Mandya has 258 GPs.
+* **Claim 7:** Will **NOT** claim 30,416 Karnataka GPs — official active count is ~5,788–6,376; Mandya has 258 GPs in source cadastral listing, 234 active in current pilot dataset.
 * **Claim 8:** Will **NOT** claim statewide Cartosat DEM mosaicking in 10 days on Bhuvan — quota is 10/day; we use terrain-conditioned downscaling with zero quota.
 * **Claim 9:** Will **NOT** claim IMD temperature exists at 0.25° — IMD gridded rainfall is 0.25°; temperature is 1.0°.
 * **Claim 10:** Will **NOT** claim Bangalore Urban as a pilot district — Bangalore Urban has 0 GPs (BBMP wards).
@@ -126,7 +126,7 @@
 
 | Risk | Likelihood | Impact | Mitigation Strategy | Owner |
 |---|---|---|---|---|
-| **1. 0 GPs in Bangalore Urban / Messy Mandya** | High | High (blocks differentiator) | Pin Mandya Day 0; DuckDB pushdown filter; assert count 80–300 (258 GPs), valid > 98%; exclude buffer from patch index; test_gis. | Data/GIS + Pitch Lead |
+| **1. 0 GPs in Bangalore Urban / Messy Mandya** | High | High (blocks differentiator) | Pin Mandya Day 0; DuckDB pushdown filter; assert count 80–300 (258 GPs in source cadastral listing; 234 active in current Mandya pilot dataset), valid > 98%; exclude buffer from patch index; test_gis. | Data/GIS + Pitch Lead |
 | **2. Re-adding Deleted NCMRWF IMDAA** | Low | High (reintroduces inversion bug) | IMDAA permanently deleted in Section 0; CODEOWNERS blocks changes to `/src/data/` without review. | ML Lead |
 | **3. Bhuvan 10/day Quota Blocks DEM** | High if used | Medium (loses terrain) | Use terrain-conditioned DEM primary (no quota); fallback to SRTM open-data bucket. | Data/GIS Lead |
 | **4. CDSE/CDS 403 / Grid Mis-registration (~2.7 km)** | Medium | Medium (systematic shift) | Accept licenses Day 0; run `test_cdse.py` & `check_registration.py` Day 0; regrid once area-weighted or shift 0.025°; freeze transform in `loaders.py`. | Data/GIS Lead |
@@ -160,7 +160,7 @@
 
 - [ ] `test_conservation_exact` passes: constant field coarsened equals input within $10^{-6}$ ($k=5$, $\mathbf{w}$ at HR centers).
 - [ ] `test_conservation_detects_sum_bug` passes: naive summation fails unit test.
-- [ ] `test_gis` passes: Mandya count 80–300 (258 GPs), valid $>98\%$, buffer $0.5^\circ$ excluded from train, `patch_index ∩ buffer == ∅`, land fraction $\ge 70\%$.
+- [ ] `test_gis` passes: Mandya count 80–300 (258 GPs in source cadastral listing; 234 active in current Mandya pilot dataset), valid $>98\%$, buffer $0.5^\circ$ excluded from train, `patch_index ∩ buffer == ∅`, land fraction $\ge 70\%$.
 - [ ] `test_patch_geometry` passes: single-district patch bug caught, all-India $80\times 80$ HR / $16\times 16$ LR verified.
 - [ ] `test_registration` passes: IMD vs. CHIRPS grid edge alignment verified, $2.7\text{ km}$ shift caught.
 - [ ] `test_quantile_mapping` passes: mapping executed per $0.25^\circ$ LR cell, preserving intra-cell spatial variance.

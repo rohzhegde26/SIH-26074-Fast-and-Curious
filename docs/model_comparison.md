@@ -26,7 +26,9 @@ To maintain complete scientific and empirical honesty:
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Bilinear Interpolation** (Floor Baseline) | 0 | 0 MB | 1.84 | 6.42 | 11.20 | 0.741 | ~0.08 mm (area-distortion) |
 | **DeepSD CNN + Elevation** (Vandal et al. Prior Art) | 28,481 | 0.11 MB | 1.62 | 5.38 | 9.85 | 0.795 | Unconstrained (~0.45 mm) |
-| **Proposed 5× U-Net** (GroupNorm + Composite Loss) | 1,973,377 | 7.53 MB | **1.28** | **3.94** | **7.12** | **0.862** | **< 0.001 mm (strictly conserved)** |
+| **Baseline U-Net benchmark (rain-only input)** (GroupNorm + Composite Loss) | 1,973,377 | 7.53 MB | **1.28** | **3.94** | **7.12** | **0.862** | **< 0.001 mm (strictly conserved)** |
+
+> *Note on Model Iteration:* The 1.28 mm MAE reported above represents the baseline U-Net benchmark (rain-only input). The v3.1 iteration adds terrain-conditioned refinement on top.
 
 ---
 

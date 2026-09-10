@@ -82,7 +82,7 @@ Convert raw 5× model gridded outputs into calibrated, uncertainty-bounded, panc
 - [ ] Generate and commit `docs/cqr_coverage.png` (coverage reliability diagram and interval width distributions).
 
 ### C. Zonal Polygon Aggregation (`src/data/zonal_aggregation.py`)
-- [ ] Pre-compute intersection weights $w_i = f_i \cdot A_i$ for all 258 Mandya panchayats loading strictly from `data/processed/mandya_full.geojson` (never the simplified display TopoJSON).
+- [ ] Pre-compute intersection weights $w_i = f_i \cdot A_i$ for all Mandya panchayats (258 in source cadastral listing; 234 active in current Mandya pilot dataset) loading strictly from `data/processed/mandya_full.geojson` (never the simplified display TopoJSON).
 - [ ] Run validation gate 1: verify polygon area completeness within $10^{-3}$ relative error against `pyproj.Geod`.
 - [ ] Run validation gate 2: verify interior HR cell partition $\sum_P f_i \approx 1.0$.
 - [ ] Execute daily panchayat aggregations for Mandya across test year 2023.
@@ -104,11 +104,11 @@ Convert raw 5× model gridded outputs into calibrated, uncertainty-bounded, panc
 ## 5. Verification Gates & Definition of Done
 
 - [ ] `tests/test_quantile_mapping.py` passes: verifies mapping is executed per $0.25^\circ$ cell and preserves intra-cell spatial variance.
-- [ ] Zonal aggregation validation gates pass on all 258 Mandya panchayats:
+- [ ] Zonal aggregation validation gates pass on all Mandya panchayats (258 in source cadastral listing; 234 active in current Mandya pilot dataset):
   - Relative area difference $\le 10^{-3}$.
   - Interior cell sum $\approx 1.0$.
 - [ ] CQR empirical test coverage on unseen monsoon 2023 satisfies $90\% \pm 2\%$.
-- [ ] Calibrated prediction output generated for all Mandya panchayats (150–258 valid predictions with realistic spatial variability).
+- [ ] Calibrated prediction output generated for all Mandya panchayats (150–234 active valid predictions from 258 source cadastral listing with realistic spatial variability).
 - [ ] All three mandatory evaluation artifacts committed:
   - `docs/calibration_curve.png`
   - `docs/cqr_coverage.png`

@@ -227,12 +227,19 @@
               <!-- Dual Map Synchronized Audit Modal -->
               <div id="dual-map-modal" class="dual-map-modal hidden" role="dialog" aria-modal="true" aria-label="IMD vs 5x AI Spatial Benchmark">
                 <div class="dual-map-modal-header">
-                  <div class="dual-modal-title-wrap">
-                    <span class="dual-modal-pill">🔬 SPATIAL BENCHMARK AUDIT</span>
-                    <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#0f172a;">IMD Block vs 5× AI Downscaling - Spatial Resolution Proof</h3>
-                    <span id="dual-prov-chip" class="dual-modal-pill" style="background:#e0f2fe; color:#0369a1; font-weight:600;">—</span>
+                  <div style="display:flex; align-items:center; gap:12px;">
+                    <span style="font-size:1.4rem;">🔬</span>
+                    <div>
+                      <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#0f172a;">Coarse Block vs 5x AI Downscaling - Spatial Resolution Proof</h3>
+                      <p style="margin:2px 0 0; font-size:0.78rem; color:#64748b;" id="dual-modal-sub">
+                        Direct Side-by-Side Spatial Resolution Audit • Mandya District
+                      </p>
+                    </div>
                   </div>
-                  <button type="button" id="dual-modal-close" class="dual-modal-close" aria-label="Close Dual Map Modal">✕ Close</button>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="meta-pill pill-verified" id="dual-prov-chip" style="font-size:0.75rem;">—</span>
+                    <button type="button" class="btn-modal-close" id="btn-close-dual-modal" aria-label="Close modal">✕</button>
+                  </div>
                 </div>
 
                 <!-- Resolution HUD Scorecard Strip (Instant Operational Outcomes) -->
@@ -266,7 +273,7 @@
                 <div class="dual-map-modal-body">
                   <div class="dual-map-pane">
                     <div class="dual-map-label">
-                      <span class="badge imd">IMD Mausamgram 0.25° • 28 km • 1 Value</span>
+                      <span class="badge imd">Coarse parent forecast • 0.25° • 28 km • 1 block-mean value</span>
                       <span class="label-desc" id="dual-imd-sub">—</span>
                     </div>
                     <div id="map-imd" class="dual-leaflet-map"></div>
@@ -395,7 +402,7 @@
                 </p>
                 <div class="dual-benchmark-grid">
                   <div class="benchmark-pane imd-pane">
-                    <span class="benchmark-badge imd">IMD Mausamgram 0.25°</span>
+                    <span class="benchmark-badge imd">Coarse parent forecast • 0.25°</span>
                     <div class="benchmark-value">1 Value • Block-Mean Flat • 27km</div>
                     <div class="benchmark-color" style="background:#e3f2fd"></div>
                   </div>
@@ -412,7 +419,7 @@
                       <span id="varg-station-title">Panchayat: KA_MAN_215504 (Banavasi)</span>
                       <span class="varg-status-pill">● VALIDATED_MASS_CONSERVED</span>
                     </div>
-                    <pre id="varg-json-code" class="varg-pre"><code>Loading live IMD schema payload...</code></pre>
+                    <pre id="varg-json-code" class="varg-pre"><code>Loading standard IMD AWS schema payload...</code></pre>
                   </div>
                 </details>
               </div>
@@ -429,7 +436,7 @@
                   </div>
                 </div>
                 <p class="pillar-desc">
-                  Jointly downscales precipitation, temperature, relative humidity, and surface wind with psychrometric Magnus saturation and C¹ Hann boundary blending:
+                  Couples learned precipitation downscaling with physics-based thermodynamic refinement for temperature, relative humidity, and surface wind using psychrometric Magnus saturation and C¹ Hann boundary blending:
                 </p>
                 <div class="cqr-metrics-grid" style="grid-template-columns: repeat(3, 1fr); margin: 10px 0;">
                   <div class="cqr-stat-box">

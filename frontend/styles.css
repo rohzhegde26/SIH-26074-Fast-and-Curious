@@ -297,7 +297,7 @@ body {
 }
 
 /* ==========================================================================
-   SURFACE A: VILLAGE COCKPIT (MOBILE-FIRST)
+   SURFACE A: PANCHAYAT EXPLORER (MOBILE-FIRST)
    ========================================================================== */
 .village-container {
   max-width: 490px;
@@ -1141,7 +1141,7 @@ body {
   border: 1px solid #fcd34d;
 }
 
-/* Crop Segmented Control (RSK & Farmer Roles) */
+/* Crop Segmented Control (Agromet Field Roles) */
 .crop-segmented-section {
   display: flex;
   flex-direction: column;
