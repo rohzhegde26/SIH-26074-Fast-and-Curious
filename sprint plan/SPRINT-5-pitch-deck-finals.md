@@ -49,7 +49,7 @@ Produce an unassailable pitch deck, a crisp 2-minute demonstration video, and co
 5. Will **NOT** claim architectural novelty for the downscaling neural network itself (novelty is system-level: all-India training with spatial holdout, clean polygon aggregation with correct gates, terrain conditioning, mass-conserving kernel=5 pooling, grid registration assert, quantile calibration, and CQR uncertainty).
 6. Will **NOT** claim Tier 2 or Tier 3 operational readiness (these are roadmap items using IMERG Early/Late and BharatFS).
 7. Will **NOT** claim 30,416 Karnataka GPs (official active count is ~5,788–6,376; Mandya has 258 GPs).
-8. Will **NOT** claim statewide Cartosat DEM mosaicking in 10 days on Bhuvan (quota is 10 tiles/day; we used GLO-30 via CDSE S3 with zero quota).
+8. Will **NOT** claim statewide Cartosat DEM mosaicking in 10 days on Bhuvan (quota is 10 tiles/day; we used terrain-conditioned downscaling with zero quota).
 9. Will **NOT** claim IMD temperature exists at 0.25° (IMD rainfall is 0.25°; temperature is 1.0°).
 10. Will **NOT** claim Bangalore Urban as a pilot district (Bangalore Urban has 0 GPs under BBMP wards).
 11. Will **NOT** claim sub-panchayat resolution detail.
@@ -70,9 +70,9 @@ Produce an unassailable pitch deck, a crisp 2-minute demonstration video, and co
    *"Direct-to-farmer agri-apps show near-zero sustained retention — the sector's graveyard is well documented."*  
    Reframing: The farmer is the beneficiary, not the user. Empowering the 4 village intermediaries (Dairy Secretary, RSK Officer, GP Secretary, Lead Farmer) who already dispense daily advice. Detailed master deck in [pitch_deck_finals.md](file:///c:/Users/Rohith P Hegde/Desktop/SIH-FINALISTS-2026/docs/pitch_deck_finals.md).
 4. **Slide 4: Data Pipeline & Spatial Integrity**  
-   All-India monsoon training (2010–2023, 1,708 days, 310k raw patches $\to$ 200k–240k usable after $\ge 70\%$ land filter). GLO-30 DEM via CDSE S3. Mandya $+ 0.5^\circ$ buffer strictly held out (`patch_index ∩ buffer == ∅`).
+   All-India monsoon training (2010–2023, 1,708 days, 310k raw patches $\to$ 200k–240k usable after $\ge 70\%$ land filter). Terrain-conditioned DEM. Mandya $+ 0.5^\circ$ buffer strictly held out (`patch_index ∩ buffer == ∅`).
 5. **Slide 5: Physics & Mathematics: Conservation & Registration**  
-   Mass conservation pooling with kernel=5 and cosine weighting at HR pixel centers. Elimination of the $2.7\text{ km}$ grid registration shift. Elimination of the cos×area double-counting bug.
+   Parent-cell precipitation consistency pooling with kernel=5 and cosine weighting at HR pixel centers. Elimination of the $2.7\text{ km}$ grid registration shift. Elimination of the cos×area double-counting bug.
 6. **Slide 6: Calibration, Uncertainty & Honest Metrics (No Dry-Day Illusion)**  
    Per-$0.25^\circ$-cell quantile mapping to IMD gauge truth (QQ plot artifact). Conformalized Quantile Regression (CQR) with 90% empirical coverage on unseen 2023 test data. **Reporting Wet-Day MAE ($>2.5\text{ mm}$) and Extreme Event CSI (R95/R99)** alongside aggregate MAE to prove skill on actual rainfall events.
 7. **Slide 7: Clean Polygon Aggregation & Bookkeeping Gates**  
@@ -99,7 +99,7 @@ Produce an unassailable pitch deck, a crisp 2-minute demonstration video, and co
   3. Reference ground truth.  
   Zoom into hilly taluks to show orographic rainfall enhancement that bilinear interpolation fails to capture.
 * **0:45 – 1:10 (Mathematical Rigor):** Briefly display:
-  - Exact mass conservation check ($k=5$).
+  - Exact parent-cell precipitation consistency check ($k=5$).
   - Grid registration alignment.
   - Calibration QQ curve and CQR uncertainty range ($90\%$ test coverage).
 * **1:10 – 1:40 (Mobile PWA & Bilingual Advisory Demo):**

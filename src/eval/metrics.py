@@ -182,12 +182,12 @@ def classify_terrain(
     lats: Union[np.ndarray, torch.Tensor],
     lons: Optional[Union[np.ndarray, torch.Tensor]] = None,
     elevation_threshold: float = 500.0,
-    dem_path: Optional[str] = "data/raw/dem/glo30_terrain.nc",
+    dem_path: Optional[str] = "data/raw/dem/synthetic_terrain.nc",
 ) -> Tuple[np.ndarray, bool, str, str]:
     """
     Classifies spatial samples into Hill vs Plains.
     If DEM file exists at dem_path and lons are provided:
-        Extracts elevation from GLO-30 DEM and classifies Hill if elevation >= 500m.
+        Extracts elevation from terrain-conditioned DEM and classifies Hill if elevation >= 500m.
     Otherwise:
         Falls back to latitude proxy (lat >= 12.5°N) with a printed warning.
 
@@ -255,7 +255,7 @@ def compute_hill_vs_plains(
     lats: Union[np.ndarray, torch.Tensor],
     lons: Optional[Union[np.ndarray, torch.Tensor]] = None,
     elevation_threshold: float = 500.0,
-    dem_path: Optional[str] = "data/raw/dem/glo30_terrain.nc",
+    dem_path: Optional[str] = "data/raw/dem/synthetic_terrain.nc",
 ) -> Dict[str, Dict[str, float]]:
     """
     Computes stratified error breakdown for Hill (Western Ghats / high terrain) vs Plains.
@@ -313,7 +313,7 @@ def plot_hill_vs_plains(
     lats: np.ndarray,
     lons: Optional[np.ndarray] = None,
     elevation_threshold: float = 500.0,
-    dem_path: Optional[str] = "data/raw/dem/glo30_terrain.nc",
+    dem_path: Optional[str] = "data/raw/dem/synthetic_terrain.nc",
     save_path: str = "docs/hill_vs_plains.png",
 ) -> Path:
     """
@@ -428,7 +428,7 @@ def plot_hill_vs_plains(
 def run_metrics_pipeline(
     checkpoint_path: str = "models/checkpoints/best_5x_model.pt",
     zarr_path: str = "data/cache/india_monsoon_patches.zarr",
-    dem_path: str = "data/raw/dem/glo30_terrain.nc",
+    dem_path: str = "data/raw/dem/synthetic_terrain.nc",
     save_plot_path: str = "docs/hill_vs_plains.png",
     device: Optional[torch.device] = None,
 ) -> Dict:

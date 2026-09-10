@@ -1,11 +1,7 @@
 """
-scripts/download_glo30.py
-
-Ingest Copernicus GLO-30 Digital Elevation Model (DEM) and derive terrain channels:
-    - Elevation (meters)
-    - Slope (degrees)
-    - Aspect (degrees)
-Resampled to the 0.05° HR grid matching CHIRPS.
+SYNTHETIC TERRAIN GENERATOR — NOT Copernicus GLO-30. Generates artificial
+elevation ridges for development/demo. Real GLO-30 terrain will be ingested
+for operational deployment via authorized Copernicus Data Space access.
 """
 
 import argparse
@@ -39,8 +35,8 @@ def compute_slope_and_aspect(elevation: np.ndarray, cell_size_m: float = 5550.0)
     return slope_deg, aspect_deg
 
 
-def generate_glo30_terrain(output_path: str = "data/raw/dem/glo30_terrain.nc"):
-    """Generate standardized GLO-30 DEM and terrain attributes for India domain."""
+def generate_synthetic_terrain(output_path: str = "data/raw/dem/synthetic_terrain.nc"):
+    """Generate standardized synthetic DEM and terrain attributes for India domain."""
     out_file = Path(output_path)
     out_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -66,7 +62,7 @@ def generate_glo30_terrain(output_path: str = "data/raw/dem/glo30_terrain.nc"):
 
     ds = xr.Dataset(
         data_vars={
-            "elevation": (("lat", "lon"), elevation, {"units": "meters", "long_name": "Copernicus GLO-30 Elevation"}),
+            "elevation": (("lat", "lon"), elevation, {"units": "meters", "long_name": "Synthetic Demo Elevation"}),
             "slope": (("lat", "lon"), slope_deg, {"units": "degrees", "long_name": "Terrain Slope"}),
             "aspect": (("lat", "lon"), aspect_deg, {"units": "degrees", "long_name": "Terrain Aspect"}),
         },
@@ -75,19 +71,19 @@ def generate_glo30_terrain(output_path: str = "data/raw/dem/glo30_terrain.nc"):
             "lon": lons,
         },
         attrs={
-            "source": "Copernicus DEM GLO-30 (CC-BY 4.0 via CDSE)",
+            "source": "SYNTHETIC_DEMO_TERRAIN",
             "resolution": "0.05 degree resampled",
         },
     )
 
     ds.to_netcdf(out_file)
-    print(f"[SUCCESS] Saved GLO-30 terrain dataset to {out_file} ({out_file.stat().st_size / (1024*1024):.2f} MB)")
+    print(f"[SUCCESS] Saved synthetic terrain dataset to {out_file} ({out_file.stat().st_size / (1024*1024):.2f} MB)")
     return ds
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Ingest or generate GLO-30 DEM terrain data")
-    parser.add_argument("--output", default="data/raw/dem/glo30_terrain.nc")
+    parser = argparse.ArgumentParser(description="Generate synthetic demo terrain data")
+    parser.add_argument("--output", default="data/raw/dem/synthetic_terrain.nc")
     args = parser.parse_args()
 
-    generate_glo30_terrain(args.output)
+    generate_synthetic_terrain(args.output)

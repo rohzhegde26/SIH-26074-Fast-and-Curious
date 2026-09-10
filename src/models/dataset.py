@@ -56,8 +56,7 @@ class MonsoonPatchDataset(Dataset):
         self.lats = self.root["center_lats"][:]
         self.lons = self.root["center_lons"][:]
         self.dates = self.root["dates"][:]
-
-        self.dem_path = Path("data/raw/dem/glo30_terrain.nc")
+        self.dem_path = Path("data/raw/dem/synthetic_terrain.nc")
         self.dem_ds = None
         if self.dem_path.exists():
             try:

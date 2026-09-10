@@ -163,7 +163,7 @@ def run_pipeline(
 
     # Build 5-channel terrain features for Mandya domain if DEM is present
     terrain_tensor = None
-    dem_path = ROOT / "data" / "raw" / "dem" / "glo30_terrain.nc"
+    dem_path = ROOT / "data" / "raw" / "dem" / "synthetic_terrain.nc"
     if dem_path.exists():
         try:
             from src.data.terrain_features import build_terrain_tensor_5ch

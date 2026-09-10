@@ -25,8 +25,8 @@
 
 | Role | Core Responsibilities | Primary Sprints |
 |---|---|---|
-| **Data/GIS Lead** | Ingestion of IMD 0.25°, CHIRPS 0.05°, GLO-30 DEM; DuckDB panchayat geometry processing; patch index extraction ($\ge 70\%$ land filter); grid registration assert; clean zonal polygon aggregation weights ($w_i = f_i \cdot A_i$). | 0, 1, 3 |
-| **ML Lead** | 5× direct U-Net/CNN downscaling architecture; physical mass conservation pooling loss ($k=5$, $\mathbf{w}$ at HR centers); PyTorch AMP fp16 training loop; integration of terrain channels. | 0, 1, 2 |
+| **Data/GIS Lead** | Ingestion of IMD 0.25°, CHIRPS 0.05°, terrain-conditioned DEM; DuckDB panchayat geometry processing; patch index extraction ($\ge 70\%$ land filter); grid registration assert; clean zonal polygon aggregation weights ($w_i = f_i \cdot A_i$). | 0, 1, 3 |
+| **ML Lead** | 5× direct U-Net/CNN downscaling architecture; parent-cell precipitation consistency pooling loss ($k=5$, $\mathbf{w}$ at HR centers); PyTorch AMP fp16 training loop; integration of terrain channels. | 0, 1, 2 |
 | **ML/Eval Engineer** | Fast patch loader (Zarr/LMDB); baselines (Bilinear, DeepSD-style CNN, optional RF); 4-way temporal splits; per-$0.25^\circ$-cell quantile mapping; Conformalized Quantile Regression (CQR); hill-vs-plains evaluation. | 1, 2, 3 |
 | **Backend Engineer** | FastAPI endpoints (`/api/forecast/{lgd_code}`, `/api/egramswaraj/mock` labeled mock); serving quantile mapping and CQR predictions; OpenAPI spec documentation. | 0, 4 |
 | **Frontend/PWA Engineer** | Offline-first mobile PWA; Service Worker caching (Network-First forecast, Cache-First tiles); IndexedDB storage; airplane-mode detection banner; interactive Mandya map. | 0, 4 |
@@ -35,7 +35,7 @@
 ### Merge & Headcount Contingencies
 * **Never merge Pitch Lead:** Dedicated narrative, scientific defense, and jury rehearsal ownership is required full-time.
 * **If 5 members:** Merge Backend and Frontend roles; descope Frontend to static cached map tiles if needed.
-* **If 4 members:** Require pre-filtered Mandya parquet, GLO-30 tiles, and pre-cached patch Zarr ready on Day 0.
+* **If 4 members:** Require pre-filtered Mandya parquet, terrain DEM tiles, and pre-cached patch Zarr ready on Day 0.
 * **CODEOWNERS Enforcement:**
   - `/src/losses/` $\to$ `@ML Lead`
   - `/src/data/` $\to$ `@Data/GIS Lead`
@@ -50,7 +50,7 @@
 | 1. DATA SOURCES & INGESTION                                                        |
 | - IMD 0.25° Daily Rainfall (Native LR coarse input, 1901-2024, 135x129 grid)       |
 | - CHIRPS 0.05° Daily Rainfall (Native HR target, 1981-present, free no login)       |
-| - Copernicus GLO-30 DEM (30m elevation via CDSE S3, slope & aspect derived)        |
+| - Terrain-Conditioned DEM (elevation, slope & aspect derived; synthetic pilot)     |
 | - India-Geodata Parquet (319k LGD panchayats -> DuckDB Mandya 258 GPs filtered)    |
 +-----------------------------------------+------------------------------------------+
                                           |
@@ -69,7 +69,7 @@
 | 3. CORE 5x DOWNSCALING MODEL & LOSS CONSERVATION                                   |
 | - Direct 5x Linear Downscaling (0.25° -> 0.05°, kernel=5)                          |
 | - Terrain-Conditioned U-Net / CNN with DEM, Slope, Aspect                          |
-| - Mass Conservation Loss: avg_pool2d(HR * cos(lat_hr), k=5) == LR                  |
+| - Parent-Cell Precipitation Consistency Loss: avg_pool2d(HR * cos(lat_hr), k=5) == LR |
 | - 4 Splits: Train 2010-2020 | Val 2021 | Cal 2022 | Test 2023                      |
 +-----------------------------------------+------------------------------------------+
                                           |
@@ -115,7 +115,7 @@
 * **Claim 5:** Will **NOT** claim architectural novelty for the downscaling neural network itself — novelty is system-level (all-India training with spatial holdout, clean polygon aggregation, physical conservation, registration assert, quantile calibration, and CQR uncertainty).
 * **Claim 6:** Will **NOT** claim Tier 2 or Tier 3 operational status — roadmap only (IMERG Early/Late, BharatFS).
 * **Claim 7:** Will **NOT** claim 30,416 Karnataka GPs — official active count is ~5,788–6,376; Mandya has 258 GPs.
-* **Claim 8:** Will **NOT** claim statewide Cartosat DEM mosaicking in 10 days on Bhuvan — quota is 10/day; we use GLO-30 via CDSE S3 with zero quota.
+* **Claim 8:** Will **NOT** claim statewide Cartosat DEM mosaicking in 10 days on Bhuvan — quota is 10/day; we use terrain-conditioned downscaling with zero quota.
 * **Claim 9:** Will **NOT** claim IMD temperature exists at 0.25° — IMD gridded rainfall is 0.25°; temperature is 1.0°.
 * **Claim 10:** Will **NOT** claim Bangalore Urban as a pilot district — Bangalore Urban has 0 GPs (BBMP wards).
 * **Claim 11:** Will **NOT** claim sub-panchayat resolution detail — at 5.5 km, 1 pixel $\approx 1$ GP. We deliver panchayat-scale, not sub-panchayat. State this before the jury asks.
@@ -128,7 +128,7 @@
 |---|---|---|---|---|
 | **1. 0 GPs in Bangalore Urban / Messy Mandya** | High | High (blocks differentiator) | Pin Mandya Day 0; DuckDB pushdown filter; assert count 80–300 (258 GPs), valid > 98%; exclude buffer from patch index; test_gis. | Data/GIS + Pitch Lead |
 | **2. Re-adding Deleted NCMRWF IMDAA** | Low | High (reintroduces inversion bug) | IMDAA permanently deleted in Section 0; CODEOWNERS blocks changes to `/src/data/` without review. | ML Lead |
-| **3. Bhuvan 10/day Quota Blocks DEM** | High if used | Medium (loses terrain) | Use GLO-30 via CDSE S3 primary (no quota); fallback to SRTM open-data bucket. | Data/GIS Lead |
+| **3. Bhuvan 10/day Quota Blocks DEM** | High if used | Medium (loses terrain) | Use terrain-conditioned DEM primary (no quota); fallback to SRTM open-data bucket. | Data/GIS Lead |
 | **4. CDSE/CDS 403 / Grid Mis-registration (~2.7 km)** | Medium | Medium (systematic shift) | Accept licenses Day 0; run `test_cdse.py` & `check_registration.py` Day 0; regrid once area-weighted or shift 0.025°; freeze transform in `loaders.py`. | Data/GIS Lead |
 | **5. Patch Index OOM / Desert & Sea Waste** | High | Medium (wasted compute & time) | DuckDB pushdown; lazy xarray reads; filter land fraction $\ge 70\%$; assert `patch_index ∩ buffer == ∅`. | Data/GIS Lead |
 | **6. Single-District Training Impossible** | High if not fixed | High (model never trains) | All-India training ($80\times 80$ HR / $16\times 16$ LR, ~200k–240k usable patches); Mandya $+ 0.5^\circ$ buffer strictly held out. | ML Lead |

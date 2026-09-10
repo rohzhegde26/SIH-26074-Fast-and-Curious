@@ -7,7 +7,7 @@
 ---
 
 ## 1. Goal
-Complete ingestion and spatial alignment of All-India CHIRPS, IMD 0.25°, GLO-30 DEM, and Mandya panchayat vector geometries. Build the all-India patch index store (Zarr/LMDB) enforcing land-fraction filtering and spatial holdout buffer exclusion. Implement and pass unit tests for grid registration (2.7 km shift assert) and physical conservation laws (kernel=5, HR cosine weights, clean polygon weighting) *in isolation before model training commences*.
+Complete ingestion and spatial alignment of All-India CHIRPS, IMD 0.25°, terrain-conditioned DEM, and Mandya panchayat vector geometries. Build the all-India patch index store (Zarr/LMDB) enforcing land-fraction filtering and spatial holdout buffer exclusion. Implement and pass unit tests for grid registration (2.7 km shift assert) and physical conservation laws (kernel=5, HR cosine weights, clean polygon weighting) *in isolation before model training commences*.
 
 ---
 
@@ -15,7 +15,7 @@ Complete ingestion and spatial alignment of All-India CHIRPS, IMD 0.25°, GLO-30
 
 | Role | Sprint 1 Deliverables |
 |---|---|
-| **Data/GIS Lead** | Ingest IMD 0.25° grid, verify national CHIRPS Zarr, download GLO-30 DEM, construct all-India patch index with buffer exclusion & land filter, run `scripts/check_registration.py`, implement `src/data/loaders.py`, `src/data/patch_extraction.py`, `src/data/zonal_aggregation.py`. |
+| **Data/GIS Lead** | Ingest IMD 0.25° grid, verify national CHIRPS Zarr, generate terrain-conditioned DEM, construct all-India patch index with buffer exclusion & land filter, run `scripts/check_registration.py`, implement `src/data/loaders.py`, `src/data/patch_extraction.py`, `src/data/zonal_aggregation.py`. |
 | **ML Lead** | Write unit tests for physical conservation in `tests/test_conservation.py`, implement `src/losses/conservation.py` with `kernel=5`, `count_include_pad=False`, cosine weights at HR centers, verify analytic spherical area formulas. |
 | **ML/Eval Engineer** | Author `tests/test_patch_geometry.py` and `tests/test_splits.py`, verify 4-way temporal split (train 2010–2020, val 2021, cal 2022, test 2023) and spatial holdout mask. |
 | **Domain/Product Lead** | Document Mandya agro-climatic baseline and 2 dominant crops (Ragi + Paddy per RDPR calendar). |
@@ -77,9 +77,9 @@ $$\mathcal{L}_{\text{cons}} = \text{MSE}(\mathcal{C}[\text{HR}], \text{LR})$$
 - [ ] **Ingest IMD 0.25° Daily Rainfall (1901–2024):**
   - Implement `scripts/download_imd.py` to fetch IMD 0.25° binary/gridded data.
   - Parse into xarray Dataset ($135\times 129$ grid, latitude $6.5^\circ\text{--}38.5^\circ\text{N}$, longitude $66.5^\circ\text{--}100.0^\circ\text{E}$).
-- [ ] **Ingest National CHIRPS 0.05° & GLO-30 DEM:**
+- [ ] **Ingest National CHIRPS 0.05° & Terrain DEM:**
   - Complete `scripts/download_chirps.py` for JJAS monsoon (1,708 days, 2010–2023). If bandwidth constrained, apply fallback to 2014–2023 (1,100 days).
-  - Crop GLO-30 DEM to India domain and compute slope/aspect channels.
+  - Prepare terrain DEM for India domain and compute slope/aspect channels.
 - [ ] **Panchayat Filtering & Spatial Holdout Creation:**
   - Filter `india-geodata` to Mandya (258 GPs) and backup Mysuru using DuckDB.
   - Generate holdout polygon: `Mandya.buffer(0.5)`.
@@ -125,7 +125,7 @@ The following automated test suite in `tests/` must pass by End of Day 2:
   - Assert single-district patch generation fails ($64\times 64 > \text{Mandya}$).
   - Assert all-India patch index yields $\approx 200,000\text{--}240,000$ usable patches.
 - [ ] **Visual Sanity Check:**
-  - Plot aligned LR IMD, HR CHIRPS, GLO-30 DEM, and Mandya vector overlay for a single monsoon date (`docs/alignment_sanity.png`).
+  - Plot aligned LR IMD, HR CHIRPS, terrain DEM, and Mandya vector overlay for a single monsoon date (`docs/alignment_sanity.png`).
 
 ---
 

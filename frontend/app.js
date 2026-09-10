@@ -1507,7 +1507,7 @@ async function loadVirtualArgPayload() {
       },
       qc_status: "VALIDATED_MASS_CONSERVED",
       data_type: "SYNTHETIC_DOWNSCALED_FEATURE_STREAM",
-      provenance: "SIH26074_vARG_Unet5x_GLO30"
+      provenance: "SIH26074_vARG_Unet5x_Terrain"
     };
     if (codeBlock) codeBlock.textContent = JSON.stringify(fallback, null, 2);
   }
@@ -1737,7 +1737,7 @@ function renderExclaveModalContent(record) {
 
       <div class="parcel-matrix-footer">
         <div class="parcel-mass-check">
-          ⚖️ <strong>Mass Conservation:</strong> Area-weighted sum = <strong>${weightedMean.toFixed(1)} mm</strong> (conserves Panchayat total ${selectedDayExp.toFixed(1)} mm, Δ = ${massDelta.toFixed(2)} mm)
+          ⚖️ <strong>Precipitation Consistency:</strong> Area-weighted sum = <strong>${weightedMean.toFixed(1)} mm</strong> (preserves Panchayat total ${selectedDayExp.toFixed(1)} mm, Δ = ${massDelta.toFixed(2)} mm)
         </div>
         <div class="parcel-provenance-note">
           ℹ️ <em>Operational Note:</em> To our knowledge, operational agromet feeds do not publish parcel-differentiated forecasts for multi-polygon panchayats. In Mandya district, <strong>89 of 234 Gram Panchayats (38.0%)</strong> are official MultiPolygons requiring cadastral-level downscaling.
@@ -2344,8 +2344,8 @@ function updateDualModalHUD(records, dayIdx = 0) {
   if (zonesImd) zonesImd.textContent = "0 (Single Warning Class)";
   if (zonesAi) zonesAi.textContent = `${wrongCat} GPs in Different Warning Class`;
   if (subImd) subImd.textContent = `Uniform ${avg} mm block-mean • single IMD warning class (${imdCategoryLabel(avg)}) • blind to orographic concentration & rain-shadows`;
-  if (subAi) subAi.textContent = `${mn}–${mx} mm • convective peak resolved • 0.000% mass error`;
-  if (footerMass) footerMass.textContent = `(1/25)Σ HR·cos(φ) = LR • district conserved mean ${avg} mm (= coarse block-mean)`;
+  if (subAi) subAi.textContent = `${mn}–${mx} mm • convective peak resolved • 0.000% parent-cell volume error`;
+  if (footerMass) footerMass.textContent = `(1/25)Σ HR·cos(φ) = LR • district parent-cell mean ${avg} mm (= coarse block-mean)`;
   if (provChip) provChip.textContent = `Cycle ${cycleDate} • ${dayLabel} • ${prov}`;
 }
 

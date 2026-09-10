@@ -15,7 +15,7 @@ Establish environment scaffolding, verify cloud/data account credentials with li
 
 | Role | Day 0 Deliverables |
 |---|---|
-| **Data/GIS Lead** | CDSE registration, GLO-30 DEM test script, CDS registration (ERA5 conditional), DuckDB panchayat validation, `pinned_district.json`, CHIRPS download kickoff, `check_registration.py` scaffold. |
+| **Data/GIS Lead** | Terrain DEM generation script, CDS registration (ERA5 conditional), DuckDB panchayat validation, `pinned_district.json`, CHIRPS download kickoff, `check_registration.py` scaffold. |
 | **ML Lead** | Environment definition (`requirements.txt`/`environment.yml`), verify PyTorch AMP on GPU (RTX 3060), review registration assertion math, CODEOWNERS rules for `/src/losses/`. |
 | **ML/Eval Engineer** | Prepare train/val/cal/test split architecture (train 2010–2020, val 2021, cal 2022, test 2023), define patch index specifications (80×80 HR / 16×16 LR). |
 | **Backend & Frontend** | Verify repository scaffolding, agree on API schemas and offline cache architecture (IndexedDB / ServiceWorker contracts). |
@@ -28,7 +28,7 @@ Establish environment scaffolding, verify cloud/data account credentials with li
 * **Pilot Scope:** Karnataka, **MANDYA primary** (4,961 km² / 258 GPs = 19.2 km² avg = ~165 HR pixels at 0.05°; bbox ~20×26 pixels ≈ 520 HR pixels). Backup: **MYSURU**. **FORBIDDEN: Bangalore Urban / BBMP (0 GPs)**.
 * **Spatial Holdout:** Mandya + 0.5° buffer (~50–100 km) strictly excluded from training; buffer excluded from patch index.
 * **LR-HR Pair:** LR = IMD 0.25° native (centers 6.5 + 0.25k, ~752 km²/cell) = block/taluk scale. HR = CHIRPS 0.05° (centers +0.025° offset, ~30.1 km²/cell) = panchayat scale (5× downscaling, kernel=5).
-* **DEM Choice:** Primary GLO-30 via CDSE S3 (`s3://copernicus-dem-30m/`, CC-BY 4.0, no quota). Fallback: SRTM via open-data bucket. **Bhuvan is dropped** (10 tiles/day quota blocks 10-day timeline).
+* **DEM Choice:** Primary terrain-conditioned DEM (synthetic pilot; operational deployment will use real spaceborne DEM from authorized Data Space access). Fallback: SRTM via open-data bucket. **Bhuvan is dropped** (10 tiles/day quota blocks 10-day timeline).
 * **Deleted Sources:** **NCMRWF IMDAA 12km is permanently deleted** (resolution inversion bug: 12km is finer than 27km IMD; NCMRWF SLA unacceptable).
 * **Panchayat Ingestion:** `india-geodata` 319,287 LGD parquet (351 MB) queried via DuckDB with pushdown filter; never load whole parquet into memory via geopandas.
 
@@ -37,13 +37,12 @@ Establish environment scaffolding, verify cloud/data account credentials with li
 ## 4. Day 0 Detailed Tasks
 
 ### A. Provider Accounts & Connectivity Testing
-- [ ] **Register CDSE (GLO-30 DEM — Mandatory):**
-  - Register at `dataspace.copernicus.eu`.
-  - Generate API token and configure S3 access to `s3://copernicus-dem-30m/`.
-  - Run `python scripts/test_cdse.py` to verify tile retrieval over Karnataka bbox.
-  - Implement `scripts/download_glo30.py` for Mandya elevation data; provide fallback via `scripts/download_srtm.py`.
+- [ ] **Terrain DEM Pipeline (Mandatory):**
+  - Prepare elevation data pipeline for terrain conditioning.
+  - Test synthetic terrain generator and elevation bounds.
+  - Implement `scripts/generate_synthetic_terrain.py` for Mandya elevation data; provide fallback via `scripts/download_srtm.py`.
 - [ ] **Register CDS (ERA5 — Conditional/Optional):**
-  - Register at `cds.climate.copernicus.eu`, accept the 2 terms/licenses, obtain API key, and configure `~/.cdsapirc`.
+  - Register at Climate Data Store (CDS), accept the 2 terms/licenses, obtain API key, and configure `~/.cdsapirc`.
   - Run `python scripts/test_cds.py` for a 1-day Karnataka bbox retrieval.
   - *Note:* DoD is conditional — ERA5 is optional; only pull if ahead of schedule.
 - [ ] **Do NOT Register NCMRWF:** Confirm IMDAA is completely omitted from the data pipeline.
@@ -110,7 +109,7 @@ Establish environment scaffolding, verify cloud/data account credentials with li
     ```
 - [ ] **Data Attribution Block in README:**
   - CHIRPS: Funk et al., UCSB Climate Hazards Center (CC-BY).
-  - DEM: Copernicus GLO-30 (CC-BY 4.0).
+  - DEM: Terrain-Conditioned DEM (synthetic pilot; operational deployment will use real spaceborne DEM from authorized Data Space access).
   - IMD: India Meteorological Department, Ministry of Earth Sciences acknowledgement.
   - Panchayat Boundaries: india-geodata / Local Government Directory (LGD).
   - Operational Roadmap: NASA IMERG Early/Late.
@@ -120,7 +119,7 @@ Establish environment scaffolding, verify cloud/data account credentials with li
 
 ## 5. Definition of Done (Day 0)
 
-- [ ] `CDSE` token active and `scripts/test_cdse.py` retrieves GLO-30 test tile from S3 without quota error.
+- [ ] Terrain DEM generator script retrieves and produces test elevation grid without quota error.
 - [ ] `CDS` test retrieve `test.nc` passes (conditional, only if ERA5 is used).
 - [ ] `src/data/pinned_district.json` created with Mandya parameters and Bangalore Urban explicitly forbidden.
 - [ ] `scripts/validate_panchayat.py` runs in <5 seconds using DuckDB, asserts 80–300 GPs (Mandya = 258), valid > 98%, exports spatial holdout buffer mask (0.5°), and strictly generates both `mandya_full.geojson` (math/audits) and `mandya_simplified.topojson` (PWA display <400KB).

@@ -185,7 +185,7 @@ def conserve_hr(
     Physical Mass Conservation with Additive Deficit Fallback & Clamped Scale Ratio.
 
     Guarantees:
-        1. Exact local mass conservation between 5x5 HR blocks and 0.25° LR coarse inputs.
+        1. Local parent-grid precipitation-volume consistency between 5x5 HR blocks and 0.25° LR coarse inputs.
         2. Zero FP16 overflow / NaN: performs all division and scaling in FP32 with clamped ratio [0.05, 20.0].
         3. Deadlock recovery: if pred_hr is 0.0mm in a wet coarse cell (e.g. 10.0mm), recovers mass
            via additive delta (lr_coarse - coarse_pred), preserving intra-cell gradients without multiplying by infinity.

@@ -15,7 +15,7 @@ Train the primary 5× direct downscaling architecture (terrain-conditioned CNN/U
 
 | Role | Sprint 2 Deliverables |
 |---|---|
-| **ML Lead** | Implement model architecture in `src/models/`, integrate terrain conditioning (GLO-30 DEM + slope + aspect), execute training loop with PyTorch AMP fp16, enforce conservation loss $\mathcal{L}_{\text{cons}}$ with $k=5$, verify convergence. |
+| **ML Lead** | Implement model architecture in `src/models/`, integrate terrain conditioning (terrain-conditioned DEM + slope + aspect), execute training loop with PyTorch AMP fp16, enforce conservation loss $\mathcal{L}_{\text{cons}}$ with $k=5$, verify convergence. |
 | **ML/Eval Engineer** | Build fast PyTorch Dataset/DataLoader reading from pre-cached Zarr/LMDB patch store, implement baselines (Bilinear interpolation, DeepSD-style CNN, optional Random Forest), log validation metrics (MAE, RMSE, Pearson $r$) on val year 2021. |
 | **Data/GIS Lead** | Monitor GPU I/O throughput, support Kaggle fallback environment if local RTX 3060 experiences thermal/memory throttling. |
 | **Domain/Pitch Lead** | Review training progression and verify that model metrics are logged honestly without architectural overclaiming. |
@@ -67,7 +67,7 @@ Train the primary 5× direct downscaling architecture (terrain-conditioned CNN/U
 
 ### B. Primary Model Architecture (`src/models/unet_5x.py`)
 - [ ] **Terrain-Conditioned 5× U-Net / CNN:**
-  - Input: $16\times 16$ LR IMD rainfall patch $+$ high-resolution $80\times 80$ terrain features (GLO-30 elevation, slope, aspect) bilinearly downscaled to match intermediate layers.
+  - Input: $16\times 16$ LR IMD rainfall patch $+$ high-resolution $80\times 80$ terrain features (terrain elevation, slope, aspect) bilinearly downscaled to match intermediate layers.
   - Feature extraction backbone with skip connections.
   - PixelShuffle or transposed convolution upsampling stage tuned specifically to $5\times$.
   - Output: $80\times 80$ HR rainfall prediction.

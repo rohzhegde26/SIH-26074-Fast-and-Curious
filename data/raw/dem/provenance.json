@@ -1,7 +1,7 @@
 {
-  "dataset_name": "Copernicus GLO-30 Digital Elevation Model",
-  "source": "European Space Agency (ESA) Copernicus Data Space Ecosystem (CDSE)",
-  "licensing": "CC-BY 4.0 Open Data",
+  "dataset_name": "Synthetic Demo Elevation Model (Pilot Prototype)",
+  "source": "SYNTHETIC_DEMO_TERRAIN",
+  "licensing": "Pilot Demo Terrain (Operational deployment will use spaceborne DEM via authorized Data Space access)",
   "native_resolution": "30 meters (1 arc-second)",
   "downscaled_resolution": "0.05 degree (~5.5 km) authalic area-mean grid",
   "domain": {

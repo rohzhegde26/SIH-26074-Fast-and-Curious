@@ -2,7 +2,7 @@
 scripts/plot_alignment_sanity.py
 
 Generate visual sanity check plot:
-4-panel overlay of aligned LR IMD (0.25°), HR CHIRPS (0.05°), GLO-30 DEM elevation,
+4-panel overlay of aligned LR IMD (0.25°), HR CHIRPS (0.05°), terrain-conditioned DEM elevation,
 and Mandya vector boundaries demonstrating exact spatial registration.
 Saves to docs/alignment_sanity.png.
 """
@@ -24,7 +24,7 @@ import xarray as xr
 def plot_alignment(
     imd_path: str = "data/raw/imd/imd_sample.nc",
     chirps_path: str = "data/raw/chirps/chirps_sample.nc",
-    dem_path: str = "data/raw/dem/glo30_terrain.nc",
+    dem_path: str = "data/raw/dem/synthetic_terrain.nc",
     mandya_geojson: str = "data/processed/mandya_full.geojson",
     output_png: str = "docs/alignment_sanity.png",
 ):
@@ -82,13 +82,13 @@ def plot_alignment(
     ax2.set_ylabel("Latitude (°N)")
     fig.colorbar(im2, ax=ax2, label="Rainfall (mm/day)", shrink=0.7)
 
-    # Panel 3: GLO-30 DEM Elevation
+    # Panel 3: Terrain-Conditioned DEM Elevation
     ax3 = axes[1, 0]
     im3 = ax3.pcolormesh(
         dem_sub.lon, dem_sub.lat, dem_sub.values, cmap="terrain", shading="auto"
     )
     gdf_mandya.boundary.plot(ax=ax3, color="black", linewidth=1.2)
-    ax3.set_title("Panel 3: Copernicus GLO-30 DEM Elevation (0.05°)", fontsize=11, fontweight="bold")
+    ax3.set_title("Panel 3: Terrain-Conditioned DEM Elevation (0.05°)", fontsize=11, fontweight="bold")
     ax3.set_xlim(extent[0], extent[1])
     ax3.set_ylim(extent[2], extent[3])
     ax3.set_xlabel("Longitude (°E)")

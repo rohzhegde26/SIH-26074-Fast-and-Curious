@@ -46,8 +46,8 @@ def get_quantile_mapper() -> QuantileMapper:
 
 @lru_cache(maxsize=1)
 def get_terrain_tensor(device_name: str = "cpu") -> Optional[torch.Tensor]:
-    """Loads and caches Mandya GLO-30 5-channel terrain features if present."""
-    dem_path = ROOT / "data" / "raw" / "dem" / "glo30_terrain.nc"
+    """Loads and caches Mandya terrain-conditioned downscaling 5-channel features if present."""
+    dem_path = ROOT / "data" / "raw" / "dem" / "synthetic_terrain.nc"
     if not dem_path.exists():
         return None
     try:
@@ -395,7 +395,7 @@ def run_live_inference(
 
     return InferenceResponse(
         status="success",
-        model_name="UNet5x-SuperRes-GLO30",
+        model_name="UNet5x-SuperRes-Terrain",
         lead_days=lead_days,
         input_shape=[lead_days, 1, 16, 16],
         output_shape=[lead_days, 1, 80, 80],

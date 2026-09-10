@@ -148,7 +148,7 @@ class VirtualARGResponse(BaseModel):
     uncertainty_range_90pct: VirtualARGUncertainty
     qc_status: str = "VALIDATED_MASS_CONSERVED"
     data_type: str = "SYNTHETIC_DOWNSCALED_FEATURE_STREAM"
-    provenance: str = "SIH26074_vARG_Unet5x_GLO30"
+    provenance: str = "SIH26074_vARG_Unet5x_Terrain"
 
 
 class NandiniValidationRequest(BaseModel):

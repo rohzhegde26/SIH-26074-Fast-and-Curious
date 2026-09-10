@@ -252,7 +252,7 @@ def panchayat_feed(lgd_code: str) -> VirtualARGResponse:
         ),
         qc_status="VALIDATED_MASS_CONSERVED",
         data_type="SYNTHETIC_DOWNSCALED_FEATURE_STREAM",
-        provenance="SIH26074_vARG_Unet5x_GLO30",
+        provenance="SIH26074_vARG_Unet5x_Terrain",
     )
 
 

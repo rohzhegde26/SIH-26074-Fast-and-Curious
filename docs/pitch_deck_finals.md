@@ -27,11 +27,11 @@
 
 ### Slide 4: Data Pipeline & Spatial Integrity
 * **Regional Training:** Peninsular India (Western Ghats & Southern Plateau) with zero-shot validation on Mandya (2010–2023 daily monsoon data, land filter $\ge 70\%$).
-* **Topography Conditioning:** Copernicus GLO-30 DEM, slope, aspect, and curvature.
+* **Topography Conditioning:** Terrain-conditioned downscaling (elevation, slope, aspect, and curvature).
 * **Zero-Shot Spatial Holdout:** Mandya district $+ 0.5^\circ$ buffer (~50–100 km) strictly held out from training (`patch_index ∩ buffer == ∅`). Proven generalization to unseen terrain.
 
-### Slide 5: Physics & Local Mass Conservation
-* **Strict Local 5×5 Mass Conservation ($L_{\text{cons}}$):** Area-weighted kernel=5 average-pooling preserves integrated precipitation volume cell-by-cell ($0.000\%$ local block mass error vs $11.2\%$ hallucination in vanilla super-resolution).
+### Slide 5: Physics & Local Parent-Cell Precipitation Consistency
+* **Strict Local 5×5 Parent-Cell Precipitation Consistency ($L_{\text{cons}}$):** Area-weighted kernel=5 average-pooling preserves parent-cell precipitation volume cell-by-cell ($0.000\%$ local parent-grid precipitation-volume error vs $11.2\%$ hallucination in vanilla super-resolution).
 * **Grid Registration Realignment:** Fixed the critical 2.7 km half-pixel center-vs-corner coordinate offset.
 * **On-Demand Live Inference:** `/api/v1/infer` runs 5× downscaling on arbitrary 16×16 coarse inputs in <50 ms on CPU.
 
@@ -40,7 +40,7 @@
 | :--- | :--- | :--- |
 | **Downscaling Approach** | Bilinear interpolation from 12 km NCUM | **5× Deep Super-Resolution U-Net (`UNet5x`)** |
 | **Intra-Block Resolution** | Smooth gradient; misses micro-convective events | Resolves **Nalligere 30.4 mm** vs **Banavasi 1.7 mm** in same block |
-| **Mass Conservation** | None (integrated water mass violated) | **0.000% Local Block Mass Conservation** |
+| **Parent-Cell Consistency** | None (integrated rainfall volume unconstrained) | **0.000% Local Parent-Cell Precipitation Consistency** |
 | **Delivery Payload** | Web portal requiring persistent 4G (>3 MB) | **Dual-Mode PWA (<400 KB)** with 100% offline Service Worker |
 
 ### Slide 7: The Intermediary Cockpit (Dynamic Role Reordering)
@@ -82,14 +82,14 @@
 | Component | Status (TRAINED MODEL / SYNTHETIC HARNESS / STATIC DATA) | Evidence path |
 | :--- | :--- | :--- |
 | **UNet5x Deep Super-Resolution** | **TRAINED MODEL** | `models/checkpoints/best_5x_model_v3_1.pt` |
-| **Mass Conservation Kernel ($L_{\text{cons}}$)** | **TRAINED MODEL** | `src/losses/conservation.py` |
+| **Parent-Cell Consistency Kernel ($L_{\text{cons}}$)** | **TRAINED MODEL** | `src/losses/conservation.py` |
 | **Quantile Mapping Calibration** | **TRAINED MODEL** | `src/eval/calibration.py`, `data/static/quantile_mapping_params.json` |
 | **IMD 0.25° Ingestion Engine** | **SYNTHETIC HARNESS** | `scripts/run_pipeline.py` (`SyntheticIngestionHarness`), `scripts/download_imd.py` |
 | **KMF Dairy Validation Stream** | **SYNTHETIC HARNESS** | `src/api/feedback_store.py` (seed fixtures migrated to SQLite DB) |
 | **Crop Economics & Cost-of-Error** | **STATIC DATA** | `data/static/crop_economics.json` (cited from UAS Bangalore 2022-2023 extension bulletins) |
 | **Terrain Normalization & Centroids** | **STATIC DATA** | `data/serving/mandya_centroids.json`, `data/static/norm_params.json` |
 
-> **Plain Transparency Disclosure:** The UNet5x model, mass-conservation loss, and quantile mapper are trained and real. IMD raster ingestion operates as an air-gapped synthetic emulation harness pending ministry intranet IP whitelisting. Initial KMF Nandini records are development fixtures migrated to SQLite. Crop financial risk numbers are cited estimates from published UAS Bangalore extension packages.
+> **Plain Transparency Disclosure:** The UNet5x model, parent-cell precipitation consistency loss, and quantile mapper are trained and real. IMD raster ingestion operates as an air-gapped synthetic emulation harness pending ministry intranet IP whitelisting. Initial KMF Nandini records are development fixtures migrated to SQLite. Crop financial risk numbers are cited estimates from published UAS Bangalore extension packages.
 
 ---
 

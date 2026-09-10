@@ -1,6 +1,6 @@
 # SIH 2026 — Problem Statement 26074: Downscaling Weather Forecast from Block to Panchayat Level
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-green.svg)](https://fastapi.tiangolo.com/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -24,7 +24,7 @@
 
 ## 2. Mathematical Formulation
 
-The operational model bridges the $27\text{ km} \to 5.5\text{ km}$ spatial scale through a **5× Super-Resolution U-Net (`UNet5x`)** with Group Normalization ($G=8$) and exact local mass conservation.
+The operational model bridges the $27\text{ km} \to 5.5\text{ km}$ spatial scale through a **5× Super-Resolution U-Net (`UNet5x`)** with Group Normalization ($G=8$) and local parent-grid precipitation-volume consistency.
 
 ```
 +------------------------------------+          +-----------------------------------------+
@@ -48,8 +48,8 @@ The operational model bridges the $27\text{ km} \to 5.5\text{ km}$ spatial scale
                                                 +-----------------------------------------+
 ```
 
-### Local $5\times 5$ Block Mass Conservation
-Unlike global scaling which moves precipitation across distant macro-boxes, our projection conserves atmospheric water volume **within each individual $27\text{ km}$ grid cell independently**:
+### Local $5\times 5$ Parent-Cell Precipitation Consistency
+Unlike global scaling which moves precipitation across distant macro-boxes, our projection preserves parent-cell precipitation volume **within each individual $27\text{ km}$ grid cell independently**:
 
 $$\hat{y}_{\text{coarse}} = \frac{\text{avg\_pool2d}(y_{\text{HR}} \cdot \cos\phi, k=5, s=5)}{\text{avg\_pool2d}(\cos\phi, k=5, s=5)}$$
 
@@ -57,7 +57,7 @@ $$\text{scale} = \frac{x_{\text{coarse}}}{\text{clamp}(\hat{y}_{\text{coarse}}, 
 
 $$y_{\text{conserved}} = y_{\text{HR}} \times \text{repeat\_interleave}(\text{scale}, 5)$$
 
-* **Mass Conservation Guarantee:** Integrated coarse-cell rainfall equals integrated fine-cell rainfall to $0.000\%$ mathematical precision.
+* **Parent-Cell Consistency Guarantee:** Integrated coarse-cell rainfall equals integrated fine-cell rainfall to $0.000\%$ mathematical precision.
 * **Loss Objective:** $\mathcal{L}_{\text{total}} = \mathcal{L}_{1}(\log(1+\hat{y}), \log(1+y)) + 0.1 \cdot \mathcal{L}_{\text{cons}}(\hat{y}, x)$.
 
 ---
@@ -94,7 +94,7 @@ IMD currently operates the **Gram Panchayat Level Weather Forecast (GPLWF)** via
 | **Base NWP Resolution** | $12\text{ km}$ NCUM (National Centre for Medium Range Weather Forecasting) | $0.25^\circ \approx 27\text{ km}$ IMD GFS / NCUM coarse grid |
 | **Downscaling Approach** | Bilinear interpolation to GP centroid point coordinates | **5× Deep Super-Resolution U-Net (`UNet5x`)** conditioned on local topography |
 | **Intra-Block Resolution** | Smooth gradient; washes out micro-convective cloudbursts | Resolves sharp local extrema (e.g., **Nalligere $30.4\text{ mm}$** vs. **Banavasi $1.7\text{ mm}$** in the same district block) |
-| **Physical Conservation** | Unconstrained interpolation; violates integrated atmospheric water mass | **Strict $5\times 5$ Block Mass Conservation** ($<0.001\%$ mass discrepancy) |
+| **Physical Conservation** | Unconstrained interpolation; violates parent-cell precipitation consistency | **Strict $5\times 5$ Parent-Cell Precipitation Consistency** ($<0.001\%$ parent-cell volume error) |
 | **Delivery & Offline Capability** | Web portal requiring persistent 4G connectivity ($>3\text{ MB}$ payload) | **Dual-Mode PWA ($<400\text{ KB}$)** with 100% offline Service Worker & local IndexedDB storage |
 | **Local Agro-Context** | Generic text tables | Stage-dependent Kannada audio advisories for rural intermediaries & farmers |
 | **Interoperability** | HTML tables | **RESTful API + WMO/IMD standard AWS JSON feed** (`/api/v1/panchayat-feed/{lgd}`) |
@@ -104,7 +104,7 @@ IMD currently operates the **Gram Panchayat Level Weather Forecast (GPLWF)** via
 ## 5. Quickstart & Installation
 
 ### Prerequisites
-- Python 3.10+ (Recommended: Python 3.11 or 3.12)
+- Python >= 3.11 (Recommended: Python 3.11 or 3.12)
 - Node.js (Optional, for running automated frontend test scripts)
 
 ### Installation
@@ -171,10 +171,10 @@ pytest
 SIH-FINALISTS-2026/
 ├── README.md                      # Primary documentation & PS mapping
 ├── Dockerfile                     # Container deployment specification
-├── requirements.txt               # Pinned Python package dependencies
+├── requirements.txt               # Minimum-version production dependencies
 ├── conftest.py                    # Pytest harness configuration
 ├── data/
-│   ├── raw/                       # Raw NetCDF/GRIB data + glo30_terrain.nc (All-India DEM)
+│   ├── raw/                       # Raw NetCDF/GRIB data + synthetic_terrain.nc (All-India DEM)
 │   ├── processed/                 # GeoJSON boundaries (mandya_full, mandya_holdout_buffer)
 │   ├── serving/                   # Live serving store (mandya_forecasts.json, mandya_centroids.json)
 │   └── static/                    # Static terrain normalization parameters
@@ -192,7 +192,7 @@ SIH-FINALISTS-2026/
 │   ├── api/                       # FastAPI routes, schemas, forecast repository, inference runner
 │   ├── data/                      # NetCDF ingestion, patch extraction, spatial index
 │   ├── eval/                      # Quantile mapping, CQR conformal intervals, metrics
-│   ├── losses/                    # Physical mass conservation & dual-domain loss functions
+│   ├── losses/                    # Parent-cell precipitation consistency & dual-domain loss functions
 │   └── models/                    # UNet5x architecture, baselines (DeepSD, Bilinear), training loop
 └── tests/                         # Automated unit & integration tests
     ├── api/                       # API endpoint, contract, and payload verification tests

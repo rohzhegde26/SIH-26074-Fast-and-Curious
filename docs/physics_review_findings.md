@@ -22,7 +22,7 @@ Every critique was experimentally tested and verified against the live codebase.
 | **3. Wind-Aware Orographic Dynamics** | 4/10 (Fail) | 🔴 **Confirmed** | Codebase has zero wind vectors ($u, v$). Without $w_{\text{orog}} = \vec{V} \cdot \nabla h$, elevation conditioning correlates `higher = wetter`, contradicting Mandya's leeward rain-shadow reality. |
 | **4. Zero-Init Surgery & CQR Crash** | 5.5/10 (Critical) | 🔴 **Confirmed** | `MCDropoutWrapper.forward()` bypasses base forward argument passing. Expanding `refine_5x` to 34ch triggers `RuntimeError: expected 34 got 32`. Zero-init surgery verified to have **0.0000** divergence at step 0. |
 | **5. Dry $\rightarrow$ Wet Conservation Deadlock** | 6/10 (Warning) | 🔴 **Confirmed** | If coarse is wet (10mm) and predicted block is dry (0mm), ratio scaling eliminates 100% of mass. Under FP16, `10 / 1e-6` overflows max value (65,504) to `inf`, resulting in `0 * inf = NaN`. |
-| **6. GLO-30 Provenance & Area Pooling** | 5/10 (Critical) | 🔴 **Confirmed** | `glo30_terrain.nc` (3.86MB) is synthetic sine waves with max elevation across India of only 1,072m (Himalayas missing). `avg_pool2d` has **0.000%** volume error vs bilinear shift. |
+| **6. Terrain DEM Provenance & Area Pooling** | 5/10 (Critical) | 🔴 **Confirmed** | `synthetic_terrain.nc` (3.86MB) is synthetic sine waves with max elevation across India of only 1,072m (Himalayas missing; operational deployment will ingest real spaceborne DEM). `avg_pool2d` has **0.000%** volume error vs bilinear shift. |
 
 ---
 
@@ -190,22 +190,22 @@ pred_cons = pred_repaired * scale
 **Test Results:**
 - Input coarse: `10.0 mm`
 - Raw prediction mean: `0.0 mm`
-- Conserved output mean: `10.0 mm` (100% mass conserved)
+- Conserved output mean: `10.0 mm` (100% parent-cell volume preserved)
 - `Any NaN in FP16?`: **`False`**
 - `Any Inf in FP16?`: **`False`**
 - On dry input ($0\,\text{mm}$ coarse, $10^{-4}\,\text{mm}$ noise): Conserved output is exactly `0.0 mm`.
 
 ---
 
-### Critique 6: GLO-30 Data Provenance & Area-Mean Pooling
+### Critique 6: Terrain DEM Data Provenance & Area-Mean Pooling
 
 #### Review Assertion
-- `data/raw/dem/glo30_terrain.nc` (3.86 MB) is not genuine Copernicus GLO-30 data; it contains synthetic mathematical functions.
+- Synthetic DEM pilot (3.86 MB) contains synthetic mathematical functions; operational deployment will ingest real spaceborne DEM from authorized Data Space access.
 - Downsampling terrain via bilinear interpolation shifts regional mean elevations and violates area conservation.
 - `src/eval/cqr.py` dataloaders omit terrain, resulting in an unconditioned calibration baseline.
 
 #### Codebase Evidence: Synthetic Terrain Generation
-We inspected [`scripts/download_glo30.py:56-63`](file:///c:/Users/rohit/.gemini/antigravity/playground/SIH/scripts/download_glo30.py#L56-L63):
+We inspected [`scripts/generate_synthetic_terrain.py`](file:///scripts/generate_synthetic_terrain.py):
 ```python
 lon_grid, lat_grid = np.meshgrid(lons, lats)
 elevation = 200.0 + 400.0 * np.sin(np.radians(lat_grid * 2)) + 150.0 * np.cos(np.radians(lon_grid * 3))
@@ -213,7 +213,7 @@ elevation += 800.0 * np.exp(-((lon_grid - 75.5) ** 2) / 1.5 - ((lat_grid - 13.0)
 mandya_mask = (lat_grid >= 12.0) & (lat_grid <= 13.5) & (lon_grid >= 76.0) & (lon_grid <= 77.5)
 elevation[mandya_mask] = 680.0 + np.random.uniform(-30, 30, size=np.sum(mandya_mask))
 ```
-- NetCDF inspection of `data/raw/dem/glo30_terrain.nc`:
+- NetCDF inspection of `data/raw/dem/synthetic_terrain.nc`:
   - Size: `3.86 MB`
   - Geographic domain: Lat $8.0^\circ\text{–}37.0^\circ\text{N}$, Lon $68.0^\circ\text{–}97.0^\circ\text{E}$ (All India).
   - Maximum elevation across the entire file: **`1,072.3 m`** (The Himalayas, which exceed 8,000m, are capped at ~1,000m due to the synthetic equation).
@@ -274,4 +274,4 @@ Bilinear Downsampling Mean:       684.7174 m  (Error: +0.0229 m | Volume Error: 
 | [`src/eval/calibration.py`](file:///c:/Users/rohit/.gemini/antigravity/playground/SIH/src/eval/calibration.py) | Replace ratio scaling deadlock with uniform block fallback. |
 | [`src/models/unet_5x.py`](file:///c:/Users/rohit/.gemini/antigravity/playground/SIH/src/models/unet_5x.py) | Add `terrain_hr` argument to `forward()`, concatenate 4 terrain channels at `refine_5x[0]`, add bilinear residual skip. |
 | [`src/eval/cqr.py`](file:///c:/Users/rohit/.gemini/antigravity/playground/SIH/src/eval/cqr.py) | Update `MCDropoutWrapper.forward(x, terrain_hr=None)`, pass `terrain_hr` during MC inference and calibration. |
-| [`scripts/download_glo30.py`](file:///c:/Users/rohit/.gemini/antigravity/playground/SIH/scripts/download_glo30.py) | Document synthetic CDSE fallback and add native Horn algorithm notes for data provenance defense. |
+| [`scripts/generate_synthetic_terrain.py`](file:///scripts/generate_synthetic_terrain.py) | Document synthetic CDSE fallback and add native Horn algorithm notes for data provenance defense. |

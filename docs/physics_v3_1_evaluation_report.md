@@ -1,19 +1,19 @@
 # Evaluation report: physics v3.1 against review critiques
 
-This report records empirical measurements comparing the baseline model (best_5x_model.pt) against the fine-tuned model (best_5x_model_v3_1.pt). Tests ran on the Mandya domain with Copernicus GLO-30 terrain and IMD observations.
+This report records empirical measurements comparing the baseline model (best_5x_model.pt) against the fine-tuned model (best_5x_model_v3_1.pt). Tests ran on the Mandya domain with terrain-conditioned downscaling and IMD observations.
 
 ## Summary of verdicts
 
 | Review critique | Claimed issue | Measured outcome in v3.1 | Verdict |
 |---|---|---|---|
-| Mass conservation deadlock | Wet coarse with dry pred causes division by zero and FP16 NaN | Additive repair restores 10.0 mm target with zero NaNs | Fixed |
+| Parent-cell volume consistency deadlock | Wet coarse with dry pred causes division by zero and FP16 NaN | Additive repair restores 10.0 mm target with zero NaNs | Fixed |
 | GroupNorm channel crash | 36 channels breaks GroupNorm(8, 36) | 8-channel projection yields 40 channels, divisible by 8 | Fixed |
 | MC dropout wrapper crash | Crashed on expanded channels, used channel drops | elementwise dropout on bottleneck runs in 20 passes | Fixed |
 | Terrain normalization | Raw meters gave elevation 296x gradient over rain | Z-score bounds elevation in [-0.71, 1.0] | Fixed |
 | Duplicate panchayat entities | 7 duplicate names conflated into single entries | Taluk field disambiguates all 7 pairs in API and UI | Fixed |
 | Rain shadow and wind steering | Melukote hill creates rain on dry days | False hill rain dropped from 1.51 mm to 0.39 mm (below valley), wind sensitivity reached 0.178 mm | Fixed |
 
-## 1. Mass conservation and FP16 deadlock
+## 1. Parent-cell precipitation consistency and FP16 deadlock
 
 ### The baseline failure
 The previous scaling logic computed a multiplier: scale = coarse / max(pred, eps). When the coarse grid had 10.0 mm but the model predicted 0.0 mm, scale reached 100,000. Multiplying 0.0 by 100,000 gave 0.0 mm. It recovered none of the input mass. In FP16, dividing 10.0 by 1e-7 overflowed immediately to infinity.
@@ -26,7 +26,7 @@ I passed a dry prediction grid (all zeros) paired with a 10.0 mm coarse input gr
 - conserve_hr recovery: 10.0 mm (exact target).
 - conserve_hr FP16 status: no infinities, no NaNs.
 
-The additive repair step computes delta = lr_coarse - coarse_pred and distributes that deficit across dry cells. Mass conservation error dropped to 0.0 mm.
+The additive repair step computes delta = lr_coarse - coarse_pred and distributes that deficit across dry cells. Parent-cell precipitation-volume error dropped to 0.0 mm.
 
 ## 2. Architecture and zero-drift backbone audit
 
@@ -130,7 +130,7 @@ Empirical quantile mapping curves were fitted and serialized using [`scripts/fit
 - **Curve specification**: 100-quantile monotonic `interp1d` curves per coarse cell region plus a pooled global fallback curve; strictly identity-preserving below the 50th percentile (natural data support, unforced).
 
 ### Before/After Heavy-Tail Bias on the Holdout
-The empirical distribution matching completely eliminates the systematic heavy-tail under-prediction on the Mandya holdout:
+The empirical distribution matching empirically restores 95th-percentile convective peaks on the calibration holdout (independent out-of-sample validation pending operational deployment):
 
 | Percentile | Model Raw Prediction (mm) | CHIRPS Ground Truth (mm) | Pre-Fit Bias (%) | Fitted Tail Correction Factor | Post-Fit Mapped (mm) | Post-Fit Bias (%) |
 |---|---|---|---|---|---|---|
@@ -139,8 +139,8 @@ The empirical distribution matching completely eliminates the systematic heavy-t
 | **95th (Heavy-tail trigger)** | 26.54 | 33.96 | -21.83% | **1.279** (+27.93%) | 33.94 | -0.06% |
 | **99th (Convective peak)** | 41.20 | 50.94 | -19.13% | **1.237** (+23.66%) | 50.94 | -0.00% |
 
-- **Under-prediction fix**: Pre-fit -21.8% bias at the 95th percentile and -19.1% bias at the 99th percentile are brought to 0.0% residual bias.
-- **Physical mass conservation**: The delivered grid retains 0.000% coarse-block mass conservation error under `conservative_renorm_local()` while providing a measured +47.08% fine-grid maximum boost during convective cloudburst scenarios.
+- **Under-prediction calibration**: Pre-fit -21.8% bias at the 95th percentile and -19.1% bias at the 99th percentile are empirically reduced on the calibration holdout to near 0.0% residual bias.
+- **Parent-cell precipitation consistency**: The delivered grid retains 0.000% coarse-block parent-cell volume error under `conservative_renorm_local()` while providing a measured +47.08% fine-grid maximum boost during convective cloudburst scenarios.
 
 ## 9. Future Roadmap & External Couplers (Stage-2 Deployment)
 
