@@ -102,14 +102,9 @@
 - **Round 2 Cycle 14 Rejected:** Balanced Multi-Objective Regularization (Sub-optimal score).
 
 - **Round 2 Cycle 15 Rejected:** Final Calibrated Ensemble Checkpoint (Sub-optimal score).
-
-- **Round 3 Cycle 1 Rejected:** Round 2 Champion Calibrated Baseline (Sub-optimal score).
-
 - **Round 3 Cycle 2 Rejected:** Extreme Tail Pinball Loss (tau=0.92) (Sub-optimal score).
 
 - **Round 3 Cycle 3 Rejected:** Storm-Core Spatial Focal Loss Mask (Sub-optimal score).
-
-- **Round 3 Cycle 4 Rejected:** Topographic Curvature & Valley Convergence (Sub-optimal score).
 
 - **Round 3 Cycle 5 Rejected:** Dual-Stream Stratiform-Convective Head (Sub-optimal score).
 
@@ -128,29 +123,5 @@
 - **Round 3 Cycle 12 Rejected:** Round 3 Consolidated Cloudburst Super-Champion (Sub-optimal score).
 
 - **Round 3 Cycle 13 Rejected:** Fine-Grained Learning Rate Refinement (Sub-optimal score).
-
-- **Round 3 Cycle 14 Rejected:** Balanced Convective Multi-Objective Tuning (Sub-optimal score).
 
 - **Round 3 Cycle 15 Rejected:** Top-K Pareto Ensemble Checkpoint (Sub-optimal score).
-
-- **Round 3 Cycle 2 Rejected:** Extreme Tail Pinball Loss (tau=0.92) (Sub-optimal score).
-
-- **Round 3 Cycle 3 Rejected:** Storm-Core Spatial Focal Loss Mask (Sub-optimal score).
-
-- **Round 3 Cycle 5 Rejected:** Dual-Stream Stratiform-Convective Head (Sub-optimal score).
-
-- **Round 3 Cycle 6 Rejected:** Extreme Convective Hurdle Trigger (>30mm) (Sub-optimal score).
-
-- **Round 3 Cycle 7 Rejected:** Topographic Gradient Skip Routing (Sub-optimal score).
-
-- **Round 3 Cycle 8 Rejected:** Curvature + Extreme Hurdle Synthesis (Sub-optimal score).
-
-- **Round 3 Cycle 9 Rejected:** Agent B Extreme Flood Stress Probe (Sub-optimal score).
-
-- **Round 3 Cycle 10 Rejected:** Cyclic Cosine Annealing with Warm Restarts (SGDR) (Sub-optimal score).
-
-- **Round 3 Cycle 11 Rejected:** High-Resolution Terrain Skip Refinement (Sub-optimal score).
-
-- **Round 3 Cycle 12 Rejected:** Round 3 Consolidated Cloudburst Super-Champion (Sub-optimal score).
-
-- **Round 3 Cycle 13 Rejected:** Fine-Grained Learning Rate Refinement (Sub-optimal score).
