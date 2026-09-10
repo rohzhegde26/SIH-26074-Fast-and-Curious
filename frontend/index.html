@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/styles.css?v=23">
     <title>Mandya Agro-Weather — Dual-Mode Downscaling Cockpit (SIH 26074)</title>
   </head>
-  <body data-view="mission-control" data-operator-role="dairy">
+  <body data-view="mission-control">
     <!-- Top Offline Warning Banner (Sticky) -->
     <div id="offline-banner" class="banner hidden" role="alert" aria-live="assertive">
       <span class="banner-icon">⚠️</span>
@@ -73,20 +73,10 @@
           <div class="village-left-pane">
             <!-- Presentation Quick Demo Drawer (Collapsible on mobile, permanent sidebar on desktop) -->
             <details class="demo-drawer" id="demo-drawer" aria-label="Presentation Controls">
-              <summary class="demo-drawer-summary" title="Toggle Stage Presentation & Role Controls">
-                <span class="drawer-pill">⚡ Presentation Quick Demo & Roles ▾</span>
+              <summary class="demo-drawer-summary" title="Toggle Stage Presentation Shortcuts">
+                <span class="drawer-pill">⚡ Presentation Quick Demo & Shortcuts ▾</span>
               </summary>
               <div class="demo-drawer-body">
-                <!-- Role Switcher -->
-                <div class="drawer-row">
-                  <span class="drawer-label">INTERMEDIARY ROLE:</span>
-                  <div class="operator-role-pills" role="radiogroup" aria-label="Select Village Role">
-                    <button type="button" class="btn-role active" data-role="dairy">🥛 Dairy Secretary</button>
-                    <button type="button" class="btn-role" data-role="rsk">🌾 RSK Officer</button>
-                    <button type="button" class="btn-role" data-role="gp">🏛️ GP Secretary</button>
-                    <button type="button" class="btn-role" data-role="lead">👩‍🌾 Lead Farmer</button>
-                  </div>
-                </div>
 
                 <!-- 60-Second Demo Contrast Chips (Instantly proves 0.25° blindspot) -->
                 <div class="drawer-row">

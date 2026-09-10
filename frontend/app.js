@@ -128,7 +128,6 @@ let currentLanguage = "en";
 let currentCropStage = "vegetative";
 let currentSelectedDayIndex = 0; // 0 = Today, 1 = Tomorrow, ..., 6 = Day 6
 let currentView = "village"; // 'village' | 'mission-control'
-let currentRole = "dairy";
 let mapPaths = new Map();
 let currentZoom = 1.0;
 let initialViewBox = null;
@@ -517,14 +516,8 @@ function renderForecastDetails(record) {
     ? (currentLanguage === "kn" ? record.advisory.sugarcane.action_kn : record.advisory.sugarcane.action_en)
     : (currentLanguage === "kn" ? "ವಾಡಿಕೆಯಂತೆ ಕಬ್ಬಿನ ಬೆಳೆ ನಿರ್ವಹಣೆ ಮುಂದುವರಿಸಿ." : "Maintain scheduled cane tillering and irrigation.");
 
-  // Role tag display
-  const roleLabels = {
-    dairy: currentLanguage === "kn" ? "🥛 ಡೈರಿ" : "🥛 Dairy",
-    rsk: currentLanguage === "kn" ? "🌾 ಕೃಷಿ ಅಧಿಕಾರಿ" : "🌾 RSK",
-    gp: currentLanguage === "kn" ? "🏛️ ಗ್ರಾ.ಪಂ." : "🏛️ GP",
-    lead: currentLanguage === "kn" ? "👩‍🌾 ರೈತ" : "👩‍🌾 Farmer"
-  };
-  const roleTagText = roleLabels[currentRole] || "🥛 Dairy";
+  // Village advisory tag
+  const advisoryBadgeText = currentLanguage === "kn" ? "🌾 ಕೃಷಿ & ಗ್ರಾಮ ಸಮಾಲೋಚನೆ" : "🌾 Farmer & Village Advisory";
 
   // ZONE 1: HERO VERDICT (Always visible, presentation scale)
   const parcelSuffix = activeParcel
@@ -638,7 +631,7 @@ function renderForecastDetails(record) {
       <div class="village-name-block">
         <span class="village-pin">📍</span>
         <h2 class="village-title">${record.panchayat_name} ${record.taluk ? `<span style="font-size:0.82rem; color:#94a3b8; font-weight:normal;">(${record.taluk})</span>` : ""} ${parcelSuffix} ${selectedDayLabel ? `<small style="font-size:0.85rem; font-weight:700; color:#059669;">[${selectedDayLabel}]</small>` : ''}</h2>
-        <span class="village-role-tag">${roleTagText}</span>
+        <span class="village-role-tag">${advisoryBadgeText}</span>
       </div>
       <div class="village-rain-block">
         <span class="village-rain-val">${exp.toFixed(1)} <small>mm</small></span>
@@ -761,7 +754,7 @@ function renderForecastDetails(record) {
 
     let cellsInspectorHtml = "";
     if (spVar.constituent_cells && spVar.constituent_cells.length > 1) {
-      const showExpanded = (currentRole === "rsk" || currentRole === "gp" || currentView === "mission-control");
+      const showExpanded = Boolean(spVar.is_high_variance || currentView === "mission-control");
       cellsInspectorHtml = `
         <details class="constituent-cells-details" ${showExpanded ? "open" : ""}>
           <summary class="constituent-cells-summary">
@@ -821,9 +814,9 @@ function renderForecastDetails(record) {
     `;
   }
 
-  // DESKTOP FULL-SCREEN GRIDS (Visible only on desktop screens >= 1025px)
-  const desktopCropGridHtml = `
-    <div class="desktop-only village-desktop-crop-grid" aria-label="3-Crop Advisory Grid">
+  // 3-Crop Advisory Cards Strip (Ragi, Paddy, Sugarcane)
+  const cropGridHtml = `
+    <div class="village-crop-grid" aria-label="3-Crop Advisory Grid">
       <div class="crop-card-item">
         <div class="crop-card-header">
           <span class="crop-card-title">🌱 ${currentLanguage === "kn" ? "ರಾಗಿ" : "Ragi"}</span>
@@ -848,94 +841,14 @@ function renderForecastDetails(record) {
     </div>
   `;
 
-  const desktopOpsGridHtml = `
-    <div class="desktop-only village-desktop-ops-grid" aria-label="Operations and Notice Board">
-      <!-- KMF Dairy Loop -->
-      <div class="card nandini-context-card" aria-label="KMF Dairy Verification Loop">
+  // Operations Grid: KMF Dairy Verification Loop & Village Notice Board + WhatsApp Dispatch
+  const opsGridHtml = `
+    <div class="village-ops-grid" aria-label="Operations and Notice Board">
+      <!-- KMF Dairy Ground-Truth Loop -->
+      <div class="card nandini-context-card" id="nandini-section" aria-label="KMF Dairy Verification Loop">
         <div class="nandini-context-header">
           <span class="nandini-title">🥛 ${record.panchayat_name} KMF Dairy</span>
-          <span class="nandini-stat-pill nandini-stat-pill-desktop">57.6% Agreement</span>
-        </div>
-        <p class="nandini-prompt">
-          ${currentLanguage === "kn"
-            ? `ಕಳೆದ 12 ಗಂಟೆಗಳಲ್ಲಿ ${record.panchayat_name}ದಲ್ಲಿ ಮಳೆ ಬಿದ್ದಿದೆಯೇ? (2-ಟ್ಯಾಪ್ ದೃಢೀಕರಣ)`
-            : `Did it rain in ${record.panchayat_name} during the last 12 hours? (Secretary 2-Tap)`}
-        </p>
-        <div class="nandini-btn-group">
-          <button class="btn-nandini btn-nandini-yes btn-nandini-yes-desktop" aria-label="Confirm rain fell">
-            <span>🟢 ಹೌದು (Yes, Rained)</span>
-          </button>
-          <button class="btn-nandini btn-nandini-no btn-nandini-no-desktop" aria-label="Confirm no rain">
-            <span>🔴 ಇಲ್ಲ (No Rain)</span>
-          </button>
-        </div>
-        <div class="nandini-alert hidden nandini-feedback-alert-desktop" role="status"></div>
-      </div>
-
-      <!-- Village Chalkboard Notice -->
-      <div class="katte-inline-board" role="region" aria-label="Official Chalkboard Notice">
-        <div class="katte-top">
-          <span>🏛️ ${record.panchayat_name} NOTICE BOARD</span>
-          <span>${record.forecast_date}</span>
-        </div>
-        <div class="katte-symbol ${isRainRisk ? "katte-x" : "katte-check"}">
-          ${isRainRisk ? "✕" : "✓"}
-        </div>
-        <div class="katte-action">
-          ${isRainRisk 
-            ? (currentLanguage === "kn" ? "ಕೂಲಿ ಬೇಡ / ಸಿಂಪಡಣೆ ಬೇಡ (HOLD)" : "NO SPRAY / HOLD LABOUR") 
-            : (currentLanguage === "kn" ? "ಕೆಲಸ ಮುಂದುವರಿಸಿ (PROCEED)" : "SAFE FOR FIELD WORK")}
-        </div>
-      </div>
-    </div>
-  `;
-
-  const desktopTechGridHtml = `
-    <div class="desktop-only village-desktop-tech-grid" aria-label="Scientific Calibration and WhatsApp Dispatch">
-      <!-- CQR Calibration Summary -->
-      <div class="tech-card-box">
-        <div class="tech-card-title">📊 Statistical Calibration & Mass Invariant</div>
-        <div class="cqr-mini-grid">
-          <div class="cqr-mini-box">
-            <span class="cqr-mini-val text-success">90.2%</span>
-            <span class="cqr-mini-lbl">CQR Coverage</span>
-          </div>
-          <div class="cqr-mini-box">
-            <span class="cqr-mini-val">${lMin.toFixed(1)}–${lMax.toFixed(1)} mm</span>
-            <span class="cqr-mini-lbl">Empirical Range</span>
-          </div>
-          <div class="cqr-mini-box">
-            <span class="cqr-mini-val text-success">99.8%</span>
-            <span class="cqr-mini-lbl">L_cons Conserved</span>
-          </div>
-        </div>
-        <p class="cqr-mini-note">
-          Zero-hallucination guarantee: mass conservation invariant enforced via FP32 expm1 loss. LGD code: ${record.lgd_code}.
-        </p>
-      </div>
-
-      <!-- WhatsApp Community Broadcast & eGramSwaraj -->
-      <div class="tech-card-box">
-        <div class="tech-card-title">💬 Community Broadcast & e-GramSwaraj Ingest</div>
-        <p style="font-size:0.84rem; color:var(--text-muted); margin:0;">
-          One-click localized advisory broadcast to registered Mandya farmer WhatsApp & Telegram community groups.
-        </p>
-        <button id="btn-share-whatsapp-desktop" class="btn-action btn-whatsapp" style="width:100%; border:none; padding:0.75rem; border-radius:var(--radius-sm); font-weight:800; cursor:pointer; font-size:0.95rem;">
-          <span>💬</span>
-          <span>${currentLanguage === "kn" ? "ಗ್ರಾಮಸ್ಥರಿಗೆ ವಾಟ್ಸಾಪ್ ಸಂದೇಶ ಕಳುಹಿಸಿ" : "Dispatch WhatsApp Advisory to Farmers"}</span>
-        </button>
-      </div>
-    </div>
-  `;
-
-  // MOBILE-ONLY STREAMLINED SECTIONS (Visible only on < 1025px)
-  let mobileZone2Html = "";
-  if (currentRole === "dairy") {
-    mobileZone2Html = `
-      <div class="card nandini-context-card" id="nandini-section" aria-label="KMF Nandini Dairy Ground-Truth Loop">
-        <div class="nandini-context-header">
-          <span class="nandini-title">🥛 ${record.panchayat_name} KMF Dairy</span>
-          <span class="nandini-stat-pill" id="nandini-stat-text">Verified</span>
+          <span class="nandini-stat-pill" id="nandini-stat-text">57.6% Agreement</span>
         </div>
         <p class="nandini-prompt" id="nandini-prompt-text">
           ${currentLanguage === "kn"
@@ -943,22 +856,21 @@ function renderForecastDetails(record) {
             : `Did it rain in ${record.panchayat_name} during the last 12 hours? (Secretary 2-Tap)`}
         </p>
         <div class="nandini-btn-group">
-          <button id="btn-nandini-yes" class="btn-nandini btn-nandini-yes" aria-label="Confirm rain fell">
-            <span>🟢 ಹೌದು (Yes, Rained)</span>
+          <button type="button" id="btn-nandini-yes" class="btn-nandini btn-nandini-yes" aria-label="Confirm rain fell">
+            <span>🟢 ${currentLanguage === "kn" ? "ಹೌದು (ಮಳೆಯಾಗಿದೆ)" : "ಹೌದು (Yes, Rained)"}</span>
           </button>
-          <button id="btn-nandini-no" class="btn-nandini btn-nandini-no" aria-label="Confirm no rain">
-            <span>🔴 ಇಲ್ಲ (No Rain)</span>
+          <button type="button" id="btn-nandini-no" class="btn-nandini btn-nandini-no" aria-label="Confirm no rain">
+            <span>🔴 ${currentLanguage === "kn" ? "ಇಲ್ಲ (ಮಳೆಯಾಗಿಲ್ಲ)" : "ಇಲ್ಲ (No Rain)"}</span>
           </button>
         </div>
         <div id="nandini-feedback-alert" class="nandini-alert hidden" role="status"></div>
       </div>
-    `;
-  } else if (currentRole === "gp") {
-    mobileZone2Html = `
-      <div class="katte-inline-board" role="region" aria-label="Notice Board Chalkboard Template">
+
+      <!-- Village Chalkboard Notice -->
+      <div class="katte-inline-board" id="katte-inline-card" role="region" aria-label="Official Chalkboard Notice">
         <div class="katte-top">
           <span>🏛️ ${record.panchayat_name} NOTICE BOARD</span>
-          <span>${record.forecast_date}</span>
+          <span>${activeDay ? activeDay.date : record.forecast_date}</span>
         </div>
         <div class="katte-symbol ${isRainRisk ? "katte-x" : "katte-check"}">
           ${isRainRisk ? "✕" : "✓"}
@@ -969,98 +881,6 @@ function renderForecastDetails(record) {
             : (currentLanguage === "kn" ? "ಕೆಲಸ ಮುಂದುವರಿಸಿ (PROCEED)" : "SAFE FOR FIELD WORK")}
         </div>
       </div>
-    `;
-  } else {
-    const cropTextMap = {
-      ragi: { name: currentLanguage === "kn" ? "ರಾಗಿ (Ragi)" : "Ragi", stage: currentCropStage.toUpperCase(), text: ragiAdv },
-      paddy: { name: currentLanguage === "kn" ? "ಭತ್ತ (Paddy)" : "Paddy", stage: record.advisory?.paddy?.stage || "SOWING", text: paddyAdv },
-      sugarcane: { name: currentLanguage === "kn" ? "ಕಬ್ಬು (Sugarcane)" : "Sugarcane", stage: record.advisory?.sugarcane?.stage || "GROWTH", text: sugarcaneAdv || "Routine growth maintenance." }
-    };
-    const activeCropData = cropTextMap[activeCrop] || cropTextMap.ragi;
-
-    mobileZone2Html = `
-      <div class="crop-segmented-section" aria-label="Crop Advisory Selector">
-        <div class="crop-segmented-tabs" role="tablist">
-          <button type="button" class="btn-crop-tab ${activeCrop === "ragi" ? "active" : ""}" data-crop="ragi">🌱 ${currentLanguage === "kn" ? "ರಾಗಿ" : "Ragi"}</button>
-          <button type="button" class="btn-crop-tab ${activeCrop === "paddy" ? "active" : ""}" data-crop="paddy">🌾 ${currentLanguage === "kn" ? "ಭತ್ತ" : "Paddy"}</button>
-          ${sugarcaneAdv ? `<button type="button" class="btn-crop-tab ${activeCrop === "sugarcane" ? "active" : ""}" data-crop="sugarcane">🎋 ${currentLanguage === "kn" ? "ಕಬ್ಬು" : "Cane"}</button>` : ""}
-        </div>
-        <div class="crop-advice-single-card" id="active-crop-card">
-          <div class="crop-advice-title-row">
-            <span class="crop-advice-name">${activeCropData.name}</span>
-            <span class="crop-advice-stage">${activeCropData.stage}</span>
-          </div>
-          <p class="crop-advice-text">${activeCropData.text}</p>
-        </div>
-      </div>
-    `;
-  }
-
-  const mobileDetailsHtml = `
-    <div class="collapsible-details-group" aria-label="Supplementary Information">
-      <details class="detail-accordion" id="acc-science">
-        <summary class="detail-summary">
-          <span>📊 Scientific Calibration & CQR Details</span>
-          <span class="acc-chevron">▾</span>
-        </summary>
-        <div class="detail-content">
-          <div class="cqr-mini-grid">
-            <div class="cqr-mini-box">
-              <span class="cqr-mini-val">90.2%</span>
-              <span class="cqr-mini-lbl">CQR Coverage</span>
-            </div>
-            <div class="cqr-mini-box">
-              <span class="cqr-mini-val">${lMin.toFixed(1)}–${lMax.toFixed(1)} mm</span>
-              <span class="cqr-mini-lbl">Empirical Range</span>
-            </div>
-            <div class="cqr-mini-box">
-              <span class="cqr-mini-val">${record.lgd_code}</span>
-              <span class="cqr-mini-lbl">LGD Code</span>
-            </div>
-          </div>
-          <p class="cqr-mini-note">
-            Calibrated via per-cell quantile mapping against IMD gauge network on unseen 2023 test data. Strict mass conservation $L_{cons}$ preserved.
-          </p>
-        </div>
-      </details>
-
-      ${currentRole !== "gp" ? `
-      <details class="detail-accordion" id="acc-chalkboard">
-        <summary class="detail-summary">
-          <span>📋 Village Notice Board (ಕಟ್ಟೆ ಚೀಟಿ)</span>
-          <span class="acc-chevron">▾</span>
-        </summary>
-        <div class="detail-content">
-          <div class="katte-inline-board">
-            <div class="katte-top">
-              <span>🏛️ ${record.panchayat_name}</span>
-              <span>${record.forecast_date}</span>
-            </div>
-            <div class="katte-symbol ${isRainRisk ? "katte-x" : "katte-check"}">
-              ${isRainRisk ? "✕" : "✓"}
-            </div>
-            <div class="katte-action">
-              ${isRainRisk 
-                ? (currentLanguage === "kn" ? "ಕೂಲಿ ಬೇಡ / ಸಿಂಪಡಣೆ ಬೇಡ (HOLD)" : "NO SPRAY / HOLD LABOUR") 
-                : (currentLanguage === "kn" ? "ಕೆಲಸ ಮುಂದುವರಿಸಿ (PROCEED)" : "SAFE FOR FIELD WORK")}
-            </div>
-          </div>
-        </div>
-      </details>
-      ` : ""}
-
-      <details class="detail-accordion" id="acc-whatsapp">
-        <summary class="detail-summary">
-          <span>💬 WhatsApp Community Dispatch</span>
-          <span class="acc-chevron">▾</span>
-        </summary>
-        <div class="detail-content">
-          <button id="btn-share-whatsapp" class="btn-action btn-whatsapp" style="width:100%; border:none; padding:0.6rem; border-radius:4px; font-weight:700; cursor:pointer;">
-            <span>💬</span>
-            <span>${currentLanguage === "kn" ? "ಗ್ರಾಮಸ್ಥರಿಗೆ ವಾಟ್ಸಾಪ್ ಸಂದೇಶ ಕಳುಹಿಸಿ" : "Dispatch WhatsApp Advisory"}</span>
-          </button>
-        </div>
-      </details>
     </div>
   `;
 
@@ -1068,13 +888,8 @@ function renderForecastDetails(record) {
     <article class="forecast-card-streamlined">
       ${heroHtml}
       ${spatialVarianceHtml}
-      ${desktopCropGridHtml}
-      ${desktopOpsGridHtml}
-      ${desktopTechGridHtml}
-      <div class="mobile-only">
-        ${mobileZone2Html}
-        ${mobileDetailsHtml}
-      </div>
+      ${cropGridHtml}
+      ${opsGridHtml}
     </article>
   `;
 
@@ -1151,27 +966,12 @@ function renderForecastDetails(record) {
   const voiceBtn = container.querySelector("#btn-voice");
   if (voiceBtn) voiceBtn.onclick = () => playVoiceAdvisory(record);
 
-  const shareBtn = container.querySelector("#btn-share-whatsapp");
-  if (shareBtn) shareBtn.onclick = () => broadcastToWhatsApp(record);
+  // Nandini Secretary Handlers
+  const nandiniYesBtn = container.querySelector("#btn-nandini-yes");
+  if (nandiniYesBtn) nandiniYesBtn.onclick = () => submitNandiniValidation(true);
 
-  const shareBtnDesktop = container.querySelector("#btn-share-whatsapp-desktop");
-  if (shareBtnDesktop) shareBtnDesktop.onclick = () => broadcastToWhatsApp(record);
-
-  // Nandini Secretary Handlers (desktop & mobile)
-  container.querySelectorAll(".btn-nandini-yes").forEach(btn => {
-    btn.onclick = () => submitNandiniValidation(true);
-  });
-  container.querySelectorAll(".btn-nandini-no").forEach(btn => {
-    btn.onclick = () => submitNandiniValidation(false);
-  });
-
-  // Crop Tab Switches (mobile)
-  container.querySelectorAll(".btn-crop-tab").forEach(tab => {
-    tab.onclick = () => {
-      activeCrop = tab.dataset.crop;
-      renderForecastDetails(record);
-    };
-  });
+  const nandiniNoBtn = container.querySelector("#btn-nandini-no");
+  if (nandiniNoBtn) nandiniNoBtn.onclick = () => submitNandiniValidation(false);
 
   // Update Nandini Secretary Stats
   fetchNandiniStats();
@@ -2291,60 +2091,6 @@ function setupMapModal() {
 }
 
 // -------------------------------------------------------------
-// Operator Roles Setup (Village Mode)
-// -------------------------------------------------------------
-const ROLE_DESCRIPTIONS = {
-  dairy: {
-    en: "🥛 Dairy Secretary: 06:00 AM Rain Verification & Milk Center Broadcast prioritised.",
-    kn: "🥛 ಡೈರಿ ಕಾರ್ಯದರ್ಶಿ: ಹಾಲು ಅಳೆಯುವ ಸಮಯದ 2-ಟ್ಯಾಪ್ ಮಳೆ ದೃಢೀಕರಣ ಮತ್ತು ಬ್ರಾಡ್‌ಕಾಸ್ಟ್ ಮೊದಲ ಪ್ರಾಶಸ್ತ್ಯ."
-  },
-  rsk: {
-    en: "🌾 RSK Officer: Crop phenology stage & ₹ cost-of-error financial risk prioritised.",
-    kn: "🌾 ಕೃಷಿ ಅಧಿಕಾರಿ: ಬೆಳೆಯ ಬೆಳವಣಿಗೆ ಹಂತ ಮತ್ತು ₹ ಆರ್ಥಿಕ ನಷ್ಟ ಅಪಾಯ ವಿಶ್ಲೇಷಣೆ ಮೊದಲ ಪ್ರಾಶಸ್ತ್ಯ."
-  },
-  gp: {
-    en: "🏛️ GP Secretary: Notice Board / Chalkboard template & Virtual ARG data prioritised.",
-    kn: "🏛️ ಗ್ರಾ.ಪಂ. ಅಧಿಕಾರಿ: ಗ್ರಾಮ ಪಂಚಾಯತಿ ನೋಟಿಸ್ ಬೋರ್ಡ್ ಚೀಟಿ ಮತ್ತು ವರ್ಚುವಲ್ ರೇನ್ ಗೇಜ್ ಡಾಟಾ."
-  },
-  lead: {
-    en: "👩‍🌾 Lead Farmer: High-contrast today/tomorrow field action decision only.",
-    kn: "👩‍🌾 ಪ್ರಗತಿಪರ ರೈತ: ಇಂದಿನ ಮತ್ತು ನಾಳೆಯ ನೇರ ಕೃಷಿ ನಿರ್ಧಾರ (ಸರಳ ನೋಟ)."
-  }
-};
-
-function setOperatorRole(role) {
-  if (!role) return;
-  currentRole = role;
-  localStorage.setItem("mandya_operator_role", role);
-  document.body.setAttribute("data-operator-role", role);
-
-  document.querySelectorAll(".btn-role").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.role === role);
-  });
-
-  const banner = document.querySelector("#role-purpose-banner");
-  if (banner) {
-    const desc = ROLE_DESCRIPTIONS[role];
-    banner.textContent = currentLanguage === "kn" ? desc.kn : desc.en;
-  }
-
-  // Update Zone 2 immediately for the active panchayat
-  if (currentRecords && currentRecords.length) {
-    const current = currentRecords.find(r => String(r.lgd_code) === String(selectedLgdCode)) || currentRecords[0];
-    if (current) renderForecastDetails(current);
-  }
-}
-
-function setupOperatorRoles() {
-  const savedRole = localStorage.getItem("mandya_operator_role") || "dairy";
-  setOperatorRole(savedRole);
-
-  document.querySelectorAll(".btn-role").forEach(btn => {
-    btn.onclick = () => setOperatorRole(btn.dataset.role);
-  });
-}
-
-// -------------------------------------------------------------
 // Cycle Badge Helper (Rural Offline Age-Bucketed SOP)
 // -------------------------------------------------------------
 export function getCycleBadgeProps(cycleDate, cycleAge) {
@@ -2690,7 +2436,6 @@ async function loadData() {
       document.querySelectorAll(".lang-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       currentLanguage = btn.dataset.lang;
-      setOperatorRole(currentRole);
       const current = records.find(r => String(r.lgd_code) === String(selectedLgdCode)) || records[0];
       if (current) renderForecastDetails(current);
     };
@@ -2763,16 +2508,7 @@ async function loadData() {
       return;
     }
 
-    // Presenter Stage Hotkey: 'd' or 'D' -> Cycle Roles
-    if (e.key.toLowerCase() === "d" && !isEditing) {
-      e.preventDefault();
-      const roles = ["dairy", "rsk", "gp", "lead"];
-      const nextRole = roles[(roles.indexOf(currentRole) + 1) % roles.length];
-      setOperatorRole(nextRole);
-      const roleLabel = ROLE_DESCRIPTIONS[nextRole]?.en?.split(":")[0] || nextRole;
-      showToast(`Switched Role: ${roleLabel}`);
-      return;
-    }
+
 
     // Chalkboard Mode toggle: 'c' or 'C'
     if (e.key.toLowerCase() === "c" && !isEditing) {
@@ -2963,7 +2699,6 @@ if ("serviceWorker" in navigator) {
 }
 
 setupModeSwitcher();
-setupOperatorRoles();
 setupNandiniModule();
 setupMapControls();
 setupVirtualArgCopy();

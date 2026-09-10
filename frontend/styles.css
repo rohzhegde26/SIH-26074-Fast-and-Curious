@@ -385,28 +385,14 @@ body {
     gap: 1rem;
   }
 
-  /* Desktop Multi-Card Grids */
-  .desktop-only {
-    display: grid !important;
-  }
-
-  .mobile-only {
-    display: none !important;
-  }
-
-  .village-desktop-crop-grid {
+  /* Desktop Responsive Grids */
+  .village-crop-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
   }
 
-  .village-desktop-ops-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-
-  .village-desktop-tech-grid {
+  .village-ops-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
@@ -527,95 +513,7 @@ body {
   .village-desktop-map-slot {
     display: none !important;
   }
-  .desktop-only {
-    display: none !important;
-  }
-  .mobile-only {
-    display: block !important;
-  }
 }
-
-  /* Presentation Typography Scaling for Projectors / Stage Monitors */
-  #view-village .village-hero-header {
-    padding: 0.25rem 0.5rem 0.25rem;
-  }
-
-  #view-village .village-title {
-    font-size: 2rem;
-  }
-
-  #view-village .village-pin {
-    font-size: 1.75rem;
-  }
-
-  #view-village .village-role-tag {
-    font-size: 0.85rem;
-    padding: 3px 10px;
-  }
-
-  #view-village .village-rain-val {
-    font-size: 2.6rem;
-  }
-
-  #view-village .village-rain-range {
-    font-size: 0.88rem;
-  }
-
-  #view-village .hero-verdict-card {
-    padding: 1.25rem 1.4rem;
-    gap: 0.65rem;
-  }
-
-  #view-village .verdict-pill {
-    font-size: 1.15rem;
-    padding: 0.4rem 0.85rem;
-  }
-
-  #view-village .verdict-save-badge {
-    font-size: 0.92rem;
-    padding: 0.35rem 0.75rem;
-  }
-
-  #view-village .verdict-summary {
-    font-size: 1rem;
-    line-height: 1.5;
-  }
-
-  #view-village .btn-hero-audio {
-    height: 58px;
-    font-size: 1.2rem;
-    border-radius: var(--radius-md);
-  }
-
-  #view-village .nandini-context-card {
-    padding: 1.1rem 1.25rem;
-  }
-
-  #view-village .nandini-title {
-    font-size: 1.05rem;
-  }
-
-  #view-village .nandini-prompt {
-    font-size: 0.95rem;
-  }
-
-  #view-village .btn-nandini {
-    padding: 0.75rem 1rem;
-    font-size: 0.95rem;
-  }
-
-  #view-village .crop-advice-single-card {
-    padding: 1.1rem 1.25rem;
-  }
-
-  #view-village .crop-advice-name {
-    font-size: 1.1rem;
-  }
-
-  #view-village .crop-advice-text {
-    font-size: 0.95rem;
-    line-height: 1.5;
-  }
 
 /* ==========================================================================
    Presentation Quick Demo Drawer (Collapsible)
@@ -683,37 +581,19 @@ body {
   text-transform: uppercase;
 }
 
-.operator-role-pills {
+/* Base Layout for Village Cockpit Cards */
+.village-crop-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.4rem;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
 }
 
-.btn-role {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #f1f5f9;
-  padding: 0.35rem 0.6rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-  flex: 1;
-  text-align: center;
+.village-ops-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
 }
 
-.btn-role:hover {
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.btn-role.active {
-  background: #38bdf8;
-  color: #0f172a;
-  font-weight: 800;
-  border-color: #38bdf8;
-}
 
 /* Demo Chips */
 .demo-chips-row {
@@ -1141,80 +1021,7 @@ body {
   border: 1px solid #fcd34d;
 }
 
-/* Crop Segmented Control (RSK & Farmer Roles) */
-.crop-segmented-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
 
-.crop-segmented-tabs {
-  display: flex;
-  background: #e2e8f0;
-  padding: 3px;
-  border-radius: var(--radius-sm);
-  gap: 3px;
-}
-
-.btn-crop-tab {
-  flex: 1;
-  background: transparent;
-  border: none;
-  padding: 0.35rem 0.45rem;
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: #475569;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  text-align: center;
-}
-
-.btn-crop-tab.active {
-  background: #ffffff;
-  color: var(--primary-dark);
-  font-weight: 800;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
-}
-
-.crop-advice-single-card {
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.65rem 0.75rem;
-  box-shadow: var(--shadow-sm);
-  min-height: 75px;
-}
-
-.crop-advice-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.25rem;
-}
-
-.crop-advice-name {
-  font-size: 0.84rem;
-  font-weight: 800;
-  color: var(--primary-dark);
-}
-
-.crop-advice-stage {
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: var(--radius-sm);
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.crop-advice-text {
-  font-size: 0.8rem;
-  line-height: 1.35;
-  color: var(--text-main);
-  margin: 0;
-}
 
 /* ==========================================================================
    ZONE 3: COLLAPSIBLE DETAILS (Default Closed)
