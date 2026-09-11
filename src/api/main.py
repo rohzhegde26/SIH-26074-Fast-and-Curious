@@ -113,7 +113,7 @@ def _response(record: dict) -> ForecastResponse:
     tmin_c = float(record.get("tmin_c", 21.0))
     temp_c = float(record.get("temp_c", round((tmax_c + tmin_c) / 2.0, 1)))
     rh_pct = float(record.get("rh_pct", 68.0))
-    wind_kph = float(record.get("wind_kph", 8.2))
+    wind_kph = float(record.get("wind_kph", 8.5))
 
     ragi = build_advisory(
         "ragi", record.get("ragi_stage", "vegetative"), expected, likely_max,
@@ -314,7 +314,22 @@ def infer(req: Optional[InferenceRequest] = None) -> InferenceResponse:
     grid = req.coarse_grid if req else None
     grids = req.coarse_grids if req else None
     lead_days = req.lead_days if req else 1
-    return run_live_inference(coarse_grid=grid, coarse_grids=grids, lead_days=lead_days)
+    try:
+        return run_live_inference(
+            coarse_grid=grid,
+            coarse_grids=grids,
+            lead_days=lead_days,
+            coarse_tmax_grid=req.coarse_tmax_grid if req else None,
+            coarse_tmin_grid=req.coarse_tmin_grid if req else None,
+            coarse_rh_grid=req.coarse_rh_grid if req else None,
+            coarse_wind_grid=req.coarse_wind_grid if req else None,
+            coarse_tmax_grids=req.coarse_tmax_grids if req else None,
+            coarse_tmin_grids=req.coarse_tmin_grids if req else None,
+            coarse_rh_grids=req.coarse_rh_grids if req else None,
+            coarse_wind_grids=req.coarse_wind_grids if req else None,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post(

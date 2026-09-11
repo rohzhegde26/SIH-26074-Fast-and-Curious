@@ -34,6 +34,7 @@ from src.advisory.engine import (
     rainfall_band_name,
 )
 from src.api.inference_service import conservative_renorm_local
+from src.data.forecast_loader import load_latest_coarse_forecast
 from src.data.zonal_aggregation import ZonalAggregator
 from src.eval.cqr import MCDropoutWrapper
 from src.losses.conservation import expm1_transform
@@ -46,36 +47,12 @@ def load_multiday_coarse(
     forecast_dir: Path = ROOT / "data" / "raw" / "forecast",
 ) -> tuple[dict, bool]:
     """
-    Loads multi-day coarse forecast JSON.
+    Loads multi-day coarse forecast JSON using the shared forecast loader.
     Returns (coarse_data, is_committed_fallback).
-    If forecast_file is specified and exists, loads it.
-    If missing, falls back to the committed cycle and sets is_committed_fallback=True.
     """
-    is_fallback = False
-    target_path: Path | None = None
-
-    if forecast_file is not None:
-        if forecast_file.exists():
-            target_path = forecast_file
-        else:
-            print(f"[!] Warning: Specified forecast file not found: {forecast_file}. Triggering COMMITTED_FALLBACK_CYCLE.")
-            is_fallback = True
-
-    if target_path is None:
-        if forecast_dir.exists():
-            candidates = sorted(forecast_dir.glob("multiday_coarse_*.json"))
-            if candidates:
-                target_path = candidates[-1]
-                if is_fallback:
-                    print(f"[*] Replaying committed fallback cycle: {target_path.name}")
-            else:
-                raise FileNotFoundError(f"No coarse forecast files found in {forecast_dir}")
-        else:
-            raise FileNotFoundError(f"Forecast directory not found: {forecast_dir}")
-
-    with open(target_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
+    data, is_fallback = load_latest_coarse_forecast(forecast_file=forecast_file, forecast_dir=forecast_dir)
+    if data is None:
+        raise FileNotFoundError(f"No coarse forecast files found in {forecast_dir}")
     return data, is_fallback
 
 
@@ -188,7 +165,13 @@ def run_pipeline(
     for d in range(7):
         if not use_unified_nwp and d == 0:
             p_coarse = lr_slice_day1
-            tmax_lr, tmin_lr, rh_lr, wind_lr = None, None, None, None
+            if "temperature_2m_max" in coarse_grids and len(coarse_grids["temperature_2m_max"]) > 0:
+                tmax_lr = torch.from_numpy(np.array(coarse_grids["temperature_2m_max"][0], dtype=np.float32)).unsqueeze(0).unsqueeze(0).to(device)
+                tmin_lr = torch.from_numpy(np.array(coarse_grids["temperature_2m_min"][0], dtype=np.float32)).unsqueeze(0).unsqueeze(0).to(device)
+                rh_lr = torch.from_numpy(np.array(coarse_grids["relative_humidity_2m_mean"][0], dtype=np.float32)).unsqueeze(0).unsqueeze(0).to(device)
+                wind_lr = torch.from_numpy(np.array(coarse_grids["wind_speed_10m_max"][0], dtype=np.float32)).unsqueeze(0).unsqueeze(0).to(device)
+            else:
+                tmax_lr, tmin_lr, rh_lr, wind_lr = None, None, None, None
             day_prov = "IMD_OBSERVATION_DOWNSCALED"
         else:
             grid_idx = min(d, len(coarse_grids.get("precipitation_sum", [])) - 1)

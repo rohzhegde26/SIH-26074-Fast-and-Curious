@@ -26,6 +26,10 @@ from src.models.multivariate import (
 from src.losses.conservation import log1p_transform, expm1_transform
 from src.api.schemas import GPInferenceSummary, InferenceResponse
 from src.eval.calibration import QuantileMapper
+from src.data.forecast_loader import (
+    load_latest_coarse_forecast,
+    extract_coarse_meteorological_tensors,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 CKPT_V3_1 = ROOT / "models" / "checkpoints" / "best_5x_model_v3_1.pt"
@@ -241,15 +245,58 @@ def conservative_renorm_local(
     return pred_conserved
 
 
+def _parse_explicit_grid(
+    single_grid: Optional[List[List[float]]],
+    multi_grids: Optional[List[List[List[float]]]],
+    lead_days: int,
+    var_name: str,
+    device: torch.device,
+) -> Optional[torch.Tensor]:
+    """Validates and parses explicit caller-supplied meteorological grids into [lead_days, 1, 16, 16] tensor."""
+    if multi_grids is not None and len(multi_grids) > 0:
+        raw = multi_grids[:lead_days]
+        if len(raw) < lead_days:
+            raw = raw + [raw[-1]] * (lead_days - len(raw))
+    elif single_grid is not None:
+        raw = [single_grid] * lead_days
+    else:
+        return None
+
+    for day_idx, g in enumerate(raw):
+        if not isinstance(g, (list, tuple)) or len(g) != 16:
+            raise ValueError(
+                f"Invalid shape for {var_name} at day {day_idx}: expected 16 rows, got {len(g) if isinstance(g, (list, tuple)) else type(g)}"
+            )
+        for r_idx, row in enumerate(g):
+            if not isinstance(row, (list, tuple)) or len(row) != 16:
+                raise ValueError(
+                    f"Invalid shape for {var_name} at day {day_idx}, row {r_idx}: expected 16 columns"
+                )
+            if any(not np.isfinite(x) for x in row):
+                raise ValueError(f"Non-finite value detected in {var_name} at day {day_idx}")
+
+    arr = np.array(raw, dtype=np.float32)
+    return torch.from_numpy(arr).unsqueeze(1).to(device)
+
+
 def run_live_inference(
     coarse_grid: Optional[List[List[float]]] = None,
     coarse_grids: Optional[List[List[List[float]]]] = None,
     lead_days: int = 1,
     include_multivariate: bool = True,
+    coarse_tmax_grid: Optional[List[List[float]]] = None,
+    coarse_tmin_grid: Optional[List[List[float]]] = None,
+    coarse_rh_grid: Optional[List[List[float]]] = None,
+    coarse_wind_grid: Optional[List[List[float]]] = None,
+    coarse_tmax_grids: Optional[List[List[List[float]]]] = None,
+    coarse_tmin_grids: Optional[List[List[List[float]]]] = None,
+    coarse_rh_grids: Optional[List[List[List[float]]]] = None,
+    coarse_wind_grids: Optional[List[List[List[float]]]] = None,
 ) -> InferenceResponse:
     """
     Executes end-to-end on-demand 5x downscaling with multi-day NWP batch support
     and multi-variable thermodynamic downscaling.
+    Ingests real coarse NWP meteorological fields (Tmax, Tmin, RH, Wind) with safe climatological fallback.
     """
     t_start = time.perf_counter()
 
@@ -272,6 +319,30 @@ def run_live_inference(
     coarse_mean = float(np.mean(coarse_np))
 
     model, device = load_inference_model()
+
+    # Parse or load coarse meteorological context (Tmax, Tmin, RH, Wind)
+    tmax_lr = _parse_explicit_grid(coarse_tmax_grid, coarse_tmax_grids, lead_days, "tmax", device)
+    tmin_lr = _parse_explicit_grid(coarse_tmin_grid, coarse_tmin_grids, lead_days, "tmin", device)
+    rh_lr = _parse_explicit_grid(coarse_rh_grid, coarse_rh_grids, lead_days, "rh", device)
+    wind_lr = _parse_explicit_grid(coarse_wind_grid, coarse_wind_grids, lead_days, "wind", device)
+
+    has_explicit_met = any(x is not None for x in (tmax_lr, tmin_lr, rh_lr, wind_lr))
+
+    is_fallback = False
+    if has_explicit_met:
+        prov_source = "EXPLICIT_COARSE_NWP"
+    else:
+        coarse_data, is_fallback = load_latest_coarse_forecast()
+        if coarse_data is not None:
+            extracted = extract_coarse_meteorological_tensors(coarse_data, lead_days=lead_days, device=device)
+            tmax_lr = extracted["tmax_lr"]
+            tmin_lr = extracted["tmin_lr"]
+            rh_lr = extracted["rh_lr"]
+            wind_lr = extracted["wind_lr"]
+            prov_source = "COMMITTED_FALLBACK_CYCLE" if is_fallback else "OPENMETEO_FORECAST_DOWNSCALED"
+        else:
+            tmax_lr, tmin_lr, rh_lr, wind_lr = None, None, None, None
+            prov_source = PROVENANCE_TAG
 
     # Convert to log-domain tensor [T, 1, 16, 16]
     coarse_t = torch.from_numpy(coarse_np).unsqueeze(1).to(device)
@@ -300,19 +371,21 @@ def run_live_inference(
     downscaled_mean = float(np.mean(pred_hr_np))
     mass_err = abs(downscaled_mean - coarse_mean) / (coarse_mean + 1e-8) * 100.0
 
-    # Downscale thermodynamic fields via MultivariatePhysicalDownscaler
+    # Downscale thermodynamic fields via MultivariatePhysicalDownscaler using real coarse NWP context
     terrain_single = terrain_tensor[0:1] if terrain_tensor is not None else None
     multi_downscaler = MultivariatePhysicalDownscaler()
-    multi_res = multi_downscaler(terrain_5ch=terrain_single, target_size=(80, 80))
-    tmax_hr_np = multi_res["tmax_hr"].squeeze().cpu().numpy()
-    tmin_hr_np = multi_res["tmin_hr"].squeeze().cpu().numpy()
-    rh_hr_np = multi_res["rh_hr"].squeeze().cpu().numpy()
-    wind_hr_np = multi_res["wind_hr"].squeeze().cpu().numpy()
-    if tmax_hr_np.ndim == 3:
-        tmax_hr_np = tmax_hr_np[0]
-        tmin_hr_np = tmin_hr_np[0]
-        rh_hr_np = rh_hr_np[0]
-        wind_hr_np = wind_hr_np[0]
+    multi_res = multi_downscaler(
+        tmax_lr=tmax_lr,
+        tmin_lr=tmin_lr,
+        rh_lr=rh_lr,
+        wind_lr=wind_lr,
+        terrain_5ch=terrain_single,
+        target_size=(80, 80),
+    )
+    tmax_hr_np = multi_res["tmax_hr"][0, 0].cpu().numpy()
+    tmin_hr_np = multi_res["tmin_hr"][0, 0].cpu().numpy()
+    rh_hr_np = multi_res["rh_hr"][0, 0].cpu().numpy()
+    wind_hr_np = multi_res["wind_hr"][0, 0].cpu().numpy()
 
     # Load Mandya metadata to map 80x80 grid to 234 GPs
     with open(FORECASTS_PATH, encoding="utf-8") as f:
@@ -321,6 +394,8 @@ def run_live_inference(
     # Grid bounding box: Lat 12.2 to 13.0 (80 cells), Lon 76.2 to 77.2 (80 cells)
     min_lat, max_lat = 12.2, 13.0
     min_lon, max_lon = 76.2, 77.2
+
+    has_real_met = (tmax_lr is not None)
 
     gp_results: List[GPInferenceSummary] = []
     for r in records:
@@ -340,22 +415,27 @@ def run_live_inference(
 
         # Day 0 value
         val = float(pred_hr_np[0, r_idx, c_idx])
-        # If input was the default grid, preserve exact calibrated Nalligere/Banavasi endpoints
+        # If input was the default grid, preserve exact calibrated Nalligere/Banavasi endpoints for precipitation
         if not is_custom_input:
             val = float(r["expected_mm"])
             l_min = float(r["likely_min_mm"])
             l_max = float(r["likely_max_mm"])
-            tmax_val = float(r.get("tmax_c", tmax_hr_np[r_idx, c_idx]))
-            tmin_val = float(r.get("tmin_c", tmin_hr_np[r_idx, c_idx]))
-            rh_val = float(r.get("rh_pct", rh_hr_np[r_idx, c_idx]))
-            wind_val = float(r.get("wind_kph", wind_hr_np[r_idx, c_idx]))
         else:
             l_min = max(0.0, round(val * 0.6, 1))
             l_max = round(val * 1.5 + 0.5, 1)
+
+        # For meteorological fields: use live downscaled physics grid if coarse NWP or custom input was provided;
+        # otherwise fallback to serving record cache if present
+        if has_real_met or is_custom_input or has_explicit_met:
             tmax_val = float(tmax_hr_np[r_idx, c_idx])
             tmin_val = float(tmin_hr_np[r_idx, c_idx])
             rh_val = float(rh_hr_np[r_idx, c_idx])
             wind_val = float(wind_hr_np[r_idx, c_idx])
+        else:
+            tmax_val = float(r.get("tmax_c", tmax_hr_np[r_idx, c_idx]))
+            tmin_val = float(r.get("tmin_c", tmin_hr_np[r_idx, c_idx]))
+            rh_val = float(r.get("rh_pct", rh_hr_np[r_idx, c_idx]))
+            wind_val = float(r.get("wind_kph", wind_hr_np[r_idx, c_idx]))
 
         heat_stress = "NONE"
         if tmax_val >= 38.0:
@@ -393,6 +473,12 @@ def run_live_inference(
     sample_grid = pred_hr_np[0, ::10, ::10].round(2).tolist()
     fine_max = round(float(np.max(pred_hr_np[0])), 2)
 
+    final_provenance = (
+        prov_source
+        if prov_source != PROVENANCE_TAG
+        else multi_res.get("provenance", PROVENANCE_TAG)
+    )
+
     return InferenceResponse(
         status="success",
         model_name="UNet5x-SuperRes-Terrain",
@@ -408,6 +494,6 @@ def run_live_inference(
         driest_panchayats=top_dry,
         sample_downscaled_grid=sample_grid,
         multivariate_fields=["rainfall", "tmax", "tmin", "rh", "wind"],
-        provenance=f"{multi_res.get('provenance', PROVENANCE_TAG)} | baseline_coarse_mm={BASELINE_SHIFT_MM}",
+        provenance=f"{final_provenance} | baseline_coarse_mm={BASELINE_SHIFT_MM}",
         fine_grid_max_mm=fine_max,
     )

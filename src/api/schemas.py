@@ -189,6 +189,38 @@ class InferenceRequest(BaseModel):
         description="Optional list of 16x16 2D arrays for multi-day NWP lead times (Days 1 to 5).",
     )
     lead_days: int = Field(default=1, ge=1, le=5, description="Number of lead days to forecast (1 to 5).")
+    coarse_tmax_grid: list[list[float]] | None = Field(
+        default=None,
+        description="Optional 16x16 2D array of coarse maximum temperature (°C).",
+    )
+    coarse_tmin_grid: list[list[float]] | None = Field(
+        default=None,
+        description="Optional 16x16 2D array of coarse minimum temperature (°C).",
+    )
+    coarse_rh_grid: list[list[float]] | None = Field(
+        default=None,
+        description="Optional 16x16 2D array of coarse relative humidity (%).",
+    )
+    coarse_wind_grid: list[list[float]] | None = Field(
+        default=None,
+        description="Optional 16x16 2D array of coarse surface wind speed (km/h).",
+    )
+    coarse_tmax_grids: list[list[list[float]]] | None = Field(
+        default=None,
+        description="Optional multi-day list of 16x16 arrays for coarse Tmax (°C).",
+    )
+    coarse_tmin_grids: list[list[list[float]]] | None = Field(
+        default=None,
+        description="Optional multi-day list of 16x16 arrays for coarse Tmin (°C).",
+    )
+    coarse_rh_grids: list[list[list[float]]] | None = Field(
+        default=None,
+        description="Optional multi-day list of 16x16 arrays for coarse relative humidity (%).",
+    )
+    coarse_wind_grids: list[list[list[float]]] | None = Field(
+        default=None,
+        description="Optional multi-day list of 16x16 arrays for coarse surface wind speed (km/h).",
+    )
 
 
 class GPInferenceSummary(BaseModel):
