@@ -14,7 +14,10 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 import xarray as xr
-import zarr
+try:
+    import zarr
+except ImportError:
+    zarr = None
 
 from src.data.terrain_features import build_terrain_tensor_5ch
 

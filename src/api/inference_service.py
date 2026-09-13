@@ -18,6 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from src.models.unet_5x import UNet5x
+from src.models.multitask_unet import MultiTaskUNet5x
 from src.models.multivariate import (
     MultivariatePhysicalDownscaler,
     CLIMATOLOGY_DEFAULTS,
@@ -34,6 +35,7 @@ from src.data.forecast_loader import (
 ROOT = Path(__file__).resolve().parents[2]
 CKPT_V3_1 = ROOT / "models" / "checkpoints" / "best_5x_model_v3_1.pt"
 CHECKPOINT_PATH = CKPT_V3_1 if CKPT_V3_1.exists() else (ROOT / "models" / "checkpoints" / "best_5x_model.pt")
+MULTITASK_CKPT = ROOT / "models" / "checkpoints" / "multitask_5x_champion.pt"
 CENTROIDS_PATH = ROOT / "data" / "serving" / "mandya_centroids.json"
 FORECASTS_PATH = ROOT / "data" / "serving" / "mandya_forecasts.json"
 QUANTILE_PARAMS_PATH = ROOT / "data" / "static" / "quantile_mapping_params.json"
@@ -68,9 +70,21 @@ def get_terrain_tensor(device_name: str = "cpu") -> Optional[torch.Tensor]:
 
 
 @lru_cache(maxsize=1)
-def load_inference_model() -> Tuple[UNet5x, torch.device]:
-    """Loads and caches UNet5x model in eval mode with checkpoint-aware residual handling."""
+def load_inference_model() -> Tuple[Union[MultiTaskUNet5x, UNet5x], torch.device]:
+    """Loads and caches MultiTaskUNet5x or UNet5x model in eval mode."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if MULTITASK_CKPT.exists():
+        model = MultiTaskUNet5x(base_channels=32)
+        ckpt = torch.load(MULTITASK_CKPT, map_location=device, weights_only=False)
+        state = ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt
+        try:
+            model.load_state_dict(state, strict=True)
+        except Exception:
+            model.load_state_dict(state, strict=False)
+        model.to(device)
+        model.eval()
+        return model, device
+
     is_v3_1 = "v3_1" in str(CHECKPOINT_PATH)
     model = UNet5x(
         in_channels=1,
@@ -352,40 +366,79 @@ def run_live_inference(
     if terrain_tensor is not None and terrain_tensor.shape[0] != coarse_log.shape[0]:
         terrain_tensor = terrain_tensor.expand(coarse_log.shape[0], -1, -1, -1)
 
-    with torch.no_grad():
-        pred_log = model(coarse_log, terrain_hr=terrain_tensor)
-        pred_phys = torch.clamp(torch.expm1(pred_log), min=0.0)
+    is_multitask = isinstance(model, MultiTaskUNet5x)
+    multi_res = {}
 
-        # 1. Apply per-0.25°-cell quantile mapping strictly to precipitation channel before conservation
-        if APPLY_QUANTILE_MAPPING:
-            mapper = get_quantile_mapper()
-            pred_qm = mapper.transform(pred_phys)
-        else:
-            pred_qm = pred_phys
+    if is_multitask:
+        # Prepare 5-channel coarse NWP tensor [T, 5, 16, 16]
+        # Channels: 0: Rain, 1: Tmax, 2: Tmin, 3: RH, 4: Wind
+        tmax_in = tmax_lr if tmax_lr is not None else torch.full_like(coarse_t, 31.5)
+        tmin_in = tmin_lr if tmin_lr is not None else torch.full_like(coarse_t, 21.0)
+        rh_in = rh_lr if rh_lr is not None else torch.full_like(coarse_t, 68.0)
+        wind_in = wind_lr if wind_lr is not None else torch.full_like(coarse_t, 8.5)
 
-        # 2. Enforce local 5x5 block mass conservation on the post-QM precipitation tensor
-        pred_conserved = conservative_renorm_local(pred_qm, coarse_t)
+        coarse_5ch = torch.cat([coarse_t, tmax_in, tmin_in, rh_in, wind_in], dim=1)
 
-    # Delivered final precipitation tensor (post-QM, post-conservation)
-    pred_hr_np = pred_conserved.squeeze(1).cpu().numpy()  # [T, 80, 80]
+        with torch.no_grad():
+            preds = model(coarse_5ch, terrain_hr=terrain_tensor)
+            pred_rain_t = preds["rain"]
+
+            if APPLY_QUANTILE_MAPPING:
+                mapper = get_quantile_mapper()
+                pred_qm = mapper.transform(pred_rain_t)
+            else:
+                pred_qm = pred_rain_t
+
+            pred_conserved = conservative_renorm_local(pred_qm, coarse_t)
+            pred_hr_np = pred_conserved.squeeze(1).cpu().numpy()
+
+            tmax_hr_np = preds["tmax"][0, 0].cpu().numpy()
+            tmin_hr_np = preds["tmin"][0, 0].cpu().numpy()
+            rh_hr_np = preds["rh"][0, 0].cpu().numpy()
+            wind_hr_np = preds["wind"][0, 0].cpu().numpy()
+
+        model_name = "MultiTaskUNet5x-Residual"
+        in_shape = [lead_days, 5, 16, 16] if has_explicit_met else [lead_days, 1, 16, 16]
+        out_shape = [lead_days, 5, 80, 80] if has_explicit_met else [lead_days, 1, 80, 80]
+    else:
+        with torch.no_grad():
+            pred_log = model(coarse_log, terrain_hr=terrain_tensor)
+            pred_phys = torch.clamp(torch.expm1(pred_log), min=0.0)
+
+            # 1. Apply per-0.25°-cell quantile mapping strictly to precipitation channel before conservation
+            if APPLY_QUANTILE_MAPPING:
+                mapper = get_quantile_mapper()
+                pred_qm = mapper.transform(pred_phys)
+            else:
+                pred_qm = pred_phys
+
+            # 2. Enforce local 5x5 block mass conservation on the post-QM precipitation tensor
+            pred_conserved = conservative_renorm_local(pred_qm, coarse_t)
+
+        # Delivered final precipitation tensor (post-QM, post-conservation)
+        pred_hr_np = pred_conserved.squeeze(1).cpu().numpy()  # [T, 80, 80]
+
+        # Downscale thermodynamic fields via MultivariatePhysicalDownscaler using real coarse NWP context
+        terrain_single = terrain_tensor[0:1] if terrain_tensor is not None else None
+        multi_downscaler = MultivariatePhysicalDownscaler()
+        multi_res = multi_downscaler(
+            tmax_lr=tmax_lr,
+            tmin_lr=tmin_lr,
+            rh_lr=rh_lr,
+            wind_lr=wind_lr,
+            terrain_5ch=terrain_single,
+            target_size=(80, 80),
+        )
+        tmax_hr_np = multi_res["tmax_hr"][0, 0].cpu().numpy()
+        tmin_hr_np = multi_res["tmin_hr"][0, 0].cpu().numpy()
+        rh_hr_np = multi_res["rh_hr"][0, 0].cpu().numpy()
+        wind_hr_np = multi_res["wind_hr"][0, 0].cpu().numpy()
+        model_name = "UNet5x-SuperRes-Terrain"
+        in_shape = [lead_days, 1, 16, 16]
+        out_shape = [lead_days, 1, 80, 80]
+
     downscaled_mean = float(np.mean(pred_hr_np))
     mass_err = abs(downscaled_mean - coarse_mean) / (coarse_mean + 1e-8) * 100.0
-
-    # Downscale thermodynamic fields via MultivariatePhysicalDownscaler using real coarse NWP context
-    terrain_single = terrain_tensor[0:1] if terrain_tensor is not None else None
-    multi_downscaler = MultivariatePhysicalDownscaler()
-    multi_res = multi_downscaler(
-        tmax_lr=tmax_lr,
-        tmin_lr=tmin_lr,
-        rh_lr=rh_lr,
-        wind_lr=wind_lr,
-        terrain_5ch=terrain_single,
-        target_size=(80, 80),
-    )
-    tmax_hr_np = multi_res["tmax_hr"][0, 0].cpu().numpy()
-    tmin_hr_np = multi_res["tmin_hr"][0, 0].cpu().numpy()
-    rh_hr_np = multi_res["rh_hr"][0, 0].cpu().numpy()
-    wind_hr_np = multi_res["wind_hr"][0, 0].cpu().numpy()
 
     # Load Mandya metadata to map 80x80 grid to 234 GPs
     with open(FORECASTS_PATH, encoding="utf-8") as f:
@@ -481,10 +534,10 @@ def run_live_inference(
 
     return InferenceResponse(
         status="success",
-        model_name="UNet5x-SuperRes-Terrain",
+        model_name=model_name,
         lead_days=lead_days,
-        input_shape=[lead_days, 1, 16, 16],
-        output_shape=[lead_days, 1, 80, 80],
+        input_shape=in_shape,
+        output_shape=out_shape,
         coarse_mean_mm=round(coarse_mean, 2),
         downscaled_mean_mm=round(downscaled_mean, 2),
         mass_conservation_error_pct=round(mass_err, 4),
