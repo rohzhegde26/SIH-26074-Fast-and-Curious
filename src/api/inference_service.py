@@ -52,8 +52,10 @@ def get_quantile_mapper() -> QuantileMapper:
 
 @lru_cache(maxsize=1)
 def get_terrain_tensor(device_name: str = "cpu") -> Optional[torch.Tensor]:
-    """Loads and caches Mandya terrain-conditioned downscaling 5-channel features if present."""
-    dem_path = ROOT / "data" / "raw" / "dem" / "synthetic_terrain.nc"
+    """Loads and caches Mandya terrain-conditioned downscaling 5-channel features."""
+    real_dem_path = ROOT / "data" / "raw" / "dem" / "glo30_mandya_terrain.nc"
+    synth_dem_path = ROOT / "data" / "raw" / "dem" / "synthetic_terrain.nc"
+    dem_path = real_dem_path if real_dem_path.exists() else synth_dem_path
     if not dem_path.exists():
         return None
     try:

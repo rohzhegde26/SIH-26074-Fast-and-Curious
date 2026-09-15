@@ -25,10 +25,11 @@ from src.data.agera5_loader import (
     prepare_multitask_training_sample,
     GEOGRAPHIC_TILES,
 )
+from src.data.real_data_ingestion import build_and_cache_real_multitask_dataset
 
 ROOT = Path(__file__).resolve().parents[2]
 CACHE_DIR = ROOT / "data" / "cache"
-DEFAULT_CACHE_FILE = CACHE_DIR / "multitask_proxy.npz"
+DEFAULT_CACHE_FILE = CACHE_DIR / "multitask_real.npz"
 
 # 14 Mandya and Mysore district automated weather station (AWS) coordinates
 MANDYA_MYSORE_STATIONS = [
@@ -57,12 +58,21 @@ def build_and_cache_multitask_dataset(
     """
     Constructs and serializes the 3,660 spatiotemporal sample dataset
     spanning 10 monsoon seasons (2014-2023) across 3 geographic tiles.
+    Prioritizes real CHIRPS precipitation and regridded ERA5-Land thermodynamic references.
     """
+    cache_path = Path(cache_path)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     if cache_path.exists():
         return cache_path
 
-    print(f"[*] Generating multi-task proxy dataset ({10 * days_per_season * num_tiles} samples)...")
+    try:
+        return build_and_cache_real_multitask_dataset(
+            cache_path=cache_path,
+            days_per_season=days_per_season,
+            num_tiles=num_tiles,
+        )
+    except Exception as e:
+        print(f"[!] Real data ingestion encountered error: {e}. Falling back to proxy generator...")
 
     coarse_list = []
     terrain_list = []

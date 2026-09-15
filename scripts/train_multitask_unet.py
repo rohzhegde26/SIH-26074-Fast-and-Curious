@@ -1,17 +1,18 @@
 """
 scripts/train_multitask_unet.py
 
-Deterministic One-Shot Training Pipeline for MultiTaskUNet5x.
+Deterministic Multi-Task Training Pipeline for MultiTaskUNet5x.
 Trains the 5-variable weather downscaling network (Rain, Tmax, Tmin, RH, Wind)
 with physical constraints and homoscedastic uncertainty loss balancing.
 
 Supports:
     - Robust single-GPU / CPU default with Automatic Mixed Precision (AMP).
-    - Multi-GPU DistributedDataParallel (DDP) via --distributed flag.
+    - Multi-GPU DistributedDataParallel (DDP) via torchrun or --distributed flag.
     - Checkpoints saved to models/checkpoints/multitask_5x_champion.pt.
 """
 
 import argparse
+import os
 from pathlib import Path
 import sys
 import time
@@ -24,6 +25,8 @@ if str(ROOT) not in sys.path:
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
@@ -77,7 +80,6 @@ def evaluate(
 
             p_pred = preds["rain"]
             p_tgt = fine_targets[:, 0:1]
-            # Wet-cell MAE (target > 0.5 mm)
             wet_mask = p_tgt > 0.5
             if torch.any(wet_mask):
                 rain_mae_sum += torch.mean(torch.abs(p_pred[wet_mask] - p_tgt[wet_mask])).item()
@@ -89,7 +91,6 @@ def evaluate(
             rh_mae_sum += torch.mean(torch.abs(preds["rh"] - fine_targets[:, 3:4])).item()
             wind_mae_sum += torch.mean(torch.abs(preds["wind"] - fine_targets[:, 4:5])).item()
 
-            # Mass conservation error %
             p_pooled = criterion.pooler(p_pred)
             p_lr = coarse_nwp[:, 0:1]
             mass_err_pct_sum += (
@@ -110,28 +111,62 @@ def evaluate(
 
 
 def train_multitask_model(args):
-    # Setup device
-    if args.device == "auto":
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    else:
-        device = torch.device(args.device)
+    # Distributed setup
+    is_distributed = ("RANK" in os.environ and "WORLD_SIZE" in os.environ) or args.distributed
+    if is_distributed:
+        if "RANK" in os.environ:
+            rank = int(os.environ["RANK"])
+            local_rank = int(os.environ["LOCAL_RANK"])
+            world_size = int(os.environ["WORLD_SIZE"])
+        else:
+            rank = 0
+            local_rank = 0
+            world_size = 1
 
-    print(f"[*] Training on device: {device}")
+        if torch.cuda.is_available():
+            torch.cuda.set_device(local_rank)
+            device = torch.device(f"cuda:{local_rank}")
+            if not dist.is_initialized():
+                dist.init_process_group(backend="nccl")
+        else:
+            device = torch.device("cpu")
+            if not dist.is_initialized():
+                dist.init_process_group(backend="gloo", rank=rank, world_size=world_size)
+    else:
+        rank = 0
+        local_rank = 0
+        world_size = 1
+        if args.device == "auto":
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        else:
+            device = torch.device(args.device)
+
+    if rank == 0:
+        print(f"[*] Training on device: {device} (distributed={is_distributed}, world_size={world_size})")
 
     # Create dataloaders
     train_loader, val_loader, test_loader = get_multitask_dataloaders(
         batch_size=args.batch_size,
         num_workers=0 if device.type == "cpu" else 2,
         pin_memory=(device.type == "cuda"),
-        distributed=args.distributed,
+        distributed=is_distributed,
         max_samples=args.max_samples,
     )
 
-    print(f"[*] Train batches: {len(train_loader)}, Val batches: {len(val_loader)}")
+    if rank == 0:
+        print(f"[*] Train batches: {len(train_loader)}, Val batches: {len(val_loader)}")
 
     # Model and loss
-    model = MultiTaskUNet5x(base_channels=args.base_channels).to(device)
+    raw_model = MultiTaskUNet5x(base_channels=args.base_channels).to(device)
     criterion = MultiTaskPhysicalLoss().to(device)
+
+    if is_distributed:
+        if device.type == "cuda":
+            model = DDP(raw_model, device_ids=[local_rank], output_device=local_rank)
+        else:
+            model = DDP(raw_model)
+    else:
+        model = raw_model
 
     # All parameters including uncertainty weights
     all_params = list(model.parameters()) + list(criterion.parameters())
@@ -141,17 +176,24 @@ def train_multitask_model(args):
     scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
 
     save_path = Path(args.save_path)
-    save_path.parent.mkdir(parents=True, exist_ok=True)
+    if rank == 0:
+        save_path.parent.mkdir(parents=True, exist_ok=True)
 
     best_val_loss = float("inf")
     history = []
 
-    print("=" * 70)
-    print(f"{'Epoch':<6} {'Train Loss':<12} {'Val Loss':<10} {'Rain MAE':<10} {'Tmax MAE':<10} {'RH MAE':<8} {'Time':<6}")
-    print("=" * 70)
+    if rank == 0:
+        print("=" * 70)
+        print(f"{'Epoch':<6} {'Train Loss':<12} {'Val Loss':<10} {'Rain MAE':<10} {'Tmax MAE':<10} {'RH MAE':<8} {'Time':<6}")
+        print("=" * 70)
 
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
+        
+        # Set epoch for DistributedSampler to ensure unique shuffling per GPU
+        if is_distributed and hasattr(train_loader.sampler, "set_epoch"):
+            train_loader.sampler.set_epoch(epoch)
+
         model.train()
         train_loss_sum = 0.0
         train_batches = 0
@@ -181,41 +223,52 @@ def train_multitask_model(args):
         epoch_time = time.time() - t0
         avg_train_loss = train_loss_sum / max(train_batches, 1)
 
-        val_metrics = evaluate(model, val_loader, criterion, device)
-        val_loss = val_metrics["val_loss"]
+        # Validation strictly on rank 0
+        if rank == 0:
+            eval_model = model.module if is_distributed else model
+            val_metrics = evaluate(eval_model, val_loader, criterion, device)
+            val_loss = val_metrics["val_loss"]
 
-        print(
-            f"{epoch:<6} {avg_train_loss:<12.4f} {val_loss:<10.4f} "
-            f"{val_metrics['rain_wet_mae']:<10.2f} {val_metrics['tmax_mae']:<10.2f} "
-            f"{val_metrics['rh_mae']:<8.2f} {epoch_time:<6.1f}s"
-        )
+            print(
+                f"{epoch:<6} {avg_train_loss:<12.4f} {val_loss:<10.4f} "
+                f"{val_metrics['rain_wet_mae']:<10.2f} {val_metrics['tmax_mae']:<10.2f} "
+                f"{val_metrics['rh_mae']:<8.2f} {epoch_time:<6.1f}s"
+            )
 
-        history.append({
-            "epoch": epoch,
-            "train_loss": avg_train_loss,
-            **val_metrics,
-        })
-
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            ckpt_dict = {
+            history.append({
                 "epoch": epoch,
-                "model_state_dict": model.state_dict(),
-                "criterion_state_dict": criterion.state_dict(),
-                "val_metrics": val_metrics,
-                "history": history,
-            }
-            torch.save(ckpt_dict, save_path)
-            cwd_path = Path("multitask_5x_champion.pt")
-            if cwd_path.resolve() != save_path.resolve():
-                try:
-                    torch.save(ckpt_dict, cwd_path)
-                except Exception:
-                    pass
-            print(f"    [+] New best checkpoint saved to: {save_path.name} (val_loss={best_val_loss:.4f})")
+                "train_loss": avg_train_loss,
+                **val_metrics,
+            })
 
-    print("=" * 70)
-    print(f"[+] Multi-task training completed! Best val loss: {best_val_loss:.4f}")
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                ckpt_dict = {
+                    "epoch": epoch,
+                    "model_state_dict": (model.module if is_distributed else model).state_dict(),
+                    "criterion_state_dict": criterion.state_dict(),
+                    "val_metrics": val_metrics,
+                    "history": history,
+                }
+                torch.save(ckpt_dict, save_path)
+                cwd_path = Path("multitask_5x_champion.pt")
+                if cwd_path.resolve() != save_path.resolve():
+                    try:
+                        torch.save(ckpt_dict, cwd_path)
+                    except Exception:
+                        pass
+                print(f"    [+] New best checkpoint saved to: {save_path.name} (val_loss={best_val_loss:.4f})")
+
+        if is_distributed and dist.is_initialized():
+            dist.barrier()
+
+    if rank == 0:
+        print("=" * 70)
+        print(f"[+] Multi-task training completed! Best val loss: {best_val_loss:.4f}")
+
+    if is_distributed and dist.is_initialized():
+        dist.destroy_process_group()
+
     return save_path
 
 
