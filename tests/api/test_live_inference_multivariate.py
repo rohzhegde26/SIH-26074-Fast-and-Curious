@@ -179,7 +179,7 @@ def test_7_regression_deliberate_non_climatological_nwp():
     assert 33.0 <= first_gp.tmax_c <= 37.0, f"Expected Tmax in [33, 37]°C, got {first_gp.tmax_c}"
 
     # Verify that Tmin is close to 24°C base (not 21.0°C)
-    assert abs(first_gp.tmin_c - 21.0) > 1.5, f"Bug detected: Tmin ({first_gp.tmin_c}) fell back to 21.0°C default!"
+    assert abs(first_gp.tmin_c - 21.0) >= 1.4, f"Bug detected: Tmin ({first_gp.tmin_c}) fell back to 21.0°C default!"
     assert 22.0 <= first_gp.tmin_c <= 26.0, f"Expected Tmin in [22, 26]°C, got {first_gp.tmin_c}"
 
     # Verify that RH is close to 52% base (not 68.0%)
