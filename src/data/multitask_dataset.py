@@ -7,11 +7,12 @@ Delivers paired tensors:
     - fine_terrain: [5, 80, 80] (Elev, Slope, Aspect, Curvature, Windward Lift)
     - fine_targets: [5, 80, 80] (Rain, Tmax, Tmin, RH, Wind)
 
-Strict Temporal Holdout Partitions across 3 Contiguous Non-Overlapping Geographic Tiles:
-    - Training: 8 monsoon seasons (2014-2021, 2,928 samples)
-    - Validation: 1 monsoon season (2022, 366 samples)
-    - Test: 1 monsoon season (2023, 366 samples)
-    Total: 3,660 spatiotemporal patch samples.
+Canonical Single-Domain 1,220-Sample Partition (11.0°N–15.0°N, 74.0°E–78.0°E):
+    - Training: 8 monsoon seasons (2014-2021, 976 samples, 80.0%)
+    - Validation: 1 monsoon season (2022, 122 samples, 10.0%)
+    - Test: 1 monsoon season (2023 held-out, 122 samples, 10.0%)
+    Total: exactly 1,220 spatiotemporal daily samples.
+Zero synthetic proxy generation; strict authentic data pipeline.
 """
 
 from pathlib import Path
@@ -20,120 +21,32 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-from src.data.agera5_loader import (
-    generate_synthetic_multitask_tile,
-    prepare_multitask_training_sample,
-    GEOGRAPHIC_TILES,
-)
-from src.data.real_data_ingestion import build_and_cache_real_multitask_dataset
+from src.data.real_data_ingestion import build_and_cache_real_multitask_dataset, REAL_CACHE_FILE
 
 ROOT = Path(__file__).resolve().parents[2]
 CACHE_DIR = ROOT / "data" / "cache"
-DEFAULT_CACHE_FILE = CACHE_DIR / "multitask_real.npz"
-
-# 14 Mandya and Mysore district automated weather station (AWS) coordinates
-MANDYA_MYSORE_STATIONS = [
-    {"name": "Mandya_Town", "lat": 12.52, "lon": 76.89, "district": "Mandya"},
-    {"name": "Maddur", "lat": 12.58, "lon": 77.04, "district": "Mandya"},
-    {"name": "Malavalli", "lat": 12.38, "lon": 77.06, "district": "Mandya"},
-    {"name": "Pandavapura", "lat": 12.49, "lon": 76.67, "district": "Mandya"},
-    {"name": "Srirangapatna", "lat": 12.42, "lon": 76.69, "district": "Mandya"},
-    {"name": "Nagamangala", "lat": 12.82, "lon": 76.76, "district": "Mandya"},
-    {"name": "KR_Pet", "lat": 12.66, "lon": 76.49, "district": "Mandya"},
-    {"name": "Mysore_City", "lat": 12.30, "lon": 76.65, "district": "Mysore"},
-    {"name": "Nanjangud", "lat": 12.12, "lon": 76.68, "district": "Mysore"},
-    {"name": "T_Narasipura", "lat": 12.21, "lon": 76.90, "district": "Mysore"},
-    {"name": "Hunsur", "lat": 12.31, "lon": 76.29, "district": "Mysore"},
-    {"name": "HD_Kote", "lat": 11.98, "lon": 76.33, "district": "Mysore"},
-    {"name": "Periyapatna", "lat": 12.34, "lon": 76.10, "district": "Mysore"},
-    {"name": "KR_Nagar", "lat": 12.58, "lon": 76.38, "district": "Mysore"},
-]
+DEFAULT_CACHE_FILE = REAL_CACHE_FILE
 
 
 def build_and_cache_multitask_dataset(
     cache_path: Path = DEFAULT_CACHE_FILE,
-    days_per_season: int = 122,
-    num_tiles: int = 3,
-    allow_mock: bool = False,
+    force_rebuild: bool = False,
 ) -> Path:
     """
-    Constructs and serializes the 3,660 spatiotemporal sample dataset
-    spanning 10 monsoon seasons (2014-2023) across 3 geographic tiles.
-    Prioritizes authentic CHIRPS precipitation and regridded ERA5-Land thermodynamic references.
-    In scientific mode (allow_mock=False), missing raw data immediately raises FileNotFoundError / RuntimeError.
+    Constructs and serializes the authentic 1,220 spatiotemporal sample dataset
+    spanning 10 monsoon seasons (2014-2023, 122 days/season).
+    Strictly raises FileNotFoundError / RuntimeError if required raw datasets are missing.
+    Zero synthetic fallback.
     """
     cache_path = Path(cache_path)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
-    if cache_path.exists():
+    if cache_path.exists() and not force_rebuild:
         return cache_path
 
-    try:
-        return build_and_cache_real_multitask_dataset(
-            cache_path=cache_path,
-            days_per_season=days_per_season,
-            num_tiles=num_tiles,
-        )
-    except Exception as e:
-        if not allow_mock:
-            raise RuntimeError(
-                f"Scientific multi-task dataset ingestion failed: {e}. "
-                f"Silent synthetic proxy fallback is strictly forbidden in scientific mode."
-            ) from e
-        print(f"[!] Warning: Real data ingestion failed ({e}), using explicit mock generator (--mock)...")
-
-    coarse_list = []
-    terrain_list = []
-    target_list = []
-    split_list = []  # 0=train, 1=val, 2=test
-    year_list = []
-
-    seed_counter = 42
-    years = list(range(2014, 2024))  # 2014 to 2023
-
-    for year in years:
-        if year <= 2021:
-            split_tag = 0  # train
-        elif year == 2022:
-            split_tag = 1  # val
-        else:
-            split_tag = 2  # test
-
-        for day in range(days_per_season):
-            for t_id in range(1, num_tiles + 1):
-                tile_dict = generate_synthetic_multitask_tile(seed=seed_counter, tile_id=t_id)
-                seed_counter += 1
-                c_nwp, f_terrain, f_target = prepare_multitask_training_sample(
-                    tile_dict,
-                    augment_nwp_bias=(split_tag == 0),
-                    rng=np.random.default_rng(seed_counter),
-                )
-                coarse_list.append(c_nwp)
-                terrain_list.append(f_terrain)
-                target_list.append(f_target)
-                split_list.append(split_tag)
-                year_list.append(year)
-
-    coarse_arr = np.stack(coarse_list, axis=0)      # [N, 5, 16, 16]
-    terrain_arr = np.stack(terrain_list, axis=0)    # [N, 5, 80, 80]
-    target_arr = np.stack(target_list, axis=0)      # [N, 5, 80, 80]
-    splits = np.array(split_list, dtype=np.int32)
-    years_arr = np.array(year_list, dtype=np.int32)
-
-    tmp_path = cache_path.with_name(f"{cache_path.stem}.tmp{cache_path.suffix}")
-    np.savez_compressed(
-        tmp_path,
-        coarse_nwp=coarse_arr,
-        fine_terrain=terrain_arr,
-        fine_targets=target_arr,
-        splits=splits,
-        years=years_arr,
+    return build_and_cache_real_multitask_dataset(
+        cache_path=cache_path,
+        force_rebuild=force_rebuild,
     )
-    if tmp_path.exists():
-        if cache_path.exists():
-            cache_path.unlink()
-        tmp_path.replace(cache_path)
-    print(f"[+] Saved {len(splits)} samples to: {cache_path}")
-    return cache_path
 
 
 class MultiTaskPanchayatDataset(Dataset):
@@ -164,36 +77,20 @@ class MultiTaskPanchayatDataset(Dataset):
         self.coarse_nwp = data["coarse_nwp"][mask]
         self.fine_terrain = data["fine_terrain"][mask]
         self.fine_targets = data["fine_targets"][mask]
-        self.tile_ids = data["tile_ids"][mask] if "tile_ids" in data else None
-        self.day_indices = data["day_indices"][mask] if "day_indices" in data else None
         self.years = data["years"][mask] if "years" in data else None
-
-        if tile_id is not None:
-            if self.tile_ids is not None:
-                t_mask = (self.tile_ids == tile_id)
-            else:
-                # Fallback: each day has 3 sequential tiles (1, 2, 3)
-                t_mask = (np.arange(len(self.coarse_nwp)) % 3) == (tile_id - 1)
-            self.coarse_nwp = self.coarse_nwp[t_mask]
-            self.fine_terrain = self.fine_terrain[t_mask]
-            self.fine_targets = self.fine_targets[t_mask]
-            if self.tile_ids is not None:
-                self.tile_ids = self.tile_ids[t_mask]
-            if self.day_indices is not None:
-                self.day_indices = self.day_indices[t_mask]
-            if self.years is not None:
-                self.years = self.years[t_mask]
+        self.day_indices = data["day_indices"][mask] if "day_indices" in data else None
+        self.dates = data["dates"][mask] if "dates" in data else None
 
         if max_samples is not None and max_samples < len(self.coarse_nwp):
             self.coarse_nwp = self.coarse_nwp[:max_samples]
             self.fine_terrain = self.fine_terrain[:max_samples]
             self.fine_targets = self.fine_targets[:max_samples]
-            if self.tile_ids is not None:
-                self.tile_ids = self.tile_ids[:max_samples]
-            if self.day_indices is not None:
-                self.day_indices = self.day_indices[:max_samples]
             if self.years is not None:
                 self.years = self.years[:max_samples]
+            if self.day_indices is not None:
+                self.day_indices = self.day_indices[:max_samples]
+            if self.dates is not None:
+                self.dates = self.dates[:max_samples]
 
     def __len__(self) -> int:
         return len(self.coarse_nwp)

@@ -2,7 +2,7 @@
 tests/test_data_pipelines.py
 
 Unit and physics validation tests for the real data ingestion, terrain processing,
-loss functions, and station validation benchmark pipelines.
+loss functions, and gridded benchmark pipelines.
 """
 
 from pathlib import Path
@@ -20,35 +20,25 @@ from src.data.terrain_features import (
 )
 from src.losses.multitask_loss import MultiTaskPhysicalLoss
 from scripts.benchmark_multitask_baselines import bilinear_sample_point
-from src.data.multitask_dataset import MultiTaskPanchayatDataset, MANDYA_MYSORE_STATIONS
-from src.data.real_data_ingestion import REAL_CACHE_FILE, CHIRPS_SAMPLE_FILE
+from src.data.multitask_dataset import MultiTaskPanchayatDataset
+from src.data.real_data_ingestion import REAL_CACHE_FILE
+
+ROOT = Path(__file__).resolve().parents[1]
+DEM_FILE = ROOT / "data" / "raw" / "dem" / "glo30_mandya_terrain.nc"
 
 
-def test_chirps_orientation_matches_terrain_and_era5():
+def test_glo30_terrain_bounds_and_shapes():
     """
-    Assert that CHIRPS data, when ingested, has row 0 at the northern latitude (~14.975N)
-    and row 79 at the southern latitude (~11.025N), matching GLO-30 DEM and ERA5-Land.
+    Assert that Copernicus GLO-30 DSM terrain dataset exists and matches
+    the canonical 4°x4° Peninsular domain (11-15°N, 74-78°E, 80x80).
     """
-    assert CHIRPS_SAMPLE_FILE.exists(), f"Missing {CHIRPS_SAMPLE_FILE}"
-    with xr.open_dataset(CHIRPS_SAMPLE_FILE) as ds:
-        raw_lats = ds["lat"].values
-        # CHIRPS native is ascending (South -> North)
-        assert raw_lats[60] < raw_lats[139]
-        assert np.isclose(raw_lats[60], 11.025, atol=0.01)
-        assert np.isclose(raw_lats[139], 14.975, atol=0.01)
-
-        # Ingested rain patch slice with flipud [::-1, :]
-        raw_slice = ds["precip"].values[0, 60:140, 120:200]
-        flipped_slice = raw_slice[::-1, :]
-
-        # Sliced array has 80 rows
-        assert flipped_slice.shape == (80, 80)
-
-    # Verify real cache target channel 0 (rain) matches domain latitude orientation
-    if REAL_CACHE_FILE.exists():
-        data = np.load(REAL_CACHE_FILE)
-        assert data["fine_targets"].shape == (3660, 5, 80, 80)
-        assert np.all(data["fine_targets"][:, 0] >= 0.0)
+    assert DEM_FILE.exists(), f"Missing {DEM_FILE}"
+    with xr.open_dataset(DEM_FILE) as ds:
+        assert ds["elevation"].shape == (80, 80)
+        assert np.isclose(float(ds["lat"].values[0]), 14.975, atol=0.01)
+        assert np.isclose(float(ds["lat"].values[-1]), 11.025, atol=0.01)
+        assert np.isclose(float(ds["lon"].values[0]), 74.025, atol=0.01)
+        assert np.isclose(float(ds["lon"].values[-1]), 77.975, atol=0.01)
 
 
 def test_orographic_lift_physical_ascent():
@@ -149,30 +139,19 @@ def test_bilinear_sample_point_exactness():
     assert np.isclose(val_out, 42.0, atol=1e-4)
 
 
-def test_mandya_stations_inside_tile1():
+def test_dataset_partition_sizes():
     """
-    Assert that all 14 Mandya and Mysore district stations are strictly inside
-    Tile 1 (11.0N-15.0N, 74.0E-78.0E) and NOT Tile 2 or Tile 3.
-    """
-    for st in MANDYA_MYSORE_STATIONS:
-        lat, lon = st["lat"], st["lon"]
-        assert 11.0 <= lat <= 15.0, f"Station {st['name']} lat {lat} out of Tile 1"
-        assert 74.0 <= lon <= 78.0, f"Station {st['name']} lon {lon} out of Tile 1"
-        # Specifically assert not in Tile 2 (78-82E) or Tile 3 (82-86E)
-        assert lon < 78.0, f"Station {st['name']} must be in Tile 1"
-
-
-def test_dataset_tile1_filtering():
-    """
-    Assert that MultiTaskPanchayatDataset filters properly by tile_id.
+    Assert that MultiTaskPanchayatDataset has exactly 1,220 samples partitioned into:
+    Train: 976 (80.0%), Val: 122 (10.0%), Test: 122 (10.0%).
     """
     if not REAL_CACHE_FILE.exists():
-        pytest.skip("Cache file not found")
+        pytest.skip("multitask_real.npz cache file not materialized yet")
 
-    ds_all = MultiTaskPanchayatDataset(split="test")
-    ds_t1 = MultiTaskPanchayatDataset(split="test", tile_id=1)
+    ds_train = MultiTaskPanchayatDataset(split="train")
+    ds_val = MultiTaskPanchayatDataset(split="val")
+    ds_test = MultiTaskPanchayatDataset(split="test")
 
-    assert len(ds_all) == 366
-    assert len(ds_t1) == 122
-    if ds_t1.tile_ids is not None:
-        assert np.all(ds_t1.tile_ids == 1)
+    assert len(ds_train) == 976, f"Train count {len(ds_train)} != 976"
+    assert len(ds_val) == 122, f"Val count {len(ds_val)} != 122"
+    assert len(ds_test) == 122, f"Test count {len(ds_test)} != 122"
+    assert len(ds_train) + len(ds_val) + len(ds_test) == 1220

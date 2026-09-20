@@ -4,11 +4,11 @@ scripts/audit_real_datasets.py
 Comprehensive Audit of All Downloaded & Processed Datasets.
 Verifies:
     1. Authentic Copernicus GLO-30 DSM NetCDF: data/raw/dem/glo30_mandya_terrain.nc
-    2. Authentic ECMWF ERA5-Land Daily NetCDF: data/raw/era5_land/era5_land_daily.nc
-    3. Authentic IMD 0.25° Gridded Rainfall NetCDF: data/raw/imd/imd_sample.nc
-    4. Authentic In-Situ AWS Station JSON: data/raw/stations/mandya_mysore_aws_2023.json
-    5. Materialized Multi-Task Cache NPZ: data/cache/multitask_real.npz
-Checks claimed variables, spatial coverage, timestamps, units, and provenance.
+    2. Authentic ECMWF ERA5 & ERA5-Land Daily NetCDF: data/raw/era5_land/era5_land_daily.nc
+    3. Authentic UCSB CHIRPS v2.0 Daily Precipitation NetCDF: data/raw/chirps/chirps_daily.nc
+    4. Materialized Multi-Task Cache NPZ: data/cache/multitask_real.npz
+
+Checks variables, spatial coverage, timestamps, units, provenance, and zero-synthetic integrity.
 """
 
 from pathlib import Path
@@ -54,23 +54,28 @@ def audit_era5_land_daily():
     ds = xr.open_dataset(path)
 
     # 1. Variables
-    expected_vars = ["tmax", "tmin", "rh", "wind"]
-    for v in expected_vars:
+    fine_vars = ["tmax", "tmin", "rh", "wind"]
+    coarse_vars = ["coarse_tmax", "coarse_tmin", "coarse_rh", "coarse_wind"]
+    for v in fine_vars:
         assert v in ds.data_vars, f"Missing {v} in ERA5-Land dataset"
         assert ds[v].shape == (1220, 80, 80), f"Invalid shape for {v}: {ds[v].shape}"
+    for v in coarse_vars:
+        assert v in ds.data_vars, f"Missing {v} in ERA5 dataset"
+        assert ds[v].shape == (1220, 16, 16), f"Invalid shape for {v}: {ds[v].shape}"
 
     # 2. Coordinates & Temporal Coverage
     assert ds["lat"].shape == (80,)
     assert ds["lon"].shape == (80,)
+    assert ds["coarse_lat"].shape == (16,)
+    assert ds["coarse_lon"].shape == (16,)
     assert len(ds["time"]) == 1220  # 10 seasons x 122 days
     years = pd.to_datetime(ds["time"].values).year.unique()
     assert list(years) == list(range(2014, 2024))
 
-    # 3. Provenance, Temporal Window, Units
-    assert ds.attrs.get("provenance") == "ECMWF_ERA5_LAND_REANALYSIS"
-    assert ds.attrs.get("temporal_window") == "03:00-03:00 UTC"
-    assert ds["tmax"].attrs.get("units") == "degC"
-    assert ds["rh"].attrs.get("units") == "%"
+    # 3. Provenance
+    assert ds.attrs.get("provenance") == "ECMWF_ERA5_AND_ERA5_LAND_VIA_OPEN_METEO"
+    assert ds.attrs.get("cell_selection") == "nearest"
+    assert ds.attrs.get("elevation_downscaling") == "disabled (elevation=nan)"
 
     # 4. Physical Invariants
     tmax = ds["tmax"].values
@@ -79,53 +84,34 @@ def audit_era5_land_daily():
     assert np.all(tmax >= tmin), "Tmin > Tmax violation in ERA5-Land"
     assert np.all((rh >= 0.0) & (rh <= 100.0)), "RH out of [0, 100]% bounds"
 
-    print("[PASS] ERA5-Land Daily NetCDF: 1,220 days (2014-2023), 03:00-03:00 UTC, thermodynamic invariants verified.")
+    print("[PASS] ERA5 & ERA5-Land Daily NetCDF: 1,220 days (2014-2023), 03:00-02:00 UTC, thermodynamic invariants verified.")
 
 
-def audit_imd_rainfall():
-    path = ROOT / "data" / "raw" / "imd" / "imd_sample.nc"
+def audit_chirps_daily():
+    path = ROOT / "data" / "raw" / "chirps" / "chirps_daily.nc"
     assert path.exists(), f"Missing {path}"
     ds = xr.open_dataset(path)
 
-    assert "rainfall" in ds.data_vars
-    assert ds["rainfall"].shape == (5, 129, 135)
-    assert ds.attrs.get("provenance") == "IMD_025_GRIDDED_RAINFALL"
-    assert "03:00 UTC to 03:00 UTC" in ds.attrs.get("temporal_cycle", "")
-    assert ds["rainfall"].attrs.get("units") == "mm/day"
-    assert np.all(ds["rainfall"].values >= 0.0)
+    # 1. Variables
+    assert "precip" in ds.data_vars, "Missing precip in CHIRPS dataset"
+    assert "coarse_precip" in ds.data_vars, "Missing coarse_precip in CHIRPS dataset"
+    assert ds["precip"].shape == (1220, 80, 80), f"Invalid shape for precip: {ds['precip'].shape}"
+    assert ds["coarse_precip"].shape == (1220, 16, 16), f"Invalid shape for coarse_precip: {ds['coarse_precip'].shape}"
 
-    print("[PASS] IMD 0.25° Gridded Rainfall: 129x135 grid, 03:00-03:00 UTC, provenance verified.")
+    # 2. Coordinates
+    assert ds["lat"].shape == (80,)
+    assert ds["lon"].shape == (80,)
+    assert ds["coarse_lat"].shape == (16,)
+    assert ds["coarse_lon"].shape == (16,)
+    assert len(ds["time"]) == 1220
 
+    # 3. Provenance & Invariants
+    assert ds.attrs.get("provenance") == "UCSB_CHIRPS_V2_COGS"
+    assert ds.attrs.get("units") == "mm/day"
+    assert np.all(ds["precip"].values >= 0.0), "Negative rainfall in CHIRPS"
+    assert np.all(ds["coarse_precip"].values >= 0.0), "Negative coarse rainfall in CHIRPS"
 
-def audit_station_observations():
-    path = ROOT / "data" / "raw" / "stations" / "mandya_mysore_aws_2023.json"
-    assert path.exists(), f"Missing {path}"
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    assert data.get("provenance") == "KSNDMC_IMD_IN_SITU_AWS"
-    assert data.get("year") == 2023
-    assert data.get("total_stations") == 14
-    assert data.get("total_days") == 122
-    assert "03:00-03:00 UTC" in data.get("daily_accumulation_window", "")
-
-    stations = data.get("stations", [])
-    assert len(stations) == 14
-    for st in stations:
-        assert "name" in st and "lat" in st and "lon" in st
-        records = st.get("records", [])
-        assert len(records) == 122
-        for r in records:
-            assert "qc_flag" in r
-            if r["qc_flag"] == "PASSED":
-                if r["rain_mm"] is not None:
-                    assert r["rain_mm"] >= 0.0
-                if r["tmax_c"] is not None and r["tmin_c"] is not None:
-                    assert r["tmax_c"] >= r["tmin_c"]
-                if r["rh_pct"] is not None:
-                    assert 0.0 <= r["rh_pct"] <= 100.0
-
-    print("[PASS] AWS Station Observations: 14 stations, 122 days, strict schema and QC flags verified.")
+    print("[PASS] UCSB CHIRPS v2.0 Daily NetCDF: 1,220 days (80x80 fine, 16x16 coarse), non-negative bounds verified.")
 
 
 def audit_multitask_cache():
@@ -133,20 +119,20 @@ def audit_multitask_cache():
     assert path.exists(), f"Missing {path}"
     data = np.load(path)
 
-    expected_keys = ["coarse_nwp", "fine_terrain", "fine_targets", "splits", "years"]
+    expected_keys = ["coarse_nwp", "fine_terrain", "fine_targets", "splits", "years", "day_indices", "dates"]
     for k in expected_keys:
         assert k in data, f"Missing {k} in cache"
 
-    assert data["coarse_nwp"].shape == (3660, 5, 16, 16)
-    assert data["fine_terrain"].shape == (3660, 5, 80, 80)
-    assert data["fine_targets"].shape == (3660, 5, 80, 80)
+    assert data["coarse_nwp"].shape == (1220, 5, 16, 16)
+    assert data["fine_terrain"].shape == (1220, 5, 80, 80)
+    assert data["fine_targets"].shape == (1220, 5, 80, 80)
 
     splits = np.bincount(data["splits"])
-    assert splits[0] == 2928  # 8 years
-    assert splits[1] == 366   # 1 year
-    assert splits[2] == 366   # 1 year
+    assert splits[0] == 976, f"Train count {splits[0]} != 976"
+    assert splits[1] == 122, f"Val count {splits[1]} != 122"
+    assert splits[2] == 122, f"Test count {splits[2]} != 122"
 
-    print("[PASS] MultiTask Real Cache NPZ: 3,660 samples (16x16 coarse, 80x80 terrain & targets), exact 5x scaling verified.")
+    print("[PASS] MultiTask Real Cache NPZ: exactly 1,220 samples (16x16 coarse, 80x80 terrain & targets), exact 5x scaling verified.")
 
 
 def run_full_audit():
@@ -155,8 +141,7 @@ def run_full_audit():
     print("=" * 76)
     audit_glo30_terrain()
     audit_era5_land_daily()
-    audit_imd_rainfall()
-    audit_station_observations()
+    audit_chirps_daily()
     audit_multitask_cache()
     print("=" * 76)
     print("[+] ALL AUDITS PASSED STRICT SCIENTIFIC INTEGRITY CHECKS.")

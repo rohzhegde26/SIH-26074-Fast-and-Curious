@@ -40,6 +40,12 @@ data/raw/*
 !data/raw/dem/
 data/raw/dem/*
 !data/raw/dem/provenance.json
+!data/raw/era5_land/
+data/raw/era5_land/*
+!data/raw/era5_land/provenance.json
+!data/raw/chirps/
+data/raw/chirps/*
+!data/raw/chirps/provenance.json
 data/raw/geodata/*.parquet
 data/cache/
 data/processed/
@@ -47,8 +53,10 @@ data/processed/
 *.zarr
 
 # -- Model Checkpoints (large binary files) ------------------------------------
-models/checkpoints/
+models/checkpoints/*
+!models/checkpoints/multitask_5x_champion.pt
 *.pt
+!models/checkpoints/multitask_5x_champion.pt
 *.pth
 *.ckpt
 *.h5
@@ -112,6 +120,12 @@ data/raw/*
 !data/raw/dem/
 data/raw/dem/*
 !data/raw/dem/provenance.json
+!data/raw/era5_land/
+data/raw/era5_land/*
+!data/raw/era5_land/provenance.json
+!data/raw/chirps/
+data/raw/chirps/*
+!data/raw/chirps/provenance.json
 !data/raw/forecast/
 !data/raw/forecast/multiday_coarse_*.json
 data/raw/geodata/*.parquet
@@ -120,8 +134,10 @@ data/processed/
 *.zarr
 
 # -- Model Checkpoints (large binary files) ------------------------------------
-models/checkpoints/
+models/checkpoints/*
+!models/checkpoints/multitask_5x_champion.pt
 *.pt
+!models/checkpoints/multitask_5x_champion.pt
 *.pth
 *.ckpt
 *.h5

@@ -1,0 +1,23 @@
+{
+  "source_provider": "Open-Meteo Historical Weather API",
+  "coarse_atmospheric_model": "ECMWF ERA5 Reanalysis (0.25 degree native grid)",
+  "supervision_atmospheric_model": "ECMWF ERA5-Land Reanalysis (0.1 degree native grid)",
+  "target_grid": "80x80 (0.05 degree, 11.0N-15.0N, 74.0E-78.0E)",
+  "coarse_grid": "16x16 (0.25 degree, 11.0N-15.0N, 74.0E-78.0E)",
+  "aggregation_window": "03:00 UTC on D through 02:00 UTC on D+1 (24 hourly observations)",
+  "cell_selection": "nearest",
+  "elevation_downscaling": "disabled (elevation=nan)",
+  "timezone": "GMT",
+  "seasons": "2014-2023 (10 seasons, 122 days/season = 1,220 daily samples)",
+  "train_samples": 976,
+  "val_samples": 122,
+  "test_samples": 122,
+  "variables": [
+    "tmax",
+    "tmin",
+    "rh",
+    "wind"
+  ],
+  "retrieval_timestamp_utc": "2026-09-20T20:10:24.744446+00:00",
+  "integrity_check": "PASSED (strict bounds, no NaNs, continuous timestamps, nearest cell selection)"
+}

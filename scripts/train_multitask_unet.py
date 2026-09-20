@@ -141,6 +141,9 @@ def train_multitask_model(args):
         else:
             device = torch.device(args.device)
 
+    if device.type == "cpu":
+        torch.set_num_threads(min(8, os.cpu_count() or 4))
+
     if rank == 0:
         print(f"[*] Training on device: {device} (distributed={is_distributed}, world_size={world_size})")
 
@@ -173,7 +176,7 @@ def train_multitask_model(args):
     optimizer = AdamW(all_params, lr=args.lr, weight_decay=args.weight_decay)
     scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-5)
 
-    scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
+    scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"))
 
     save_path = Path(args.save_path)
     if rank == 0:
@@ -205,7 +208,7 @@ def train_multitask_model(args):
 
             optimizer.zero_grad()
 
-            with torch.cuda.amp.autocast(enabled=(device.type == "cuda")):
+            with torch.amp.autocast("cuda", enabled=(device.type == "cuda")):
                 preds = model(coarse_nwp, terrain_hr=fine_terrain)
                 loss_dict = criterion(preds, fine_targets, coarse_nwp, fine_terrain)
                 loss = loss_dict["loss"]

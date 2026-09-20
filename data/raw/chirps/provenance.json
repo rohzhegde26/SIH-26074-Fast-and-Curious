@@ -1,0 +1,15 @@
+{
+  "dataset": "CHIRPS v2.0 (Climate Hazards Center InfraRed Precipitation with Station data)",
+  "source_cogs_p05": "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_daily/cogs/p05",
+  "source_cogs_p25": "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_daily/cogs/p25",
+  "domain": "11.0N-15.0N, 74.0E-78.0E",
+  "fine_resolution": "0.05 degree (80x80)",
+  "coarse_resolution": "0.25 degree (16x16)",
+  "seasons": "2014-2023 (10 monsoon seasons, 122 days/season = 1,220 days)",
+  "train_samples": 976,
+  "val_samples": 122,
+  "test_samples": 122,
+  "units": "mm/day",
+  "ingestion_timestamp_utc": "2026-09-20T19:36:52.317412+00:00",
+  "integrity_check": "PASSED (strict bounds, no NaNs, continuous timestamps, zero synthetic fallback)"
+}

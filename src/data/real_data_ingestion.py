@@ -2,26 +2,32 @@
 src/data/real_data_ingestion.py
 
 Ingestion & Packaging Pipeline for Multi-Task Weather Downscaling.
-Produces data/cache/multitask_real.npz containing authentic spatiotemporal samples
-across 10 monsoon seasons (2014-2023) and 3 Peninsular India geographic tiles:
-    1. Rain target: Supervised strictly by CHIRPS 0.05° satellite-gauge precipitation.
-    2. Thermodynamic targets: Supervised by authentic regridded 0.1° ERA5-Land references
-       (Tmax, Tmin, RH, Wind) without pre-baked terrain lapse rates.
+Produces data/cache/multitask_real.npz containing 1,220 authentic daily samples
+across 10 monsoon seasons (2014-2023) and the canonical 4°x4° Peninsular domain:
+    1. Rain target & coarse input: Supervised strictly by UCSB CHIRPS v2.0
+       (coarse: cogs/p25/ [16x16], target: cogs/p05/ [80x80]).
+    2. Thermodynamic targets & coarse inputs: Authentic ECMWF ERA5 & ERA5-Land
+       (coarse: ERA5 0.25° [16x16], target: ERA5-Land 0.1° regridded to 0.05° [80x80])
+       aggregated strictly on the 03:00-02:00 UTC canonical 24-hour meteorological day.
     3. Terrain prior: Authentic Copernicus GLO-30 DSM elevation, Horn 3x3 slope,
-       continuous circular aspect, and 250° monsoon windward lift via build_terrain_tensor_5ch.
-    4. Coarse NWP input: 0.25° (16x16) atmospheric fields with operational forecast bias augmentation.
+       continuous circular aspect, curvature, and 250° monsoon windward lift via build_terrain_tensor_5ch.
+    4. Coarse NWP input: 0.25° (16x16) atmospheric fields with operational forecast bias augmentation
+       applied during training.
 
 Partitions:
-    - Train: 8 seasons (2014-2021, 2,928 samples)
-    - Val: 1 season (2022, 366 samples)
-    - Test: 1 season (2023, 366 samples)
-    Total: 3,660 spatiotemporal patch samples.
+    - Train: 8 seasons (2014-2021, 976 samples, 80.0%)
+    - Val: 1 season (2022, 122 samples, 10.0%)
+    - Test: 1 season (2023, 122 samples, 10.0%)
+    Total: exactly 1,220 spatiotemporal daily samples.
+Zero synthetic fallback; hard failure if required raw datasets are missing.
 """
 
 from pathlib import Path
+import shutil
 import sys
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 import numpy as np
+import pandas as pd
 import torch
 import xarray as xr
 
@@ -29,31 +35,25 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.data.agera5_loader import (
-    GEOGRAPHIC_TILES,
-    area_weighted_coarse_pool,
-    apply_nwp_forecast_bias_augmentation,
-)
+from src.data.agera5_loader import apply_nwp_forecast_bias_augmentation
 from src.data.terrain_features import build_terrain_tensor_5ch
 
 CACHE_DIR = ROOT / "data" / "cache"
 REAL_CACHE_FILE = CACHE_DIR / "multitask_real.npz"
-CHIRPS_SAMPLE_FILE = ROOT / "data" / "raw" / "chirps" / "chirps_sample.nc"
 DEM_FILE = ROOT / "data" / "raw" / "dem" / "glo30_mandya_terrain.nc"
-ERA5_LAND_FILE = ROOT / "data" / "raw" / "era5_land" / "era5_land_daily.nc"
+CHIRPS_CACHE_DIR = ROOT / "data" / "raw" / "chirps" / "cache"
+CHIRPS_NC_FILE = ROOT / "data" / "raw" / "chirps" / "chirps_daily.nc"
+ERA5_NC_FILE = ROOT / "data" / "raw" / "era5_land" / "era5_land_daily.nc"
 
 
 def build_and_cache_real_multitask_dataset(
     cache_path: Path = REAL_CACHE_FILE,
-    days_per_season: int = 122,
-    num_tiles: int = 3,
+    years: Optional[List[int]] = None,
     force_rebuild: bool = False,
 ) -> Path:
     """
-    Constructs and serializes the 3,660 spatiotemporal sample dataset
-    spanning 10 monsoon seasons (2014-2023) across 3 geographic tiles.
-    Uses CHIRPS 0.05° precipitation supervision and authentic ERA5-Land references.
-    Strictly raises FileNotFoundError if required raw files are missing.
+    Constructs and serializes the authentic 1,220 spatiotemporal sample dataset.
+    Strictly raises FileNotFoundError if required raw datasets are missing.
     """
     cache_path = Path(cache_path)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -61,27 +61,26 @@ def build_and_cache_real_multitask_dataset(
         print(f"[*] Found cached real multi-task dataset: {cache_path} ({cache_path.stat().st_size / (1024*1024):.1f} MB)")
         return cache_path
 
-    # Enforce strict existence of all required real datasets
+    if years is None:
+        years = list(range(2014, 2024))  # 10 seasons: 2014-2023
+
+    # 1. Enforce presence of authentic DEM
     if not DEM_FILE.exists():
         raise FileNotFoundError(
             f"Required authentic Copernicus GLO-30 DEM file not found at: {DEM_FILE}. "
             f"Run python src/data/glo30_terrain.py to generate it."
         )
 
-    if not CHIRPS_SAMPLE_FILE.exists():
+    # 2. Enforce presence of ERA5/ERA5-Land reanalysis
+    if not ERA5_NC_FILE.exists():
         raise FileNotFoundError(
-            f"Required authentic CHIRPS 0.05° precipitation file not found at: {CHIRPS_SAMPLE_FILE}."
+            f"Required authentic ERA5/ERA5-Land NetCDF file not found at: {ERA5_NC_FILE}. "
+            f"Run python src/data/openmeteo_era5_ingestion.py to generate it."
         )
 
-    if not ERA5_LAND_FILE.exists():
-        raise FileNotFoundError(
-            f"Required authentic ERA5-Land daily NetCDF file not found at: {ERA5_LAND_FILE}. "
-            f"Run python src/data/era5_land_ingestion.py to generate it."
-        )
+    print(f"[*] Materializing authentic multi-task dataset ({len(years) * 122} daily samples)...")
 
-    print(f"[*] Materializing real multi-task dataset ({10 * days_per_season * num_tiles} spatiotemporal samples)...")
-
-    # 1. Load authentic Copernicus GLO-30 DSM terrain features
+    # Load authentic Copernicus GLO-30 DSM terrain features
     with xr.open_dataset(DEM_FILE) as dem_ds:
         elev_arr = dem_ds["elevation"].values[:80, :80].astype(np.float32)
         slope_arr = dem_ds["slope"].values[:80, :80].astype(np.float32)
@@ -92,103 +91,112 @@ def build_and_cache_real_multitask_dataset(
         elev_arr, slope_arr, aspect_arr, center_lat_deg=13.0, month=7
     ).cpu().numpy()
 
-    # 2. Load authentic CHIRPS precipitation
-    with xr.open_dataset(CHIRPS_SAMPLE_FILE) as chirps_ds:
-        chirps_data = chirps_ds["precip"].values  # [time, lat, lon]
+    # Load authentic CHIRPS v2.0 precipitation
+    p05_list = []
+    p25_list = []
+    all_dates = []
 
-    # 3. Load authentic ERA5-Land thermodynamic reference fields
-    with xr.open_dataset(ERA5_LAND_FILE) as era5_ds:
-        tmax_arr = era5_ds["tmax"].values  # [time, lat, lon]
-        tmin_arr = era5_ds["tmin"].values
-        rh_arr = era5_ds["rh"].values
-        wind_arr = era5_ds["wind"].values
-        n_era5_timesteps = len(tmax_arr)
+    if CHIRPS_NC_FILE.exists():
+        with xr.open_dataset(CHIRPS_NC_FILE) as ch_ds:
+            chirps_p05 = ch_ds["precip"].values.astype(np.float32)       # [1220, 80, 80]
+            chirps_p25 = ch_ds["coarse_precip"].values.astype(np.float32) # [1220, 16, 16]
+            chirps_dates = [str(t) for t in ch_ds["time"].values]
+    else:
+        # Load from per-season caches
+        for yr in years:
+            ch_cache = CHIRPS_CACHE_DIR / f"chirps_{yr}.npz"
+            if not ch_cache.exists():
+                raise FileNotFoundError(
+                    f"Required CHIRPS cache for season {yr} not found at {ch_cache}. "
+                    f"Run python src/data/chirps_ingestion.py."
+                )
+            cdata = np.load(ch_cache)
+            p05_list.append(cdata["p05"])
+            p25_list.append(cdata["p25"])
+            all_dates.extend(cdata["dates"].tolist())
+
+        chirps_p05 = np.concatenate(p05_list, axis=0)  # [1220, 80, 80]
+        chirps_p25 = np.concatenate(p25_list, axis=0)  # [1220, 16, 16]
+        chirps_dates = all_dates
+
+    # Load authentic ERA5 & ERA5-Land reanalysis
+    with xr.open_dataset(ERA5_NC_FILE) as era5_ds:
+        era5_tmax = era5_ds["tmax"].values.astype(np.float32)
+        era5_tmin = era5_ds["tmin"].values.astype(np.float32)
+        era5_rh = era5_ds["rh"].values.astype(np.float32)
+        era5_wind = era5_ds["wind"].values.astype(np.float32)
+
+        coarse_tmax = era5_ds["coarse_tmax"].values.astype(np.float32)
+        coarse_tmin = era5_ds["coarse_tmin"].values.astype(np.float32)
+        coarse_rh = era5_ds["coarse_rh"].values.astype(np.float32)
+        coarse_wind = era5_ds["coarse_wind"].values.astype(np.float32)
+
+    total_samples = len(years) * 122
+    assert len(chirps_p05) == total_samples, f"CHIRPS p05 samples {len(chirps_p05)} != {total_samples}"
+    assert len(era5_tmax) == total_samples, f"ERA5 samples {len(era5_tmax)} != {total_samples}"
 
     coarse_list = []
     terrain_list = []
     target_list = []
-    split_list = []  # 0=train, 1=val, 2=test
+    split_list = []
     year_list = []
-    tile_list = []
     day_list = []
 
-    seed_counter = 1001
-    years = list(range(2014, 2024))
+    seed_counter = 42
 
     for y_idx, year in enumerate(years):
         if year <= 2021:
-            split_tag = 0  # train (8 years, 2,928 samples)
+            split_tag = 0  # train (8 years = 976 samples)
         elif year == 2022:
-            split_tag = 1  # val (1 year, 366 samples)
+            split_tag = 1  # val (1 year = 122 samples)
         else:
-            split_tag = 2  # test (1 year, 366 samples)
+            split_tag = 2  # test (1 year = 122 samples)
 
-        for day in range(days_per_season):
-            time_idx = (y_idx * days_per_season + day) % n_era5_timesteps
+        for d in range(122):
+            idx = y_idx * 122 + d
+            rng = np.random.default_rng(seed_counter)
 
-            for t_id in range(1, num_tiles + 1):
-                rng = np.random.default_rng(seed_counter)
+            # Fine Terrain Prior [5, 80, 80]
+            fine_terrain = canonical_terrain_tensor.copy()
 
-                # Fine Terrain Prior [5, 80, 80]
-                fine_terrain = canonical_terrain_tensor.copy()
+            # Fine Targets [5, 80, 80]
+            fine_targets = np.stack([
+                chirps_p05[idx],
+                era5_tmax[idx],
+                era5_tmin[idx],
+                era5_rh[idx],
+                era5_wind[idx],
+            ], axis=0).astype(np.float32)
 
-                # High-Resolution Rain Target [80, 80] from CHIRPS
-                ch_t_idx = day % len(chirps_data)
-                col_start = 120 + ((t_id - 1) * 80) % max(1, chirps_data.shape[2] - 80)
-                row_start = 60
-                rain_patch = chirps_data[ch_t_idx, row_start : row_start + 80, col_start : col_start + 80]
-                if rain_patch.shape != (80, 80):
-                    rain_patch = np.zeros((80, 80), dtype=np.float32)
-                # CHIRPS has ascending latitude (row 60 = 11.025°N South, row 139 = 14.975°N North).
-                # Flip vertically so row 0 is North and row 79 is South, matching DEM and ERA5-Land.
-                rain_patch = rain_patch[::-1, :].copy()
-                rain_patch = np.clip(rain_patch, 0.0, 350.0).astype(np.float32)
+            # Coarse NWP Inputs [5, 16, 16]
+            coarse_nwp = np.stack([
+                chirps_p25[idx],
+                coarse_tmax[idx],
+                coarse_tmin[idx],
+                coarse_rh[idx],
+                coarse_wind[idx],
+            ], axis=0).astype(np.float32)
 
-                # High-Resolution Thermodynamic Targets from ERA5-Land [80, 80]
-                tmax_patch = tmax_arr[time_idx]
-                tmin_patch = tmin_arr[time_idx]
-                rh_patch = rh_arr[time_idx]
-                wind_patch = wind_arr[time_idx]
+            # Operational forecast bias augmentation during training split
+            if split_tag == 0:
+                coarse_nwp = apply_nwp_forecast_bias_augmentation(coarse_nwp, rng=rng)
 
-                fine_targets = np.stack([
-                    rain_patch,
-                    tmax_patch,
-                    tmin_patch,
-                    rh_patch,
-                    wind_patch,
-                ], axis=0).astype(np.float32)  # [5, 80, 80]
+            coarse_list.append(coarse_nwp)
+            terrain_list.append(fine_terrain)
+            target_list.append(fine_targets)
+            split_list.append(split_tag)
+            year_list.append(year)
+            day_list.append(d)
+            seed_counter += 1
 
-                # Coarse NWP Inputs (0.25°, 16x16) via Latitude-Weighted Area Pooling
-                tile_info = GEOGRAPHIC_TILES.get(t_id, GEOGRAPHIC_TILES[1])
-                coarse_nwp = area_weighted_coarse_pool(
-                    fine_targets,
-                    lat_min=tile_info["lat_min"],
-                    lat_max=tile_info["lat_max"],
-                    pool_factor=5,
-                )  # [5, 16, 16]
-
-                # Apply operational NWP forecast bias augmentation during training split
-                if split_tag == 0:
-                    coarse_nwp = apply_nwp_forecast_bias_augmentation(coarse_nwp, rng=rng)
-
-                coarse_list.append(coarse_nwp)
-                terrain_list.append(fine_terrain)
-                target_list.append(fine_targets)
-                split_list.append(split_tag)
-                year_list.append(year)
-                tile_list.append(t_id)
-                day_list.append(day)
-                seed_counter += 1
-
-    coarse_arr = np.stack(coarse_list, axis=0)      # [N, 5, 16, 16]
-    terrain_arr = np.stack(terrain_list, axis=0)    # [N, 5, 80, 80]
-    target_arr = np.stack(target_list, axis=0)      # [N, 5, 80, 80]
+    coarse_arr = np.stack(coarse_list, axis=0)    # [1220, 5, 16, 16]
+    terrain_arr = np.stack(terrain_list, axis=0)  # [1220, 5, 80, 80]
+    target_arr = np.stack(target_list, axis=0)    # [1220, 5, 80, 80]
     split_arr = np.array(split_list, dtype=np.int32)
     year_arr = np.array(year_list, dtype=np.int32)
-    tile_arr = np.array(tile_list, dtype=np.int32)
     day_arr = np.array(day_list, dtype=np.int32)
+    dates_arr = np.array(chirps_dates)
 
-    import shutil
     tmp_path = cache_path.with_name(f"{cache_path.stem}.tmp{cache_path.suffix}")
     np.savez_compressed(
         tmp_path,
@@ -197,8 +205,8 @@ def build_and_cache_real_multitask_dataset(
         fine_targets=target_arr,
         splits=split_arr,
         years=year_arr,
-        tile_ids=tile_arr,
         day_indices=day_arr,
+        dates=dates_arr,
     )
     if tmp_path.exists():
         if cache_path.exists():
@@ -208,7 +216,7 @@ def build_and_cache_real_multitask_dataset(
                 pass
         shutil.move(str(tmp_path), str(cache_path))
 
-    print(f"[+] Serialized real multi-task dataset to: {cache_path} ({cache_path.stat().st_size / (1024*1024):.1f} MB)")
+    print(f"[+] Serialized authentic multi-task dataset to: {cache_path} ({cache_path.stat().st_size / (1024*1024):.1f} MB)")
     print(f"    Train samples (2014-2021): {np.sum(split_arr == 0)}")
     print(f"    Val samples   (2022):      {np.sum(split_arr == 1)}")
     print(f"    Test samples  (2023):      {np.sum(split_arr == 2)}")
