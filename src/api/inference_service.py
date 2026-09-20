@@ -65,7 +65,7 @@ def get_terrain_tensor(device_name: str = "cpu") -> Optional[torch.Tensor]:
         elev_p = dem_ds["elevation"].values[:80, :80]
         slope_p = dem_ds["slope"].values[:80, :80]
         aspect_p = dem_ds["aspect"].values[:80, :80]
-        t_5ch = build_terrain_tensor_5ch(elev_p, slope_p, aspect_p, center_lat_deg=12.52, month=7)
+        t_5ch = build_terrain_tensor_5ch(elev_p, slope_p, aspect_p, center_lat_deg=13.0, month=7)
         return t_5ch.unsqueeze(0).to(torch.device(device_name))
     except Exception:
         return None

@@ -131,16 +131,18 @@ def compute_orographic_velocity(
             [-1.0, 0.0, 1.0],
         ], dtype=torch.float32, device=dem.device).view(1, 1, 3, 3) / (8.0 * dx_m)
 
+        # Row 0 is North and Row 2 is South, so North-South gradient:
+        # dh/dy_north = (dem[North] - dem[South]) / dy_m
         sobel_y = torch.tensor([
-            [-1.0, -2.0, -1.0],
-            [ 0.0,  0.0,  0.0],
             [ 1.0,  2.0,  1.0],
+            [ 0.0,  0.0,  0.0],
+            [-1.0, -2.0, -1.0],
         ], dtype=torch.float32, device=dem.device).view(1, 1, 3, 3) / (8.0 * dy_m)
 
         dh_dx = F.conv2d(dem, sobel_x, padding=1)
-        dh_dy = F.conv2d(dem, sobel_y, padding=1)
+        dh_dy_north = F.conv2d(dem, sobel_y, padding=1)
 
-        w_orog = float(u_wind) * dh_dx + float(v_wind) * dh_dy
+        w_orog = float(u_wind) * dh_dx + float(v_wind) * dh_dy_north
         w_norm = torch.tanh(w_orog * 1000.0 / 50.0)  # scale velocity
 
         if len(orig_shape) == 2:
@@ -150,8 +152,9 @@ def compute_orographic_velocity(
         return w_norm
     else:
         elev_np = np.asarray(elevation_m, dtype=np.float32)
-        dh_dy, dh_dx = np.gradient(elev_np, dy_m, dx_m)
-        w_orog = float(u_wind) * dh_dx + float(v_wind) * dh_dy
+        dh_dy_south, dh_dx = np.gradient(elev_np, dy_m, dx_m)
+        dh_dy_north = -dh_dy_south
+        w_orog = float(u_wind) * dh_dx + float(v_wind) * dh_dy_north
         w_norm = np.tanh(w_orog * 1000.0 / 50.0).astype(np.float32)
         return w_norm
 

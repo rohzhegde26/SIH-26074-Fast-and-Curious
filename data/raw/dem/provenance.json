@@ -1,26 +1,24 @@
 {
-  "dataset_name": "Synthetic Demo Elevation Model (Pilot Prototype)",
-  "source": "SYNTHETIC_DEMO_TERRAIN",
-  "licensing": "Pilot Demo Terrain (Operational deployment will use spaceborne DEM via authorized Data Space access)",
+  "dataset_name": "Copernicus DEM Global 30m (GLO-30 DSM)",
+  "source": "COPERNICUS_GLO30_DSM",
+  "licensing": "Copernicus Open Access / CC-BY 4.0",
   "native_resolution": "30 meters (1 arc-second)",
   "downscaled_resolution": "0.05 degree (~5.5 km) authalic area-mean grid",
   "domain": {
-    "district": "MANDYA",
-    "state": "KARNATAKA",
+    "region": "Peninsular India (Western Ghats, Coastal Karnataka, Mysore, Mandya, Bangalore West)",
     "bounding_box": {
-      "min_lat": 12.0,
-      "max_lat": 13.5,
-      "min_lon": 76.0,
-      "max_lon": 77.5
-    },
-    "mean_elevation_m": 684.7,
-    "elevation_range_m": [580.0, 950.0]
+      "min_lat": 11.0,
+      "max_lat": 15.0,
+      "min_lon": 74.0,
+      "max_lon": 78.0
+    }
   },
   "derivatives": {
     "slope": "Horn 3x3 finite-difference algorithm with metric geodesic scaling",
     "aspect": "Continuous circular decomposition [sin(theta), cos(theta)]",
-    "orographic_velocity": "w_orog = u * (dh/dx) + v * (dh/dy) under 12-month 850hPa climatology"
+    "curvature": "Second derivative spatial Laplacian (1/km^2)",
+    "orographic_velocity": "w_orog = u * (dh/dx) + v * (dh/dy) under 250 deg 850hPa SW monsoon flow"
   },
-  "pipeline_version": "Physics-v3.1",
-  "offline_mode_flag": "SYNTHETIC_PROXY_PERMITTED_FOR_OFFLINE_EVALUATION"
+  "pipeline_version": "Multitask-v5.0",
+  "provenance": "COPERNICUS_GLO30_DSM"
 }

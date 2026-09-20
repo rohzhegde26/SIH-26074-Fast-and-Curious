@@ -84,8 +84,10 @@ class MultiTaskPhysicalLoss(nn.Module):
 
         p_lr = coarse_nwp[:, 0:1, :, :]
         elev_norm = fine_terrain[:, 0:1, :, :]
-        # Unnormalize elevation to meters: elev = elev_norm * 400 + 700
-        elev = elev_norm * 400.0 + 700.0
+        # Unnormalize elevation to meters from standard GLO-30 normalization:
+        # dem_norm = clamp((elev - 382.5) / 458.2, -2.5, 3.5) / 3.5
+        # elev = elev_norm * (3.5 * 458.2) + 382.5 = elev_norm * 1603.7 + 382.5
+        elev = elev_norm * 1603.7 + 382.5
 
         # 1. Individual task regression losses
         # (a) Rain: log-cosh + asymmetric tail pinball

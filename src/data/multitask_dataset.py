@@ -54,11 +54,13 @@ def build_and_cache_multitask_dataset(
     cache_path: Path = DEFAULT_CACHE_FILE,
     days_per_season: int = 122,
     num_tiles: int = 3,
+    allow_mock: bool = False,
 ) -> Path:
     """
     Constructs and serializes the 3,660 spatiotemporal sample dataset
     spanning 10 monsoon seasons (2014-2023) across 3 geographic tiles.
-    Prioritizes real CHIRPS precipitation and regridded ERA5-Land thermodynamic references.
+    Prioritizes authentic CHIRPS precipitation and regridded ERA5-Land thermodynamic references.
+    In scientific mode (allow_mock=False), missing raw data immediately raises FileNotFoundError / RuntimeError.
     """
     cache_path = Path(cache_path)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -72,7 +74,12 @@ def build_and_cache_multitask_dataset(
             num_tiles=num_tiles,
         )
     except Exception as e:
-        print(f"[!] Real data ingestion encountered error: {e}. Falling back to proxy generator...")
+        if not allow_mock:
+            raise RuntimeError(
+                f"Scientific multi-task dataset ingestion failed: {e}. "
+                f"Silent synthetic proxy fallback is strictly forbidden in scientific mode."
+            ) from e
+        print(f"[!] Warning: Real data ingestion failed ({e}), using explicit mock generator (--mock)...")
 
     coarse_list = []
     terrain_list = []
@@ -139,6 +146,7 @@ class MultiTaskPanchayatDataset(Dataset):
         split: str = "train",
         cache_path: Optional[Path] = None,
         max_samples: Optional[int] = None,
+        tile_id: Optional[int] = None,
     ):
         if cache_path is None:
             cache_path = DEFAULT_CACHE_FILE
@@ -156,11 +164,36 @@ class MultiTaskPanchayatDataset(Dataset):
         self.coarse_nwp = data["coarse_nwp"][mask]
         self.fine_terrain = data["fine_terrain"][mask]
         self.fine_targets = data["fine_targets"][mask]
+        self.tile_ids = data["tile_ids"][mask] if "tile_ids" in data else None
+        self.day_indices = data["day_indices"][mask] if "day_indices" in data else None
+        self.years = data["years"][mask] if "years" in data else None
+
+        if tile_id is not None:
+            if self.tile_ids is not None:
+                t_mask = (self.tile_ids == tile_id)
+            else:
+                # Fallback: each day has 3 sequential tiles (1, 2, 3)
+                t_mask = (np.arange(len(self.coarse_nwp)) % 3) == (tile_id - 1)
+            self.coarse_nwp = self.coarse_nwp[t_mask]
+            self.fine_terrain = self.fine_terrain[t_mask]
+            self.fine_targets = self.fine_targets[t_mask]
+            if self.tile_ids is not None:
+                self.tile_ids = self.tile_ids[t_mask]
+            if self.day_indices is not None:
+                self.day_indices = self.day_indices[t_mask]
+            if self.years is not None:
+                self.years = self.years[t_mask]
 
         if max_samples is not None and max_samples < len(self.coarse_nwp):
             self.coarse_nwp = self.coarse_nwp[:max_samples]
             self.fine_terrain = self.fine_terrain[:max_samples]
             self.fine_targets = self.fine_targets[:max_samples]
+            if self.tile_ids is not None:
+                self.tile_ids = self.tile_ids[:max_samples]
+            if self.day_indices is not None:
+                self.day_indices = self.day_indices[:max_samples]
+            if self.years is not None:
+                self.years = self.years[:max_samples]
 
     def __len__(self) -> int:
         return len(self.coarse_nwp)
