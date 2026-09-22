@@ -423,3 +423,74 @@ def test_gfs_archive_tier_routing():
     assert res_2014["tier"] == "pre_operational"
 
 
+def test_gfs_9year_coverage_quick_vs_exhaustive_semantics():
+    from src.data.gfs_archive_auditor import audit_gfs_9year_coverage
+
+    # When given only a sample of years (e.g. quick mode)
+    sampled_years = [2015, 2018, 2021, 2023]
+    res_sampled = audit_gfs_9year_coverage(years=sampled_years)
+
+    # all_9_years_available must be False because only 4 of 9 years were audited
+    assert res_sampled["all_9_years_available"] is False, (
+        "all_9_years_available must not be True when only a 4-year sample was probed"
+    )
+    assert res_sampled["is_exhaustive_9year_audit"] is False
+    assert res_sampled["coverage_mode"] == "sampled"
+    assert res_sampled["all_evaluated_years_available"] is True
+    assert res_sampled["years_evaluated"] == sampled_years
+    assert res_sampled["total_years_evaluated"] == 4
+    assert res_sampled["total_target_years"] == 9
+
+
+def test_gfs_index_variable_presence_and_slice_semantics():
+    from src.data.gfs_archive_auditor import parse_gfs_idx_byte_ranges
+
+    sample_idx = (
+        "1:0:d=2023071500:TMP:2 m above ground:24 hour fcst:\n"
+        "2:2048500:d=2023071500:RH:2 m above ground:24 hour fcst:\n"
+        "3:4105000:d=2023071500:UGRD:10 m above ground:24 hour fcst:\n"
+        "4:6200000:d=2023071500:VGRD:10 m above ground:24 hour fcst:\n"
+        "5:8300000:d=2023071500:APCP:surface:18-24 hour acc fcst:\n"
+    )
+    ranges = parse_gfs_idx_byte_ranges(sample_idx)
+
+    # Required forecast keys
+    expected_keys = [
+        "TMP:2 m above ground",
+        "RH:2 m above ground",
+        "UGRD:10 m above ground",
+        "VGRD:10 m above ground",
+        "APCP:surface",
+    ]
+    for k in expected_keys:
+        assert k in ranges, f"Expected variable '{k}' in parsed index byte ranges"
+
+
+def test_gate_reporting_semantics_honest_labels():
+    from scripts.audit_sprint1_sources import run_sprint1_audit
+
+    audit_res = run_sprint1_audit(quick=True)
+    gates = audit_res["decision_gates"]
+
+    # Gate 2 in quick mode must indicate sampled verification, not exhaustive 9-year
+    g2 = gates["gate2_forecast_archive"]
+    assert "SAMPLED" in g2["status"] or "PASSED_SAMPLED" in g2["status"]
+    assert g2["coverage_mode"] == "sampled"
+
+    # Gate 3 must clarify specification + partial demonstration, not claimed full 6-var empirical extraction
+    g3 = gates["gate3_forecast_variables"]
+    assert "SPECIFICATION" in g3["status"] or "INFRASTRUCTURE" in g3["status"] or "DEMONSTRATED" in g3["status"]
+
+    # Gate 4 must remain CONFIGURATION_READY
+    g4 = gates["gate4_spatial_context"]
+    assert g4["status"] == "CONFIGURATION_READY"
+
+    # Report file check
+    report_text = (ROOT / "data" / "source_coverage_report.md").read_text(encoding="utf-8")
+    assert "All 5 Decision Gates: Fully Evaluated and Ratified" not in report_text, (
+        "Report must not claim all 5 gates are ratified when Gate 4 is CONFIGURATION_READY and Gate 2 is sampled"
+    )
+    assert "4/9" in report_text or "sampled" in report_text.lower()
+
+
+

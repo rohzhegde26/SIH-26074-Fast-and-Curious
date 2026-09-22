@@ -234,24 +234,41 @@ def audit_gfs_9year_coverage(
     timeout: int = 10,
 ) -> Dict[str, Any]:
     """
-    Audits 00Z forecast coverage across all 9 years (2015-2023) plus verifies 2014 boundary.
+    Audits 00Z forecast coverage across 2015-2023 archive plus verifies 2014 boundary.
+    Distinguishes between a sampled benchmark audit (e.g. 4 sampled years in quick mode)
+    and an exhaustive 9-year coverage audit.
     """
-    target_years = years or list(range(2015, 2024))
+    full_9_years = list(range(2015, 2024))
+    target_years = years if years is not None else full_9_years
+    is_exhaustive = set(target_years) >= set(full_9_years)
     year_audits = {}
-    all_available = True
+    all_evaluated_available = True
 
     for y in target_years:
         res = audit_gfs_archive_source(y, month=7, day=15, timeout=timeout)
         year_audits[y] = res
         if not res.get("available", False):
-            all_available = False
+            all_evaluated_available = False
 
     # Also verify 2014 boundary explicitly
     res_2014 = audit_gfs_archive_source(2014, month=7, day=15, timeout=timeout)
     boundary_verified = (res_2014["available"] is False)
 
+    # all_9_years_available is strictly True only if all 9 years were probed AND available
+    all_9_years_available = all_evaluated_available and is_exhaustive
+
     return {
-        "all_9_years_available": all_available,
+        "all_9_years_available": all_9_years_available,
+        "all_evaluated_years_available": all_evaluated_available,
+        "is_exhaustive_9year_audit": is_exhaustive,
+        "coverage_mode": "exhaustive" if is_exhaustive else "sampled",
+        "total_years_evaluated": len(target_years),
+        "total_target_years": 9,
+        "coverage_summary": (
+            "9/9 years verified (exhaustive 2015-2023 audit)"
+            if is_exhaustive and all_9_years_available
+            else f"{len(target_years)}/9 years verified (sampled benchmark mode)"
+        ),
         "boundary_2014_verified_absent": boundary_verified,
         "years_evaluated": target_years,
         "year_details": year_audits,
@@ -268,7 +285,7 @@ def live_gfs_byte_range_slice_probe(
     """
     Performs a live byte-range extraction test against NOAA GFS on AWS Open Data:
       1. Downloads the .idx file for the specified forecast cycle.
-      2. Parses byte ranges for key variables (TMP:2 m above ground, APCP:surface).
+      2. Parses byte ranges for key variables (TMP:2 m above ground, APCP:surface, etc.).
       3. Uses HTTP Range headers to fetch the first 100 bytes of the TMP GRIB message slice.
       4. Validates that the slice returns HTTP 206 Partial Content and begins with b'GRIB'.
     """
@@ -294,6 +311,16 @@ def live_gfs_byte_range_slice_probe(
         has_tmp = tmp_key in ranges
         has_apcp = apcp_key in ranges
 
+        # Verify presence of all forecast variables in the index
+        index_presence = {
+            "TMP:2 m above ground": "TMP:2 m above ground" in ranges,
+            "RH:2 m above ground": ("RH:2 m above ground" in ranges or "SPFH:2 m above ground" in ranges),
+            "UGRD:10 m above ground": "UGRD:10 m above ground" in ranges,
+            "VGRD:10 m above ground": "VGRD:10 m above ground" in ranges,
+            "APCP:surface": "APCP:surface" in ranges,
+        }
+        all_forecast_vars_in_index = all(index_presence.values())
+
         if not has_tmp:
             return {
                 "success": False,
@@ -318,6 +345,9 @@ def live_gfs_byte_range_slice_probe(
             "total_vars_indexed": len(ranges),
             "has_tmp_2m": has_tmp,
             "has_apcp_surface": has_apcp,
+            "index_variables_confirmed": index_presence,
+            "all_forecast_vars_in_index": all_forecast_vars_in_index,
+            "downloaded_slice_variable": tmp_key,
             "tmp_byte_range": [start_byte, end_byte],
             "http_status": resp_slice.status_code,
             "is_partial_content_206": is_206,
@@ -330,4 +360,5 @@ def live_gfs_byte_range_slice_probe(
             "success": False,
             "error": str(e),
         }
+
 

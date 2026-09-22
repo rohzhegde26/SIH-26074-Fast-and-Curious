@@ -1,10 +1,10 @@
 # Sprint 1 Deliverable: Source Coverage Report
 
 **Project**: SIH-26074 Multivariate Spatiotemporal Diffusion Weather Downscaler  
-**Audit Executed**: 2026-09-22T15:42:13.767337  
+**Audit Executed**: 2026-09-22T16:03:49.348312  
 **Mode**: quick  
 **Audit Engine**: `scripts/audit_sprint1_sources.py`  
-**All 5 Decision Gates**: Fully Evaluated and Ratified  
+**Decision Gates Status**: 3 Ratified / Passed, 1 Configuration-Ready (Gate 4), 1 Sample-Verified (Gate 2: 4/9 GFS years; run --full for exhaustive 9-year audit)  
 
 ---
 
@@ -13,9 +13,9 @@
 | Stream | Source | Temporal Range | Variables | Native Res | Provenance Class | Role in Pipeline | Live Audit Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **History Context** | ECMWF ERA5-Land (Thermo) / ERA5 (Wind) | 2014–2023 | Tmax, Tmin, RH, U, V | 0.1° / 0.25° | `mixed` | Past atmospheric context | Verified (HTTP 200, 72 hrs, zero NaNs) |
-| **History Context** | UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Past precipitation context | Verified (HTTP 200, 2.20s latency) |
-| **Future Forecast** | NOAA GFS 0.25° | 2015–2023 | P, Tmax, Tmin, RH, U, V | 0.25° | `numerical_weather_prediction` | Coarse 7-day forecast conditioning | Verified (9-yr coverage + live byte-range slice HTTP 206) |
-| **Supervision Target**| UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Fine precipitation supervision | Verified (HTTP 200, 2.20s latency) |
+| **History Context** | UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Past precipitation context | Verified (HTTP 200, 1.47s latency) |
+| **Future Forecast** | NOAA GFS 0.25° | 2015–2023 | P, Tmax, Tmin, RH, U, V | 0.25° | `numerical_weather_prediction` | Coarse 7-day forecast conditioning | Verified (4/9 sampled years [2015, 2018, 2021, 2023] + live byte-range slice HTTP 206; full 9-yr audit in --full mode) |
+| **Supervision Target**| UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Fine precipitation supervision | Verified (HTTP 200, 1.47s latency) |
 | **Supervision Target**| ECMWF ERA5-Land (Thermo) / ERA5 (Wind) | 2014–2023 | Tmax, Tmin, RH, U, V | (0.1°/0.25°) → 0.05° | `mixed` | Fine thermodynamic & wind supervision | Verified (HTTP 200, 72 hrs, zero NaNs) |
 | **Station Check** | NOAA GSOD | 2014–2023 | Subset (T, P, DewPt) | Point AWS | `direct_observation` | Independent point validation | Verified (8/10 station-years available, header validated) |
 | **Geophysical Prior**| Copernicus GLO-30| Static | Elev, Slope, Aspect, Curv, Lift | 30 m → 0.05° | `terrain_dsm` | Static topographical input | Verified (NetCDF 80x80, Pixel-Is-Area aligned) |
@@ -31,20 +31,24 @@
 - **Operational Adapter**: 03:00-03:00 UTC operational packaging handled via inference-time adapter with 3-hour lag note; training strictly standardizes on calendar_day_00_24_utc.
 
 ### Gate 2: 2015–2023 Forecast Archive Coverage Boundary
-- **Status**: `PASSED`
+- **Status**: `PASSED_SAMPLED (4/9 years)`
+- **Coverage Summary**: Sampled benchmark years (4/9: [2015, 2018, 2021, 2023]) verified against authoritative tiers. Complete 9-year audit requires --full mode.
 - **AWS Open Data Tier (2021–2023)**: 2021-2023 operational on AWS Open Data Registry (s3://noaa-gfs-bdp-pds)
 - **NCAR RDA ds084.1 Tier (2015–2020)**: 2015-2020 preserved in NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids)
 - **2014 Pre-Operational Boundary**: Year 2014 verified absent across 0.25° archives; strictly restricted to history/target-only pretraining without synthetic forecasts.
 
-### Gate 3: Exact 6-Variable GFS Forecast Derivation
-- **Status**: `PASSED`
+### Gate 3: Exact 6-Variable GFS Forecast Derivation & Infrastructure Demonstration
+- **Status**: `SPECIFICATION_VERIFIED & INFRASTRUCTURE_DEMONSTRATED`
+- **Specification Status**: Complete: All 6 target variables (P, Tmax, Tmin, RH, U, V) formally specified with exact GRIB2 keys, accumulation/de-accumulation formulas, and meteorological wind conversions.
+- **Infrastructure Demonstration**: Demonstrated: Live AWS GFS index parsed (all target forecast variable keys confirmed present in index), and live HTTP 206 partial content byte-range slice verified with b'GRIB' magic bytes on TMP:2 m. Full multi-year 6-variable bulk download and cube assembly scheduled for Sprint 2 data generation.
 - **Precipitation ($P$)**: APCP surface 6-hour buckets de-accumulated and summed over forecast day (kg/m² ≡ mm).
 - **Max Temperature ($T_{\max}$)**: TMAX 2m (or maximum across 3-hourly TMP 2m values) over forecast day minus 273.15 (°C).
 - **Min Temperature ($T_{\min}$)**: TMIN 2m (or minimum across 3-hourly TMP 2m values) over forecast day minus 273.15 (°C).
 - **Relative Humidity ($RH$)**: RH 2m (or derived via August-Roche-Magnus from 2m temperature and dew point) clipped to [0, 100]%.
 - **Zonal Wind ($U$) & Meridional Wind ($V$)**: UGRD and VGRD at 10m above ground (3-hourly sequence and daily vector mean in m/s).
 - **Meteorological Wind Vector Formula**: $U = -S \cdot \sin(\theta \cdot \pi / 180)$, $V = -S \cdot \cos(\theta \cdot \pi / 180)$.
-- **Empirical Live Derivation Sample (Central Mandya)**: `Tmax=25.8°C, Tmin=20.1°C, RH=85.2%, U=15.21 m/s, V=-0.86 m/s`.
+- **Empirical Live Derivation Sample (Central Mandya via Open-Meteo)**: `Tmax=25.8°C, Tmin=20.1°C, RH=85.2%, U=15.21 m/s, V=-0.86 m/s`.
+- **Sprint 2 Implementation Note**: Full multi-channel extraction of all 6 variables across all grid cells will be executed during the Sprint 2 data generation pipeline.
 
 ### Gate 4: Configuration-Ready for 2.5M Maximum Spatial Context (Scalability M to 2.5M)
 - **Status**: `CONFIGURATION_READY`
@@ -64,26 +68,27 @@
 
 ## 3. Empirical Multi-Year Archive Coverage
 
-### A. NOAA GFS 0.25° Forecast Archive (2015–2023)
+### A. NOAA GFS 0.25° Forecast Archive (Sampled Benchmark Years 2015–2023; 4/9 Years in Quick Mode)
 | Year | Forecast Cycle | Audit Status | Archive Tier | Authoritative Repository | Probe Latency |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **2015** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) (`gfs.0p25.2015071500.f024.grib2`) | 4.39s |
-| **2018** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) (`gfs.0p25.2018071500.f024.grib2`) | 3.05s |
-| **2021** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) (`gfs.20210715/00/atmos/gfs.t00z.pgrb2.0p25.f024`) | 1.62s |
-| **2023** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) (`gfs.20230715/00/atmos/gfs.t00z.pgrb2.0p25.f024`) | 1.58s |
+| **2015** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) (`gfs.0p25.2015071500.f024.grib2`) | 3.57s |
+| **2018** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) (`gfs.0p25.2018071500.f024.grib2`) | 3.34s |
+| **2021** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) (`gfs.20210715/00/atmos/gfs.t00z.pgrb2.0p25.f024`) | 1.51s |
+| **2023** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) (`gfs.20230715/00/atmos/gfs.t00z.pgrb2.0p25.f024`) | 1.82s |
 | **2014** | 00Z f024 | Expected Absent | `pre_operational` | None (0.25° started Jan 2015, HTTP 404) | N/A |
 
 ### B. UCSB CHIRPS v2.0 p05 Daily COG Archive
 | Sample File | HTTP Status | Content Length | Probe Latency |
 | :--- | :--- | :--- | :--- |
-| chirps-v2.0.2018.07.15.cog | HTTP 200 | 7.34 MB | 2.20s |
-| chirps-v2.0.2023.07.15.cog | HTTP 200 | 6.45 MB | 2.16s |
+| chirps-v2.0.2018.07.15.cog | HTTP 200 | 7.34 MB | 1.47s |
+| chirps-v2.0.2023.07.15.cog | HTTP 200 | 6.45 MB | 1.33s |
 
 ---
 
 ## 4. Live GFS Byte-Range Slice Audit Evidence
 - **Target Cycle**: 2023-07-15 00Z Lead: f024
 - **Index File Retrievable**: Yes (731 variables parsed)
+- **Forecast Variables Confirmed in Index**: {'TMP:2 m above ground': True, 'RH:2 m above ground': True, 'UGRD:10 m above ground': True, 'VGRD:10 m above ground': True, 'APCP:surface': True}
 - **`TMP:2 m above ground` Byte Range**: [421268896, 421787670]
 - **HTTP Range Request Status**: HTTP 206 (Partial Content)
 - **GRIB Magic Bytes (`b'GRIB'`) Verified**: `True`

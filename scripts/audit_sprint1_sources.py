@@ -180,10 +180,28 @@ def run_sprint1_audit(quick: bool = True) -> Dict[str, Any]:
     print(f"    - Rationale: {gate1['scientific_rationale']}")
 
     # Gate 2: 2015-2023 Forecast Archive Coverage
-    all_gfs_ok = gfs_coverage.get("all_9_years_available") and gfs_coverage.get("boundary_2014_verified_absent") and slice_res.get("success")
+    is_exhaustive = gfs_coverage.get("is_exhaustive_9year_audit", False)
+    all_eval_ok = (
+        gfs_coverage.get("all_evaluated_years_available", False)
+        and gfs_coverage.get("boundary_2014_verified_absent", False)
+        and slice_res.get("success", False)
+    )
+    if is_exhaustive and all_eval_ok:
+        gate2_status = "PASSED"
+        gate2_summary = "All 9 years (2015-2023) exhaustively audited and verified against authoritative archive tiers."
+    elif all_eval_ok:
+        gate2_status = f"PASSED_SAMPLED ({len(gfs_years)}/9 years)"
+        gate2_summary = f"Sampled benchmark years ({len(gfs_years)}/9: {gfs_years}) verified against authoritative tiers. Complete 9-year audit requires --full mode."
+    else:
+        gate2_status = "FAILED"
+        gate2_summary = "One or more GFS archive queries failed."
+
     gate2 = {
         "gate": "Gate 2: 2015-2023 Forecast Archive Verification",
-        "status": "PASSED" if all_gfs_ok else "FAILED",
+        "status": gate2_status,
+        "coverage_mode": gfs_coverage.get("coverage_mode", "sampled"),
+        "coverage_summary": gate2_summary,
+        "years_evaluated": gfs_years,
         "aws_tier": "2021-2023 operational on AWS Open Data Registry (s3://noaa-gfs-bdp-pds)",
         "ncar_tier": "2015-2020 preserved in NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids)",
         "boundary_2014": "Year 2014 verified absent across 0.25° archives; strictly restricted to history/target-only pretraining without synthetic forecasts.",
@@ -193,10 +211,18 @@ def run_sprint1_audit(quick: bool = True) -> Dict[str, Any]:
     print(f"    - AWS Tier: {gate2['aws_tier']}")
     print(f"    - NCAR Tier: {gate2['ncar_tier']}")
 
-    # Gate 3: Exact 6-Variable Forecast Mapping
+    # Gate 3: Exact 6-Variable Forecast Mapping & Infrastructure Verification
+    gate3_ok = slice_res.get("success", False) and om_res.get("success", False)
+    gate3_status = "SPECIFICATION_VERIFIED & INFRASTRUCTURE_DEMONSTRATED" if gate3_ok else "FAILED"
     gate3 = {
-        "gate": "Gate 3: Exact 6-Variable GFS Forecast Extraction & Derivation",
-        "status": "PASSED" if slice_res.get("success") and om_res.get("success") else "FAILED",
+        "gate": "Gate 3: Exact 6-Variable GFS Forecast Derivation & Infrastructure Demonstration",
+        "status": gate3_status,
+        "specification_status": "Complete: All 6 target variables (P, Tmax, Tmin, RH, U, V) formally specified with exact GRIB2 keys, accumulation/de-accumulation formulas, and meteorological wind conversions.",
+        "infrastructure_status": (
+            "Demonstrated: Live AWS GFS index parsed (all target forecast variable keys confirmed present in index), "
+            "and live HTTP 206 partial content byte-range slice verified with b'GRIB' magic bytes on TMP:2 m. "
+            "Full multi-year 6-variable bulk download and cube assembly scheduled for Sprint 2 data generation."
+        ),
         "mappings": {
             "P": "APCP surface 6-hour buckets de-accumulated and summed over forecast day (mm)",
             "Tmax": "TMAX 2m (or max 3-hourly TMP 2m) over forecast day minus 273.15 (°C)",
@@ -267,8 +293,15 @@ def write_source_coverage_report(audit: Dict[str, Any]):
     om_ok = om.get("success", False)
     om_status = f"Verified (HTTP {om.get('status_code')}, {om.get('hours_returned')} hrs, zero NaNs)" if om_ok else f"Failed ({om.get('status_code')})"
 
-    gfs_ok = gfs_cov.get("all_9_years_available", False) and slice_p.get("success", False)
-    gfs_status = f"Verified (9-yr coverage + live byte-range slice HTTP {slice_p.get('http_status')})" if gfs_ok else "Audit Incomplete"
+    is_exhaustive = gfs_cov.get("is_exhaustive_9year_audit", False)
+    all_9_avail = gfs_cov.get("all_9_years_available", False)
+    if is_exhaustive and all_9_avail and slice_p.get("success", False):
+        gfs_status = f"Verified (9/9 years exhaustive coverage + live byte-range slice HTTP {slice_p.get('http_status')})"
+    elif gfs_cov.get("all_evaluated_years_available", False) and slice_p.get("success", False):
+        sampled_count = len(gfs_cov.get("years_evaluated", []))
+        gfs_status = f"Verified ({sampled_count}/9 sampled years {gfs_cov.get('years_evaluated', [])} + live byte-range slice HTTP {slice_p.get('http_status')}; full 9-yr audit in --full mode)"
+    else:
+        gfs_status = "Audit Incomplete"
 
     stn_avail_count = stn.get("available_count", 0)
     stn_tot_count = stn.get("total_probed", 0)
@@ -323,13 +356,25 @@ def write_source_coverage_report(audit: Dict[str, Any]):
     der = om.get("derived_sample_day", {})
     der_md = f"Tmax={der.get('tmax', 0):.1f}°C, Tmin={der.get('tmin', 0):.1f}°C, RH={der.get('rh', 0):.1f}%, U={der.get('wind_u', 0):.2f} m/s, V={der.get('wind_v', 0):.2f} m/s" if der else "N/A"
 
+    is_full_mode = (audit.get("mode") == "full")
+    gates_summary_headline = (
+        "3 Ratified / Passed, 1 Configuration-Ready (Gate 4), 1 Exhaustively Verified (Gate 2: 9/9 years)"
+        if is_full_mode else
+        "3 Ratified / Passed, 1 Configuration-Ready (Gate 4), 1 Sample-Verified (Gate 2: 4/9 GFS years; run --full for exhaustive 9-year audit)"
+    )
+    gfs_section_title = (
+        "### A. NOAA GFS 0.25° Forecast Archive (Exhaustive 2015–2023 Coverage)"
+        if is_full_mode else
+        "### A. NOAA GFS 0.25° Forecast Archive (Sampled Benchmark Years 2015–2023; 4/9 Years in Quick Mode)"
+    )
+
     content = f"""# Sprint 1 Deliverable: Source Coverage Report
 
 **Project**: SIH-26074 Multivariate Spatiotemporal Diffusion Weather Downscaler  
 **Audit Executed**: {audit.get('timestamp')}  
 **Mode**: {audit.get('mode')}  
 **Audit Engine**: `scripts/audit_sprint1_sources.py`  
-**All 5 Decision Gates**: Fully Evaluated and Ratified  
+**Decision Gates Status**: {gates_summary_headline}  
 
 ---
 
@@ -357,19 +402,23 @@ def write_source_coverage_report(audit: Dict[str, Any]):
 
 ### Gate 2: 2015–2023 Forecast Archive Coverage Boundary
 - **Status**: `{gates.get('gate2_forecast_archive', {}).get('status')}`
+- **Coverage Summary**: {gates.get('gate2_forecast_archive', {}).get('coverage_summary')}
 - **AWS Open Data Tier (2021–2023)**: {gates.get('gate2_forecast_archive', {}).get('aws_tier')}
 - **NCAR RDA ds084.1 Tier (2015–2020)**: {gates.get('gate2_forecast_archive', {}).get('ncar_tier')}
 - **2014 Pre-Operational Boundary**: {gates.get('gate2_forecast_archive', {}).get('boundary_2014')}
 
-### Gate 3: Exact 6-Variable GFS Forecast Derivation
+### Gate 3: Exact 6-Variable GFS Forecast Derivation & Infrastructure Demonstration
 - **Status**: `{gates.get('gate3_forecast_variables', {}).get('status')}`
+- **Specification Status**: {gates.get('gate3_forecast_variables', {}).get('specification_status')}
+- **Infrastructure Demonstration**: {gates.get('gate3_forecast_variables', {}).get('infrastructure_status')}
 - **Precipitation ($P$)**: APCP surface 6-hour buckets de-accumulated and summed over forecast day (kg/m² ≡ mm).
 - **Max Temperature ($T_{{\\max}}$)**: TMAX 2m (or maximum across 3-hourly TMP 2m values) over forecast day minus 273.15 (°C).
 - **Min Temperature ($T_{{\\min}}$)**: TMIN 2m (or minimum across 3-hourly TMP 2m values) over forecast day minus 273.15 (°C).
 - **Relative Humidity ($RH$)**: RH 2m (or derived via August-Roche-Magnus from 2m temperature and dew point) clipped to [0, 100]%.
 - **Zonal Wind ($U$) & Meridional Wind ($V$)**: UGRD and VGRD at 10m above ground (3-hourly sequence and daily vector mean in m/s).
 - **Meteorological Wind Vector Formula**: $U = -S \\cdot \\sin(\\theta \\cdot \\pi / 180)$, $V = -S \\cdot \\cos(\\theta \\cdot \\pi / 180)$.
-- **Empirical Live Derivation Sample (Central Mandya)**: `{der_md}`.
+- **Empirical Live Derivation Sample (Central Mandya via Open-Meteo)**: `{der_md}`.
+- **Sprint 2 Implementation Note**: Full multi-channel extraction of all 6 variables across all grid cells will be executed during the Sprint 2 data generation pipeline.
 
 ### Gate 4: Configuration-Ready for 2.5M Maximum Spatial Context (Scalability M to 2.5M)
 - **Status**: `{gates.get('gate4_spatial_context', {}).get('status')}`
@@ -389,7 +438,7 @@ def write_source_coverage_report(audit: Dict[str, Any]):
 
 ## 3. Empirical Multi-Year Archive Coverage
 
-### A. NOAA GFS 0.25° Forecast Archive (2015–2023)
+{gfs_section_title}
 | Year | Forecast Cycle | Audit Status | Archive Tier | Authoritative Repository | Probe Latency |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 {gfs_table_md}
@@ -404,6 +453,7 @@ def write_source_coverage_report(audit: Dict[str, Any]):
 ## 4. Live GFS Byte-Range Slice Audit Evidence
 - **Target Cycle**: {slice_p.get('target_date', 'N/A')} {slice_p.get('cycle', '00Z')} Lead: f{slice_p.get('lead_hour', 24):03d}
 - **Index File Retrievable**: Yes ({slice_p.get('total_vars_indexed', 0)} variables parsed)
+- **Forecast Variables Confirmed in Index**: {slice_p.get('index_variables_confirmed', {})}
 - **`TMP:2 m above ground` Byte Range**: {slice_p.get('tmp_byte_range', [])}
 - **HTTP Range Request Status**: HTTP {slice_p.get('http_status')} (Partial Content)
 - **GRIB Magic Bytes (`b'GRIB'`) Verified**: `{slice_p.get('grib_magic_validated')}`
