@@ -1,16 +1,15 @@
 # AutoResearch Master Playbook: SIH 26074 Weather Downscaling
 
-## Active Compute Budget & Live Kaggle GPU Quota
-> **LIVE STATUS (Updated 2026-09-13 13:22:47):**
-> - **Total GPU Allowance:** 6.0 hours (21600 s)
-> - **GPU Time Consumed:** 0.0 hours (0 s)
-> - **GPU TIME REMAINING:** **6.0 hours (360.0 minutes)**
-> - **Quota Refreshes At:** 2026-09-19T00:00:00.000Z
+## Active Compute Budget & Live Kaggle Accelerator Quota
+> **LIVE STATUS (Verified 2026-09-22):**
+> - **Kaggle GPU Quota:** 6.0 hours (21,600 s) allowed | 0.0 s consumed | **6.0 hours remaining (100%)**
+> - **Kaggle TPU Quota:** 20.0 hours (72,000 s) allowed | 0.0 s consumed | **20.0 hours remaining (100%)**
+> - **Quota Refresh Date:** 2026-09-26T00:00:00.000Z
 >
-> ⚠️ **HARD CONSTRAINT FOR AGENTS:**
-> You have AT MOST **6.0 hours** of GPU time remaining for this cycle.
-> Every training run depletes this quota. Budget your experiments carefully. If you run 5-minute runs,
-> you have at most ~72 candidate iterations left before quota exhaustion!
+> ⚠️ **MANDATORY HARD CONSTRAINT FOR ALL AGENTS:**
+> All model training workloads MUST run on Kaggle (GPU or TPU accelerators via Kaggle API / CLI dispatch).
+> Do NOT execute heavy model training loops on the local CPU or machine.
+
 ## 1. Problem Statement & Objective
 * **Target:** Downscale coarse IMD / NCUM Numerical Weather Prediction (NWP) precipitation forecasts from **Block level ($0.25^\circ \approx 27\text{ km}$, $16\times 16$ grid)** to **Panchayat level ($0.05^\circ \approx 5.5\text{ km}$, $80\times 80$ grid)**.
 * **Pilot:** Mandya District, Karnataka (234 active Gram Panchayats in the current Mandya pilot dataset, filtered from 258 in the source cadastral listing).
