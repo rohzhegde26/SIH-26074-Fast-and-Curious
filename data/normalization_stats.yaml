@@ -1,0 +1,60 @@
+version: 1.0.0
+dataset_name: multitask_temporal_v1
+normalization_method: train_fit_log1p_zscore
+computed_split: train
+train_years:
+- 2015
+- 2016
+- 2017
+- 2018
+- 2019
+- 2020
+- 2021
+train_sample_count: 854
+train_lead_days: 7
+total_training_observations: 5978
+channels:
+  precipitation:
+    transform: log1p_zscore
+    mean: 0.7670032978057861
+    std: 1.2792773710021972
+    epsilon: 1.0e-06
+    min_physical: 0.0
+    max_physical: 500.0
+  tmax:
+    transform: zscore
+    mean: 31.20812225341797
+    std: 2.3253221975097658
+    epsilon: 1.0e-06
+    min_physical: 23.784194946289062
+    max_physical: 38.867950439453125
+  tmin:
+    transform: zscore
+    mean: 22.567785263061523
+    std: 2.434324310852051
+    epsilon: 1.0e-06
+    min_physical: 14.805999755859375
+    max_physical: 30.37732696533203
+  rh:
+    transform: zscore
+    mean: 70.60128784179688
+    std: 3.8223638997802736
+    epsilon: 1.0e-06
+    min_physical: 58.67696762084961
+    max_physical: 84.59919738769531
+  wind_u:
+    transform: zscore
+    mean: 20.68234634399414
+    std: 2.8751705156097414
+    epsilon: 1.0e-06
+    min_physical: 12.757389068603516
+    max_physical: 31.047279357910156
+  wind_v:
+    transform: zscore
+    mean: 7.5277485847473145
+    std: 1.0464774833450317
+    epsilon: 1.0e-06
+    min_physical: 4.643310070037842
+    max_physical: 11.300286293029785
+config_sha256: ae662173c6ea39e7396ac61603ba775cb93758e3f8eb8dc00fc551683dd70160
+created_at: '2026-09-22T21:11:34.895928'
