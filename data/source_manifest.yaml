@@ -45,15 +45,15 @@ streams:
         native_unit: "percent"
         target_unit: "percent"
       wind_u:
-        source: "ECMWF ERA5-Land (via Open-Meteo)"
+        source: "ECMWF ERA5 (via Open-Meteo)"
         provenance_class: "reanalysis"
-        native_resolution_deg: 0.1
+        native_resolution_deg: 0.25
         native_unit: "m/s"
         target_unit: "m/s"
       wind_v:
-        source: "ECMWF ERA5-Land (via Open-Meteo)"
+        source: "ECMWF ERA5 (via Open-Meteo)"
         provenance_class: "reanalysis"
-        native_resolution_deg: 0.1
+        native_resolution_deg: 0.25
         native_unit: "m/s"
         target_unit: "m/s"
 
@@ -133,7 +133,12 @@ streams:
         source: "ECMWF ERA5-Land (0.1° regridded to 0.05°)"
         provenance_class: "reanalysis"
         resolution_deg: 0.05
-        variables: ["tmax", "tmin", "rh", "wind_u", "wind_v"]
+        variables: ["tmax", "tmin", "rh"]
+      wind:
+        source: "ECMWF ERA5 Atmospheric Forcing (0.25° regridded to 0.05°)"
+        provenance_class: "reanalysis"
+        resolution_deg: 0.05
+        variables: ["wind_u", "wind_v"]
 
   prior:
     name: "Static Geophysical Terrain Prior"

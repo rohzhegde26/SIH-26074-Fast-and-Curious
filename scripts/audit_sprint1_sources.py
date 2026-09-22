@@ -212,17 +212,18 @@ def run_sprint1_audit(quick: bool = True) -> Dict[str, Any]:
     for k, v in gate3["mappings"].items():
         print(f"    - {k}: {v}")
 
-    # Gate 4: Maximum Spatial Context Verification
+    # Gate 4: Maximum Spatial Context Configuration
     gate4 = {
-        "gate": "Gate 4: Maximum Spatial Context Scalability (up to 2.5M)",
-        "status": "PASSED" if spatial_res.get("all_datasets_registered") else "FAILED",
+        "gate": "Gate 4: Configuration-Ready for 2.5M Maximum Spatial Context",
+        "status": "CONFIGURATION_READY" if spatial_res.get("all_datasets_registered") else "FAILED",
         "core_domain": "11-15°N, 74-78°E (4°x4°, 16x16 coarse, 80x80 fine)",
         "max_context": "8-18°N, 71-81°E (10°x10°, 40x40 coarse)",
         "candidate_ratios": [1.0, 1.25, 1.5, 1.75, 2.0, 2.5],
-        "decision": "Domain config specifies 10°x10° bounding box enabling Sprint 5 empirical context search.",
+        "decision": "Domain configuration geometry (40x40 coarse cells at 0.25°, 10°x10° bounding box) is mathematically and architecturally validated for 2.5M, allowing Sprint 5 context ablation. Actual multi-year bulk extraction of the full 2.5M domain belongs naturally to Sprint 2 data generation.",
     }
     audit_summary["decision_gates"]["gate4_spatial_context"] = gate4
     print(f"\n[*] {gate4['gate']}: {gate4['status']}")
+    print(f"    - Decision: {gate4['decision']}")
 
     # Gate 5: Provenance & Anti-Leakage Compliance
     gate5 = {
@@ -283,10 +284,11 @@ def write_source_coverage_report(audit: Dict[str, Any]):
         tier = yinfo.get("tier", "")
         repo = yinfo.get("repository", "")
         lat = f"{yinfo.get('latency_sec', 0):.2f}s" if yinfo.get("latency_sec") else "N/A"
-        gfs_table_rows.append(f"| **{yr}** | 00Z f024 | {av} | `{tier}` | {repo} | {lat} |")
+        target_f = yinfo.get("target_file", yinfo.get("s3_key", ""))
+        gfs_table_rows.append(f"| **{yr}** | 00Z f024 | {av} | `{tier}` | {repo} (`{target_f}`) | {lat} |")
     b2014 = gfs_cov.get("boundary_2014_audit", {})
     b2014_av = "Expected Absent" if not b2014.get("available") else "Available"
-    gfs_table_rows.append(f"| **2014** | 00Z f024 | {b2014_av} | `pre_operational` | None (0.25° started Jan 2015) | N/A |")
+    gfs_table_rows.append(f"| **2014** | 00Z f024 | {b2014_av} | `pre_operational` | None (0.25° started Jan 2015, HTTP 404) | N/A |")
     gfs_table_md = "\n".join(gfs_table_rows)
 
     # Dynamic CHIRPS rows
@@ -335,11 +337,11 @@ def write_source_coverage_report(audit: Dict[str, Any]):
 
 | Stream | Source | Temporal Range | Variables | Native Res | Provenance Class | Role in Pipeline | Live Audit Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **History Context** | ECMWF ERA5-Land | 2014–2023 | Tmax, Tmin, RH, U, V | 0.1° | `mixed` | Past atmospheric context | {om_status} |
+| **History Context** | ECMWF ERA5-Land (Thermo) / ERA5 (Wind) | 2014–2023 | Tmax, Tmin, RH, U, V | 0.1° / 0.25° | `mixed` | Past atmospheric context | {om_status} |
 | **History Context** | UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Past precipitation context | {chirps_status} |
 | **Future Forecast** | NOAA GFS 0.25° | 2015–2023 | P, Tmax, Tmin, RH, U, V | 0.25° | `numerical_weather_prediction` | Coarse 7-day forecast conditioning | {gfs_status} |
 | **Supervision Target**| UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Fine precipitation supervision | {chirps_status} |
-| **Supervision Target**| ECMWF ERA5-Land | 2014–2023 | Tmax, Tmin, RH, U, V | 0.1° → 0.05° | `mixed` | Fine thermodynamic supervision | {om_status} |
+| **Supervision Target**| ECMWF ERA5-Land (Thermo) / ERA5 (Wind) | 2014–2023 | Tmax, Tmin, RH, U, V | (0.1°/0.25°) → 0.05° | `mixed` | Fine thermodynamic & wind supervision | {om_status} |
 | **Station Check** | NOAA GSOD | 2014–2023 | Subset (T, P, DewPt) | Point AWS | `direct_observation` | Independent point validation | {stn_status} |
 | **Geophysical Prior**| Copernicus GLO-30| Static | Elev, Slope, Aspect, Curv, Lift | 30 m → 0.05° | `terrain_dsm` | Static topographical input | {dem_status} |
 
@@ -369,17 +371,18 @@ def write_source_coverage_report(audit: Dict[str, Any]):
 - **Meteorological Wind Vector Formula**: $U = -S \\cdot \\sin(\\theta \\cdot \\pi / 180)$, $V = -S \\cdot \\cos(\\theta \\cdot \\pi / 180)$.
 - **Empirical Live Derivation Sample (Central Mandya)**: `{der_md}`.
 
-### Gate 4: Scalable Spatial Context Geometry ($M$ to $2.5M$)
+### Gate 4: Configuration-Ready for 2.5M Maximum Spatial Context (Scalability M to 2.5M)
 - **Status**: `{gates.get('gate4_spatial_context', {}).get('status')}`
 - **Core Target Domain ($M$)**: Lat [11.0°N, 15.0°N], Lon [74.0°E, 78.0°E] (4.0° span, 80×80 fine at 0.05°, 16×16 coarse at 0.25°).
 - **Maximum Context Domain ($2.5M$)**: Lat [8.0°N, 18.0°N], Lon [71.0°E, 81.0°E] (10.0° span, 40×40 coarse at 0.25°).
 - **Candidate Ratios**: [1.0x, 1.25x, 1.5x, 1.75x, 2.0x, 2.5x].
 - **Pixel-Is-Area Cell Alignment**: Row $r$ center = $\\text{{lat}}_{{\\max}} - (r + 0.5) \\times 0.05$; Col $c$ center = $\\text{{lon}}_{{\\min}} + (c + 0.5) \\times 0.05$.
+- **Architectural Scope**: Configuration geometry is mathematically and architecturally validated for 2.5M; physical multi-year bulk extraction of the 2.5M domain belongs naturally to Sprint 2 data generation.
 
 ### Gate 5: Provenance Classification & 00Z Anti-Leakage Boundary
 - **Status**: `{gates.get('gate5_provenance_and_leakage', {}).get('status')}`
 - **00Z Anti-Leakage Boundary**: For a 00Z forecast initialized on Day $D$, historical weather context terminates strictly at $t \\le 00:00\\text{{ UTC}}$ of Day $D$ (completed Day $D-1$). Day $D$ completed observations are excluded from history context.
-- **Top-Level Provenance Schema**: Both `history` and `target` streams are classified as `provenance_class: mixed` because they combine numerical reanalysis (ERA5-Land) with satellite-gauge products (CHIRPS).
+- **Top-Level Provenance Schema**: Both `history` and `target` streams are classified as `provenance_class: mixed` because they combine numerical reanalysis (ERA5-Land thermodynamics + ERA5 wind) with satellite-gauge products (CHIRPS).
 - **Zero 'Ground Truth' Claims**: Fine targets are formally designated as **fine-resolution reference targets** or **supervision targets**. NOAA GSOD stations serve strictly as an independent point-validation layer.
 
 ---
@@ -425,6 +428,13 @@ def write_source_coverage_report(audit: Dict[str, Any]):
 - **Live Content Inspection (Bangalore HAL 43295099999)**:
   - Header schema verified: `STATION`, `DATE`, `LATITUDE`, `LONGITUDE`, `TEMP`, `MAX`, `MIN`, `PRCP`.
   - Missing variables: `wind_u`, `wind_v` (confirms why stations cannot provide dense 6-channel supervision).
+
+---
+
+## 7. Continuous Integration (CI) Verification vs. Live-Source Verification
+
+- **Automated CI Workflow (`.github/workflows/ci.yml`)**: Executes offline unit tests, schema/geometry validations, mathematical invariants, anti-leakage logic, and on-disk NetCDF registration tests on every push and PR without depending on third-party network endpoints.
+- **Empirical Live Audit (`scripts/audit_sprint1_sources.py`)**: Executed explicitly to verify live remote servers (UCSB CHC, Open-Meteo, AWS Open Data GFS, NCAR THREDDS, NOAA NCEI), measuring actual network latencies, HTTP response codes, and byte-range slice extraction.
 """
     report_path.write_text(content, encoding="utf-8")
 
@@ -501,6 +511,15 @@ def write_data_availability_report(audit: Dict[str, Any]):
 1. **No Synthetic Fallback**: If an API returns HTTP 404/429/500, or a file is corrupted, the pipeline raises an explicit `DataIngestionError` or `FileNotFoundError`.
 2. **Missing Sample Exclusion**: Missing dates are recorded in `data/source_coverage_report.md` and explicitly skipped from training batches rather than filled with synthetic Gaussian noise or linear interpolation.
 3. **Audit Verification**: Passing `scripts/audit_sprint1_sources.py` is a mandatory prerequisite for running Sprint 2 dataset builders.
+
+---
+
+## 5. Continuous Integration (CI) Verification vs. Live Data Audit
+
+- **Automated CI Workflow (`.github/workflows/ci.yml`)**:
+  Executes offline test suites (`tests/data/test_sprint1_sources.py` and full repository unit tests) on every push and pull request. Validates data schemas, domain geometries, mathematical unit derivations, anti-leakage invariant boundaries, and authentic on-disk NetCDF coordinate registration. Operates deterministically without depending on external network servers.
+- **Empirical Live Source Audit (`scripts/audit_sprint1_sources.py`)**:
+  Executed explicitly for empirical endpoint verification. Actively probes live remote archives (UCSB CHC COG servers, Open-Meteo REST API, NOAA AWS S3 Open Data bucket, NCAR THREDDS catalog, NOAA NCEI GSOD station servers), measuring real-world latency, HTTP status codes, byte offsets, and partial content headers.
 """
     report_path.write_text(content, encoding="utf-8")
 

@@ -1,7 +1,7 @@
 # Sprint 1 Deliverable: Data Availability, Licensing & Storage Report
 
 **Project**: SIH-26074 Multivariate Spatiotemporal Diffusion Weather Downscaler  
-**Audit Executed**: 2026-09-22T15:30:33.236234  
+**Audit Executed**: 2026-09-22T15:42:13.767337  
 **Mode**: quick  
 
 ---
@@ -10,9 +10,9 @@
 
 | Provider / Archive | Protocol | Observed Latency | Observed Rate Limits / Fair-Use Terms | Recommended Ingestion Strategy |
 | :--- | :--- | :--- | :--- | :--- |
-| **UCSB CHC (CHIRPS p05)** | HTTPS Direct | ~1.62s per tile | No API key required. High-volume concurrent scraping subject to IP rate throttling. | 2–4 parallel download threads with persistent HTTP session and local file caching. |
-| **Open-Meteo (ERA5-Land)** | REST JSON API | ~1.20s per request | Free tier fair use: ~10,000 daily API calls, 1 concurrent connection per client IP. Observed headers: `{}`. | Batch temporal ranges into single multi-year requests; cache hourly NetCDF directly. |
-| **NOAA AWS GFS Archive** | S3 / HTTPS Direct | ~3.73s per slice | Public AWS Open Data Registry. Zero egress charges; no API key or AWS credentials required. | Fetch 15 KB `.idx` file first; use HTTP `Range` headers to download only required variables (~2 MB vs 500 MB). |
+| **UCSB CHC (CHIRPS p05)** | HTTPS Direct | ~2.20s per tile | No API key required. High-volume concurrent scraping subject to IP rate throttling. | 2–4 parallel download threads with persistent HTTP session and local file caching. |
+| **Open-Meteo (ERA5-Land)** | REST JSON API | ~1.23s per request | Free tier fair use: ~10,000 daily API calls, 1 concurrent connection per client IP. Observed headers: `{}`. | Batch temporal ranges into single multi-year requests; cache hourly NetCDF directly. |
+| **NOAA AWS GFS Archive** | S3 / HTTPS Direct | ~3.47s per slice | Public AWS Open Data Registry. Zero egress charges; no API key or AWS credentials required. | Fetch 15 KB `.idx` file first; use HTTP `Range` headers to download only required variables (~2 MB vs 500 MB). |
 | **NCAR RDA (ds084.1 GFS)**| HTTPS / OPeNDAP | ~0.45s per index | Free research access. Bulk subsetting requests queue via NCAR RDA batch service. | Pre-stage 2015-2020 GFS cycles via NCAR RDA subsetting API during dataset build phase. |
 | **NOAA NCEI (GSOD)** | HTTPS Direct | ~0.40s per station | Public open archive. Fast response on annual CSV downloads (~50 KB per station-year). | Cache station CSVs locally in `data/raw/stations/noaa_gsod/`. |
 | **Copernicus (GLO-30)** | S3 / Open Access | N/A (Pre-cached) | Free and open Copernicus WorldCover / DEM policy. | Static mosaic cached in `data/raw/dem/glo30_mandya_terrain.nc`. |
@@ -58,3 +58,12 @@
 1. **No Synthetic Fallback**: If an API returns HTTP 404/429/500, or a file is corrupted, the pipeline raises an explicit `DataIngestionError` or `FileNotFoundError`.
 2. **Missing Sample Exclusion**: Missing dates are recorded in `data/source_coverage_report.md` and explicitly skipped from training batches rather than filled with synthetic Gaussian noise or linear interpolation.
 3. **Audit Verification**: Passing `scripts/audit_sprint1_sources.py` is a mandatory prerequisite for running Sprint 2 dataset builders.
+
+---
+
+## 5. Continuous Integration (CI) Verification vs. Live Data Audit
+
+- **Automated CI Workflow (`.github/workflows/ci.yml`)**:
+  Executes offline test suites (`tests/data/test_sprint1_sources.py` and full repository unit tests) on every push and pull request. Validates data schemas, domain geometries, mathematical unit derivations, anti-leakage invariant boundaries, and authentic on-disk NetCDF coordinate registration. Operates deterministically without depending on external network servers.
+- **Empirical Live Source Audit (`scripts/audit_sprint1_sources.py`)**:
+  Executed explicitly for empirical endpoint verification. Actively probes live remote archives (UCSB CHC COG servers, Open-Meteo REST API, NOAA AWS S3 Open Data bucket, NCAR THREDDS catalog, NOAA NCEI GSOD station servers), measuring real-world latency, HTTP status codes, byte offsets, and partial content headers.

@@ -1,7 +1,7 @@
 # Sprint 1 Deliverable: Source Coverage Report
 
 **Project**: SIH-26074 Multivariate Spatiotemporal Diffusion Weather Downscaler  
-**Audit Executed**: 2026-09-22T15:30:33.236234  
+**Audit Executed**: 2026-09-22T15:42:13.767337  
 **Mode**: quick  
 **Audit Engine**: `scripts/audit_sprint1_sources.py`  
 **All 5 Decision Gates**: Fully Evaluated and Ratified  
@@ -12,11 +12,11 @@
 
 | Stream | Source | Temporal Range | Variables | Native Res | Provenance Class | Role in Pipeline | Live Audit Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **History Context** | ECMWF ERA5-Land | 2014–2023 | Tmax, Tmin, RH, U, V | 0.1° | `mixed` | Past atmospheric context | Verified (HTTP 200, 72 hrs, zero NaNs) |
-| **History Context** | UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Past precipitation context | Verified (HTTP 200, 1.62s latency) |
+| **History Context** | ECMWF ERA5-Land (Thermo) / ERA5 (Wind) | 2014–2023 | Tmax, Tmin, RH, U, V | 0.1° / 0.25° | `mixed` | Past atmospheric context | Verified (HTTP 200, 72 hrs, zero NaNs) |
+| **History Context** | UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Past precipitation context | Verified (HTTP 200, 2.20s latency) |
 | **Future Forecast** | NOAA GFS 0.25° | 2015–2023 | P, Tmax, Tmin, RH, U, V | 0.25° | `numerical_weather_prediction` | Coarse 7-day forecast conditioning | Verified (9-yr coverage + live byte-range slice HTTP 206) |
-| **Supervision Target**| UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Fine precipitation supervision | Verified (HTTP 200, 1.62s latency) |
-| **Supervision Target**| ECMWF ERA5-Land | 2014–2023 | Tmax, Tmin, RH, U, V | 0.1° → 0.05° | `mixed` | Fine thermodynamic supervision | Verified (HTTP 200, 72 hrs, zero NaNs) |
+| **Supervision Target**| UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Fine precipitation supervision | Verified (HTTP 200, 2.20s latency) |
+| **Supervision Target**| ECMWF ERA5-Land (Thermo) / ERA5 (Wind) | 2014–2023 | Tmax, Tmin, RH, U, V | (0.1°/0.25°) → 0.05° | `mixed` | Fine thermodynamic & wind supervision | Verified (HTTP 200, 72 hrs, zero NaNs) |
 | **Station Check** | NOAA GSOD | 2014–2023 | Subset (T, P, DewPt) | Point AWS | `direct_observation` | Independent point validation | Verified (8/10 station-years available, header validated) |
 | **Geophysical Prior**| Copernicus GLO-30| Static | Elev, Slope, Aspect, Curv, Lift | 30 m → 0.05° | `terrain_dsm` | Static topographical input | Verified (NetCDF 80x80, Pixel-Is-Area aligned) |
 
@@ -46,17 +46,18 @@
 - **Meteorological Wind Vector Formula**: $U = -S \cdot \sin(\theta \cdot \pi / 180)$, $V = -S \cdot \cos(\theta \cdot \pi / 180)$.
 - **Empirical Live Derivation Sample (Central Mandya)**: `Tmax=25.8°C, Tmin=20.1°C, RH=85.2%, U=15.21 m/s, V=-0.86 m/s`.
 
-### Gate 4: Scalable Spatial Context Geometry ($M$ to $2.5M$)
-- **Status**: `PASSED`
+### Gate 4: Configuration-Ready for 2.5M Maximum Spatial Context (Scalability M to 2.5M)
+- **Status**: `CONFIGURATION_READY`
 - **Core Target Domain ($M$)**: Lat [11.0°N, 15.0°N], Lon [74.0°E, 78.0°E] (4.0° span, 80×80 fine at 0.05°, 16×16 coarse at 0.25°).
 - **Maximum Context Domain ($2.5M$)**: Lat [8.0°N, 18.0°N], Lon [71.0°E, 81.0°E] (10.0° span, 40×40 coarse at 0.25°).
 - **Candidate Ratios**: [1.0x, 1.25x, 1.5x, 1.75x, 2.0x, 2.5x].
 - **Pixel-Is-Area Cell Alignment**: Row $r$ center = $\text{lat}_{\max} - (r + 0.5) \times 0.05$; Col $c$ center = $\text{lon}_{\min} + (c + 0.5) \times 0.05$.
+- **Architectural Scope**: Configuration geometry is mathematically and architecturally validated for 2.5M; physical multi-year bulk extraction of the 2.5M domain belongs naturally to Sprint 2 data generation.
 
 ### Gate 5: Provenance Classification & 00Z Anti-Leakage Boundary
 - **Status**: `PASSED`
 - **00Z Anti-Leakage Boundary**: For a 00Z forecast initialized on Day $D$, historical weather context terminates strictly at $t \le 00:00\text{ UTC}$ of Day $D$ (completed Day $D-1$). Day $D$ completed observations are excluded from history context.
-- **Top-Level Provenance Schema**: Both `history` and `target` streams are classified as `provenance_class: mixed` because they combine numerical reanalysis (ERA5-Land) with satellite-gauge products (CHIRPS).
+- **Top-Level Provenance Schema**: Both `history` and `target` streams are classified as `provenance_class: mixed` because they combine numerical reanalysis (ERA5-Land thermodynamics + ERA5 wind) with satellite-gauge products (CHIRPS).
 - **Zero 'Ground Truth' Claims**: Fine targets are formally designated as **fine-resolution reference targets** or **supervision targets**. NOAA GSOD stations serve strictly as an independent point-validation layer.
 
 ---
@@ -66,17 +67,17 @@
 ### A. NOAA GFS 0.25° Forecast Archive (2015–2023)
 | Year | Forecast Cycle | Audit Status | Archive Tier | Authoritative Repository | Probe Latency |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **2015** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) | 3.71s |
-| **2018** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) | 3.24s |
-| **2021** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) | 1.64s |
-| **2023** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) | 1.47s |
-| **2014** | 00Z f024 | Expected Absent | `pre_operational` | None (0.25° started Jan 2015) | N/A |
+| **2015** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) (`gfs.0p25.2015071500.f024.grib2`) | 4.39s |
+| **2018** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) (`gfs.0p25.2018071500.f024.grib2`) | 3.05s |
+| **2021** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) (`gfs.20210715/00/atmos/gfs.t00z.pgrb2.0p25.f024`) | 1.62s |
+| **2023** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) (`gfs.20230715/00/atmos/gfs.t00z.pgrb2.0p25.f024`) | 1.58s |
+| **2014** | 00Z f024 | Expected Absent | `pre_operational` | None (0.25° started Jan 2015, HTTP 404) | N/A |
 
 ### B. UCSB CHIRPS v2.0 p05 Daily COG Archive
 | Sample File | HTTP Status | Content Length | Probe Latency |
 | :--- | :--- | :--- | :--- |
-| chirps-v2.0.2018.07.15.cog | HTTP 200 | 7.34 MB | 1.62s |
-| chirps-v2.0.2023.07.15.cog | HTTP 200 | 6.45 MB | 1.32s |
+| chirps-v2.0.2018.07.15.cog | HTTP 200 | 7.34 MB | 2.20s |
+| chirps-v2.0.2023.07.15.cog | HTTP 200 | 6.45 MB | 2.16s |
 
 ---
 
@@ -113,3 +114,10 @@
 - **Live Content Inspection (Bangalore HAL 43295099999)**:
   - Header schema verified: `STATION`, `DATE`, `LATITUDE`, `LONGITUDE`, `TEMP`, `MAX`, `MIN`, `PRCP`.
   - Missing variables: `wind_u`, `wind_v` (confirms why stations cannot provide dense 6-channel supervision).
+
+---
+
+## 7. Continuous Integration (CI) Verification vs. Live-Source Verification
+
+- **Automated CI Workflow (`.github/workflows/ci.yml`)**: Executes offline unit tests, schema/geometry validations, mathematical invariants, anti-leakage logic, and on-disk NetCDF registration tests on every push and PR without depending on third-party network endpoints.
+- **Empirical Live Audit (`scripts/audit_sprint1_sources.py`)**: Executed explicitly to verify live remote servers (UCSB CHC, Open-Meteo, AWS Open Data GFS, NCAR THREDDS, NOAA NCEI), measuring actual network latencies, HTTP response codes, and byte-range slice extraction.

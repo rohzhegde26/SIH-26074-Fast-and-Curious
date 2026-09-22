@@ -378,21 +378,48 @@ def test_on_disk_spatial_registration():
         assert np.isclose(f["lon_range"][1], 77.975, atol=1e-3)
 
 
+def test_manifest_wind_sources_declare_era5():
+    manifest_path = ROOT / "data" / "source_manifest.yaml"
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = yaml.safe_load(f)
+
+    hist_vars = manifest["streams"]["history"]["variables"]
+    assert "ECMWF ERA5" in hist_vars["wind_u"]["source"], "wind_u source must be ECMWF ERA5"
+    assert "Land" not in hist_vars["wind_u"]["source"], "wind_u must not claim ERA5-Land (Open-Meteo lacks Land wind)"
+    assert hist_vars["wind_u"]["native_resolution_deg"] == 0.25
+
+    assert "ECMWF ERA5" in hist_vars["wind_v"]["source"], "wind_v source must be ECMWF ERA5"
+    assert "Land" not in hist_vars["wind_v"]["source"], "wind_v must not claim ERA5-Land"
+    assert hist_vars["wind_v"]["native_resolution_deg"] == 0.25
+
+    # Check target subcomponents
+    target_sub = manifest["streams"]["target"]["subcomponents"]
+    assert "wind" in target_sub, "target stream must explicitly declare 'wind' subcomponent from ERA5"
+    assert "ECMWF ERA5" in target_sub["wind"]["source"]
+    assert target_sub["wind"]["variables"] == ["wind_u", "wind_v"]
+    assert target_sub["thermodynamics"]["variables"] == ["tmax", "tmin", "rh"]
+
+
 def test_gfs_archive_tier_routing():
     from src.data.gfs_archive_auditor import audit_gfs_archive_source
 
-    # 2023 -> AWS Open Data tier
-    res_2023 = audit_gfs_archive_source(2023)
+    # 2023 -> AWS Open Data tier (date-specific file)
+    res_2023 = audit_gfs_archive_source(2023, month=7, day=15)
     assert res_2023["tier"] == "aws_open_data"
     assert "noaa-gfs-bdp-pds" in res_2023["repository"]
+    assert res_2023["available"] is True
 
-    # 2018 -> NCAR RDA ds084.1 tier
-    res_2018 = audit_gfs_archive_source(2018)
+    # 2018 -> NCAR RDA ds084.1 tier (date-specific THREDDS catalog)
+    res_2018 = audit_gfs_archive_source(2018, month=7, day=15)
     assert res_2018["tier"] == "ncar_rda_ds084_1"
     assert "NCAR RDA ds084.1" in res_2018["repository"]
+    assert "2018/20180715/catalog.xml" in res_2018["catalog_url"]
+    assert res_2018["available"] is True
+    assert "gfs.0p25.2018071500.f024.grib2" in res_2018["target_file"]
 
     # 2014 -> Pre-operational (unsupported)
-    res_2014 = audit_gfs_archive_source(2014)
+    res_2014 = audit_gfs_archive_source(2014, month=7, day=15)
     assert res_2014["available"] is False
     assert res_2014["tier"] == "pre_operational"
+
 

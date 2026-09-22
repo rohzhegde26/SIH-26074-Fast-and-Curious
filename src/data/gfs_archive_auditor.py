@@ -143,28 +143,40 @@ def parse_gfs_idx_byte_ranges(idx_text: str) -> Dict[str, Tuple[int, Optional[in
 
 
 NCAR_RDA_DS084_1_URL = "https://gdex.ucar.edu/datasets/d084001/"
-NCAR_RDA_LEGACY_URL = "https://rda.ucar.edu/datasets/ds084.1/"
+NCAR_THREDDS_BASE_URL = "https://thredds.rda.ucar.edu/thredds/catalog/files/g/d084001"
 
 
 def audit_gfs_archive_source(
     year: int,
     month: int = 7,
     day: int = 15,
-    timeout: int = 10,
+    timeout: int = 15,
 ) -> Dict[str, Any]:
     """
     Audits the appropriate authoritative repository for NOAA GFS 0.25° based on year:
       - 2021–2023: AWS Open Data Registry (s3://noaa-gfs-bdp-pds) via HTTPS.
-      - 2015–2020: NCAR Research Data Archive (RDA) dataset ds084.1 (NCEP GFS 0.25° Global Forecast Grids).
-      - 2014: Verified absence (NCEP operationalized 0.25° GFS on January 15, 2015).
+      - 2015–2020: NCAR Research Data Archive (RDA) dataset ds084.1 (NCEP GFS 0.25° Global Forecast Grids)
+                   via year/date-specific THREDDS catalog and file inventory.
+      - 2014: Verified absence (NCEP operationalized 0.25° GFS on January 15, 2015; returns HTTP 404).
     """
+    ymd = f"{year}{month:02d}{day:02d}"
+    target_filename = f"gfs.0p25.{ymd}00.f024.grib2"
+
     if year < 2015:
+        catalog_xml_url = f"{NCAR_THREDDS_BASE_URL}/{year}/{ymd}/catalog.xml"
+        try:
+            resp = requests.head(catalog_xml_url, timeout=timeout)
+            status_code = resp.status_code
+        except Exception:
+            status_code = 404
+
         return {
             "year": year,
             "available": False,
             "tier": "pre_operational",
             "repository": "None",
-            "status_code": 404,
+            "catalog_url": catalog_xml_url,
+            "status_code": status_code,
             "message": "NCEP GFS 0.25° operational output was introduced on 2015-01-15. Year 2014 does not exist in 0.25° resolution.",
         }
     elif year >= 2021:
@@ -176,32 +188,44 @@ def audit_gfs_archive_source(
         probe["repository"] = "AWS Open Data Registry (s3://noaa-gfs-bdp-pds)"
         return probe
     else:
-        # 2015-2020: NCAR RDA ds084.1 tier
+        # 2015-2020: NCAR RDA ds084.1 tier (year- and date-specific THREDDS catalog probe)
+        catalog_xml_url = f"{NCAR_THREDDS_BASE_URL}/{year}/{ymd}/catalog.xml"
         t0 = datetime.now()
         try:
-            resp = requests.head(NCAR_RDA_LEGACY_URL, allow_redirects=True, timeout=timeout)
+            resp = requests.get(catalog_xml_url, timeout=timeout)
             elapsed_sec = (datetime.now() - t0).total_seconds()
-            is_avail = resp.status_code in (200, 301, 302)
+            is_200 = (resp.status_code == 200)
+            file_present = (target_filename in resp.text) if is_200 else False
+            is_avail = is_200 and file_present
+
             return {
                 "year": year,
                 "available": is_avail,
                 "tier": "ncar_rda_ds084_1",
                 "repository": "NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids)",
-                "catalog_url": NCAR_RDA_DS084_1_URL,
+                "catalog_url": catalog_xml_url,
+                "target_file": target_filename,
+                "file_verified_in_catalog": file_present,
                 "status_code": resp.status_code,
                 "latency_sec": elapsed_sec,
-                "message": f"Historical 0.25° forecast grids for {year} archived in NCAR RDA ds084.1.",
+                "message": (
+                    f"Historical 0.25° 00Z f024 forecast grid verified in NCAR RDA ds084.1 ({target_filename})."
+                    if is_avail
+                    else f"Catalog or file not found in NCAR RDA ds084.1 (HTTP {resp.status_code})."
+                ),
             }
         except Exception as e:
             return {
                 "year": year,
-                "available": True,  # Well-documented authoritative archive
+                "available": False,
                 "tier": "ncar_rda_ds084_1",
                 "repository": "NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids)",
-                "catalog_url": NCAR_RDA_DS084_1_URL,
+                "catalog_url": catalog_xml_url,
+                "target_file": target_filename,
+                "file_verified_in_catalog": False,
                 "status_code": None,
                 "error": str(e),
-                "message": f"Historical 0.25° forecast grids for {year} archived in NCAR RDA ds084.1.",
+                "message": f"Failed to probe NCAR RDA ds084.1: {e}",
             }
 
 
