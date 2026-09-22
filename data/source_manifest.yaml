@@ -1,0 +1,154 @@
+# data/source_manifest.yaml
+# Canonical Source Manifest & Data Provenance Specification
+# Sprint 1: Data Audit & Source Finalization
+
+version: "1.0.0"
+project: "SIH-26074 Multivariate Spatiotemporal Diffusion Weather Downscaler"
+date_created: "2026-09-22"
+
+streams:
+  history:
+    name: "Historical Meteorological Context"
+    provenance_class: "reanalysis"  # Primary thermodynamic provenance; precipitation is satellite_gauge_product
+    temporal_coverage: [2014, 2023]
+    role: "model_history_context"
+    license: "CC-BY-4.0 (ECMWF) / Public Domain (UCSB CHC)"
+    access_terms: "Free and open scientific access; adhere to provider fair-use and rate-limit guidelines."
+    variables:
+      precipitation:
+        source: "UCSB CHIRPS v2.0 p05"
+        provenance_class: "satellite_gauge_product"
+        native_resolution_deg: 0.05
+        native_unit: "mm/day"
+        target_unit: "mm"
+      tmax:
+        source: "ECMWF ERA5-Land (via Open-Meteo)"
+        provenance_class: "reanalysis"
+        native_resolution_deg: 0.1
+        native_unit: "degC"
+        target_unit: "degC"
+      tmin:
+        source: "ECMWF ERA5-Land (via Open-Meteo)"
+        provenance_class: "reanalysis"
+        native_resolution_deg: 0.1
+        native_unit: "degC"
+        target_unit: "degC"
+      rh:
+        source: "ECMWF ERA5-Land (via Open-Meteo)"
+        provenance_class: "reanalysis"
+        native_resolution_deg: 0.1
+        native_unit: "percent"
+        target_unit: "percent"
+      wind_u:
+        source: "ECMWF ERA5-Land (via Open-Meteo)"
+        provenance_class: "reanalysis"
+        native_resolution_deg: 0.1
+        native_unit: "m/s"
+        target_unit: "m/s"
+      wind_v:
+        source: "ECMWF ERA5-Land (via Open-Meteo)"
+        provenance_class: "reanalysis"
+        native_resolution_deg: 0.1
+        native_unit: "m/s"
+        target_unit: "m/s"
+
+  forecast:
+    name: "Coarse Numerical Weather Prediction Future Forecast"
+    provenance_class: "numerical_weather_prediction"
+    source: "NOAA Global Forecast System (GFS) 0.25° via AWS Open Data Registry"
+    endpoint: "s3://noaa-gfs-bdp-pds"
+    temporal_coverage: [2015, 2023]  # AWS open GFS archive started January 2015
+    forecast_cycle: "00Z"            # 00:00 UTC initialization
+    forecast_horizons_days: [1, 2, 3, 4, 5, 6, 7]
+    role: "coarse_future_conditioning"
+    license: "Public Domain (U.S. Federal Government Work)"
+    access_terms: "Free and open public access hosted on AWS Open Data Registry without auth required."
+    variables:
+      rain:
+        grib_key: "APCP"
+        level: "surface"
+        accumulation_or_step_rule: "6-hour interval steps [0-6h, 6-12h, 12-18h, 18-24h] de-accumulation"
+        daily_aggregation_rule: "sum of incremental steps over forecast day"
+        native_unit: "kg/m^2"
+        target_unit: "mm"
+      tmax:
+        grib_key: "TMAX"
+        fallback_grib_key: "TMP"
+        level: "2 m above ground"
+        accumulation_or_step_rule: "3-hourly forecast temperature sequence"
+        daily_aggregation_rule: "maximum value across 3-hourly forecast valid times within day D minus 273.15"
+        native_unit: "Kelvin"
+        target_unit: "degC"
+      tmin:
+        grib_key: "TMIN"
+        fallback_grib_key: "TMP"
+        level: "2 m above ground"
+        accumulation_or_step_rule: "3-hourly forecast temperature sequence"
+        daily_aggregation_rule: "minimum value across 3-hourly forecast valid times within day D minus 273.15"
+        native_unit: "Kelvin"
+        target_unit: "degC"
+      rh:
+        grib_key: "RH"
+        fallback_grib_key: "SPFH"
+        level: "2 m above ground"
+        accumulation_or_step_rule: "3-hourly relative humidity sequence"
+        daily_aggregation_rule: "mean relative humidity across forecast valid times (or derived via Magnus-Tetens from TMP/DPT)"
+        native_unit: "percent"
+        target_unit: "percent"
+      wind_u:
+        grib_key: "UGRD"
+        level: "10 m above ground"
+        accumulation_or_step_rule: "3-hourly U-wind forecast sequence"
+        daily_aggregation_rule: "daily mean U-component or 3-hourly vector trajectory"
+        native_unit: "m/s"
+        target_unit: "m/s"
+      wind_v:
+        grib_key: "VGRD"
+        level: "10 m above ground"
+        accumulation_or_step_rule: "3-hourly V-wind forecast sequence"
+        daily_aggregation_rule: "daily mean V-component or 3-hourly vector trajectory"
+        native_unit: "m/s"
+        target_unit: "m/s"
+
+  target:
+    name: "Fine-Resolution Reference Target Stack"
+    provenance_class: "reanalysis"  # Joint classification (reanalysis thermodynamics + satellite_gauge precipitation)
+    description: "High-resolution 0.05° reference supervision target (not direct ground observational telemetry)"
+    temporal_coverage: [2014, 2023]
+    role: "supervision_target"
+    license: "CC-BY-4.0 (ECMWF ERA5-Land) / Public Domain (UCSB CHIRPS p05)"
+    access_terms: "Free and open scientific reanalysis and satellite product access."
+    subcomponents:
+      precipitation:
+        source: "UCSB CHIRPS v2.0 p05"
+        provenance_class: "satellite_gauge_product"
+        resolution_deg: 0.05
+        unit: "mm"
+      thermodynamics:
+        source: "ECMWF ERA5-Land (0.1° regridded to 0.05°)"
+        provenance_class: "reanalysis"
+        resolution_deg: 0.05
+        variables: ["tmax", "tmin", "rh", "wind_u", "wind_v"]
+
+  prior:
+    name: "Static Geophysical Terrain Prior"
+    provenance_class: "terrain_dsm"
+    source: "Copernicus GLO-30 Digital Surface Model (DSM)"
+    native_resolution_m: 30
+    target_resolution_deg: 0.05
+    channels: ["elevation", "slope", "aspect", "curvature", "orographic_lift"]
+    role: "static_geophysical_conditioning"
+    license: "Copernicus Open Access Policy"
+    access_terms: "Free, open access for all users worldwide."
+
+  station_validation:
+    name: "Independent In-Situ Station Validation Layer"
+    provenance_class: "direct_observation"
+    source: "NOAA Global Surface Summary of the Day (GSOD) / GHCN-Daily"
+    role: "independent_point_validation"
+    spatially_interpolated: false
+    temporal_coverage: [2014, 2023]
+    supported_variables: ["precipitation", "tmax", "tmin"]
+    license: "Public Domain (U.S. Federal Government Work)"
+    access_terms: "Freely downloadable from NOAA NCEI public archive."
+    limitations: "Sparse station network in Peninsular India lacks continuous 6-variable hourly coverage; used strictly as an independent point-check layer without spatial interpolation."

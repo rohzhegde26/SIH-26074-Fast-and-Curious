@@ -1,0 +1,84 @@
+# data/domain_config.yaml
+# Canonical Spatial Domain & Grid Geometry Specification
+# Sprint 1: Data Audit & Source Finalization
+
+version: "1.0.0"
+project: "SIH-26074 Multivariate Spatiotemporal Diffusion Weather Downscaler"
+
+# 1. Core Downscaling Target Domain (M)
+# Spans 4.0° x 4.0° covering Karnataka, Western Ghats, Mandya, Mysore, and coastal zones.
+core_target_domain:
+  name: "Peninsular India Tile 1 (Core Target M)"
+  lat_bounds: [11.0, 15.0]  # [South, North] in degrees
+  lon_bounds: [74.0, 78.0]  # [West, East] in degrees
+  
+  fine_grid:
+    shape: [80, 80]         # [Height, Width]
+    resolution_deg: 0.05    # ~5.5 km at equator
+    coordinate_reference: "EPSG:4326 (WGS84)"
+    pixel_convention: "Pixel-Is-Area"
+
+  coarse_grid:
+    shape: [16, 16]         # [Height, Width]
+    resolution_deg: 0.25    # ~27 km
+    coordinate_reference: "EPSG:4326 (WGS84)"
+    pixel_convention: "Pixel-Is-Area"
+
+  scale_factor: 5           # Exact integer ratio: 16 x 5 = 80
+
+# 2. Scalable Spatial Context Configuration (for Sprint 5 N/M Research)
+# Candidate ratios to be evaluated against the core target domain M (4.0° x 4.0°):
+candidate_context_ratios: [1.0, 1.25, 1.5, 1.75, 2.0, 2.5]
+
+candidate_context_domains:
+  ratio_1_00x:
+    span_deg: 4.0
+    lat_bounds: [11.0, 15.0]
+    lon_bounds: [74.0, 78.0]
+    coarse_shape_025: [16, 16]
+
+  ratio_1_25x:
+    span_deg: 5.0
+    lat_bounds: [10.5, 15.5]
+    lon_bounds: [73.5, 78.5]
+    coarse_shape_025: [20, 20]
+
+  ratio_1_50x:
+    span_deg: 6.0
+    lat_bounds: [10.0, 16.0]
+    lon_bounds: [73.0, 79.0]
+    coarse_shape_025: [24, 24]
+
+  ratio_1_75x:
+    span_deg: 7.0
+    lat_bounds: [9.5, 16.5]
+    lon_bounds: [72.5, 79.5]
+    coarse_shape_025: [28, 28]
+
+  ratio_2_00x:
+    span_deg: 8.0
+    lat_bounds: [9.0, 17.0]
+    lon_bounds: [72.0, 80.0]
+    coarse_shape_025: [32, 32]
+
+  ratio_2_50x:
+    span_deg: 10.0
+    lat_bounds: [8.0, 18.0]
+    lon_bounds: [71.0, 81.0]
+    coarse_shape_025: [40, 40]
+
+# 3. Maximum Ingestion Domain (2.5M)
+# Ingestion pipelines must be able to stream/extract this maximum bounding box to support Sprint 5
+max_context_domain:
+  name: "Peninsular India Synoptic Monsoon Context (2.5M Max)"
+  span_deg: 10.0
+  lat_bounds: [8.0, 18.0]
+  lon_bounds: [71.0, 81.0]
+  shape: [40, 40]
+  resolution_deg: 0.25
+
+# 4. Pixel-Is-Area Cell Alignment Formula
+cell_alignment:
+  convention: "Pixel-Is-Area"
+  formula_latitude: "Row r center = lat_max - (r + 0.5) * res_lat"
+  formula_longitude: "Col c center = lon_min + (c + 0.5) * res_lon"
