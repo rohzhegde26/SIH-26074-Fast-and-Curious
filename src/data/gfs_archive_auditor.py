@@ -190,43 +190,48 @@ def audit_gfs_archive_source(
     else:
         # 2015-2020: NCAR RDA ds084.1 tier (year- and date-specific THREDDS catalog probe)
         catalog_xml_url = f"{NCAR_THREDDS_BASE_URL}/{year}/{ymd}/catalog.xml"
+        effective_timeout = max(timeout, 20)
         t0 = datetime.now()
-        try:
-            resp = requests.get(catalog_xml_url, timeout=timeout)
-            elapsed_sec = (datetime.now() - t0).total_seconds()
-            is_200 = (resp.status_code == 200)
-            file_present = (target_filename in resp.text) if is_200 else False
-            is_avail = is_200 and file_present
+        last_err = None
+        for attempt in range(3):
+            try:
+                resp = requests.get(catalog_xml_url, timeout=effective_timeout)
+                elapsed_sec = (datetime.now() - t0).total_seconds()
+                is_200 = (resp.status_code == 200)
+                file_present = (target_filename in resp.text) if is_200 else False
+                is_avail = is_200 and file_present
 
-            return {
-                "year": year,
-                "available": is_avail,
-                "tier": "ncar_rda_ds084_1",
-                "repository": "NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids)",
-                "catalog_url": catalog_xml_url,
-                "target_file": target_filename,
-                "file_verified_in_catalog": file_present,
-                "status_code": resp.status_code,
-                "latency_sec": elapsed_sec,
-                "message": (
-                    f"Historical 0.25° 00Z f024 forecast grid verified in NCAR RDA ds084.1 ({target_filename})."
-                    if is_avail
-                    else f"Catalog or file not found in NCAR RDA ds084.1 (HTTP {resp.status_code})."
-                ),
-            }
-        except Exception as e:
-            return {
-                "year": year,
-                "available": False,
-                "tier": "ncar_rda_ds084_1",
-                "repository": "NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids)",
-                "catalog_url": catalog_xml_url,
-                "target_file": target_filename,
-                "file_verified_in_catalog": False,
-                "status_code": None,
-                "error": str(e),
-                "message": f"Failed to probe NCAR RDA ds084.1: {e}",
-            }
+                return {
+                    "year": year,
+                    "available": is_avail,
+                    "tier": "ncar_rda_ds084_1",
+                    "repository": "NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids)",
+                    "catalog_url": catalog_xml_url,
+                    "target_file": target_filename,
+                    "file_verified_in_catalog": file_present,
+                    "status_code": resp.status_code,
+                    "latency_sec": elapsed_sec,
+                    "message": (
+                        f"Historical 0.25° 00Z f024 forecast grid verified in NCAR RDA ds084.1 ({target_filename})."
+                        if is_avail
+                        else f"Catalog or file not found in NCAR RDA ds084.1 (HTTP {resp.status_code})."
+                    ),
+                }
+            except Exception as e:
+                last_err = e
+
+        return {
+            "year": year,
+            "available": False,
+            "tier": "ncar_rda_ds084_1",
+            "repository": "NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids)",
+            "catalog_url": catalog_xml_url,
+            "target_file": target_filename,
+            "file_verified_in_catalog": False,
+            "status_code": None,
+            "error": str(last_err),
+            "message": f"Failed to probe NCAR RDA ds084.1: {last_err}",
+        }
 
 
 def audit_gfs_9year_coverage(

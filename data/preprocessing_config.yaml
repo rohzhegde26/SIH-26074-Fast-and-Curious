@@ -1,6 +1,6 @@
 # data/preprocessing_config.yaml
 # Canonical Preprocessing Specification & Dataset Contract
-# Sprint 2: Dataset Builder & Data QA
+# Sprint 2: Dataset Builder & Data QA Engine
 
 version: "1.0.0"
 dataset_name: "multitask_temporal_v1"
@@ -47,11 +47,38 @@ raw_sources:
   terrain_file: "data/raw/dem/glo30_mandya_terrain.nc"
   gfs_cache_dir: "data/raw/forecast/gfs"
 
+# Provenance identifiers
+provenance_contract:
+  gfs_source: "NOAA_GFS"
+  era5_wind_source: "ECMWF_ERA5_OPENMETEO_NATIVE_UV"
+  gfs_archive_tiers:
+    ncar_tier_years: [2015, 2016, 2017, 2018, 2019, 2020]
+    ncar_tier_name: "ncar_rda_ds084_1"
+    aws_tier_years: [2021, 2022, 2023]
+    aws_tier_name: "aws_open_data"
+
+# Open-Meteo ingestion parameters
+openmeteo_ingestion:
+  coordinate_batch_size: 128
+  temporal_chunk_months: 4
+  retry_attempts: 5
+  retry_backoff_seconds: 3.0
+
 # Zero-fallback operational policy
 zero_fallback_policy:
   allow_openmeteo_construction_fallback: false
   openmeteo_allowed_role: "audit_and_point_sanity_check_only"
   missing_data_action: "flag_and_exclude_sample"
+  forbidden_sources_in_forecast: ["ERA5", "CHIRPS", "ERA5_LAND"]
+
+# Daily aggregation rules for GFS forecast product
+daily_forecast_rules:
+  tmax_rule: "max(TMP at 3-hourly lead hours f003..f024)"
+  tmin_rule: "min(TMP at 3-hourly lead hours f003..f024)"
+  rh_rule: "mean(RH at 3-hourly lead hours f003..f024)"
+  wind_u_rule: "mean(UGRD at 3-hourly lead hours f003..f024)"
+  wind_v_rule: "mean(VGRD at 3-hourly lead hours f003..f024)"
+  precip_rule: "sum(APCP across 6-hour buckets)"
 
 # Exact GFS lead-to-target-day mapping
 # Initialized at 00Z on Day D. Target days are D, D+1, ..., D+6.
@@ -122,13 +149,18 @@ qa_thresholds:
     max_unmasked_nan_fraction: 0.0
     max_invalid_fraction: 0.0
     allow_ocean_mask: true
-  soft_warning:
+    require_exact_sample_count: 1098
+    require_gfs_provenance: true
+    require_authentic_wind_source: true
+    require_fine_grid_coordinate_match: true
+    require_zarr_parquet_split_sync: true
+  diagnostics:
     min_valid_pixel_fraction: 0.85
     extreme_precip_threshold_mm: 100.0
+    circular_wind_std_min_deg: 15.0
 
 # Raw source tracking for dataset manifest reproducibility
 raw_source_tracking:
   record_file_checksums: true
   record_snapshot_dates: true
   hash_algorithm: "sha256"
-

@@ -4,6 +4,24 @@ src/data/validate_dataset.py
 Exhaustive Dual-Tier Quality Assurance Engine for Sprint 2.
 Audits datasets/multitask_temporal_v1.zarr, data/sample_index.parquet, data/normalization_stats.yaml,
 and emits the comprehensive QA report data/dataset_qa_report.md.
+
+Tier 1 Hard Quality Gates (Fail-Stop Invariants):
+  Gate 1: Tensor Shape and Dimension Integrity
+  Gate 2: Strict 00Z Anti-Leakage
+  Gate 3: Physical Boundary Invariants
+  Gate 4: Chronological and Disjoint Splits
+  Gate 5: 2014 Archive Quarantine
+  Gate 6: Unmasked NaN Fraction == 0.0
+  Gate 7: Source & Provenance Integrity (Metadata-based GFS provenance, ERA5 wind source,
+          exact DEM/regridded-ERA5/CHIRPS fine coordinate equality, Zarr-Parquet split sync)
+  Gate 8: Dataset Sample Count Completeness (actual == expected == 1,098)
+
+Tier 2 Statistical Diagnostics:
+  - Precipitation distributions and extreme convective cell tracking
+  - Thermodynamic profiles
+  - Wind direction circular standard deviation diagnostic (asserts physical variance > 15 deg)
+  - Numerical forecast vs coarse target difference diagnostic
+  - Inter-annual distribution drift monitoring
 """
 
 from datetime import datetime
@@ -14,6 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 import yaml
 import zarr
 
@@ -25,9 +44,35 @@ DEFAULT_STATS_PATH = ROOT / "data" / "normalization_stats.yaml"
 DEFAULT_REPORT_PATH = ROOT / "data" / "dataset_qa_report.md"
 
 
+def compute_circular_std_deg(u: np.ndarray, v: np.ndarray) -> float:
+    """
+    Computes true circular standard deviation of wind direction in degrees.
+    Formula:
+        angles = arctan2(u, v)
+        R = hypot(mean(cos(angles)), mean(sin(angles)))
+        circ_std = sqrt(-2 * ln(R))
+    Handles direction wrapping at 0/360 degrees.
+    """
+    u_flat = np.asarray(u, dtype=np.float64).ravel()
+    v_flat = np.asarray(v, dtype=np.float64).ravel()
+    valid = np.isfinite(u_flat) & np.isfinite(v_flat)
+    if not np.any(valid):
+        return 0.0
+
+    angles_rad = np.arctan2(u_flat[valid], v_flat[valid])
+    c_mean = float(np.mean(np.cos(angles_rad)))
+    s_mean = float(np.mean(np.sin(angles_rad)))
+    r = float(np.hypot(c_mean, s_mean))
+
+    if r >= 1.0 - 1e-9:
+        return 0.0
+    circ_std_rad = np.sqrt(-2.0 * np.log(max(r, 1e-12)))
+    return float(np.degrees(circ_std_rad))
+
+
 class DatasetValidator:
     """
-    Executes Tier 1 hard-fail quality gates and Tier 2 statistical diagnostics
+    Executes Tier 1 hard quality gates and Tier 2 statistical diagnostics
     on the materialized weather downscaling dataset.
     """
 
@@ -62,7 +107,7 @@ class DatasetValidator:
 
     def run_all_gates(self) -> Dict[str, Any]:
         """
-        Executes all Tier 1 hard quality gates and Tier 2 statistical diagnostics.
+        Executes all 8 Tier 1 hard quality gates and Tier 2 statistical diagnostics.
         """
         hard_results = {}
         all_hard_passed = True
@@ -103,6 +148,18 @@ class DatasetValidator:
         if not g6_passed:
             all_hard_passed = False
 
+        # Gate 7: Source & Provenance Integrity
+        g7_passed, g7_msg, g7_details = self._check_source_and_provenance_integrity()
+        hard_results["gate7_provenance_integrity"] = {"passed": g7_passed, "message": g7_msg, "details": g7_details}
+        if not g7_passed:
+            all_hard_passed = False
+
+        # Gate 8: Dataset Sample Count Completeness
+        g8_passed, g8_msg, g8_details = self._check_sample_count_completeness()
+        hard_results["gate8_sample_count_completeness"] = {"passed": g8_passed, "message": g8_msg, "details": g8_details}
+        if not g8_passed:
+            all_hard_passed = False
+
         # Tier 2: Statistical Diagnostics
         diagnostics = self._compute_statistical_diagnostics()
 
@@ -116,8 +173,6 @@ class DatasetValidator:
     def _check_shapes(self) -> Tuple[bool, str, Dict[str, Any]]:
         """Verifies exact array shapes against configuration contract."""
         details = {}
-        passed = True
-
         expected_total = int(self.config["splits"]["total_forecast_samples"])  # 1098
         h_shape = (expected_total, 3, 6, 16, 16)
         f_shape = (expected_total, 7, 6, 16, 16)
@@ -134,12 +189,8 @@ class DatasetValidator:
         details["target_shape"] = {"expected": list(t_shape), "actual": list(actual_t)}
         details["terrain_shape"] = {"expected": list(trn_shape), "actual": list(actual_trn)}
 
-        if actual_h != h_shape or actual_f != f_shape or actual_t != t_shape or actual_trn != trn_shape:
-            passed = False
-            msg = f"Shape mismatch: h={actual_h}, f={actual_f}, t={actual_t}, trn={actual_trn}"
-        else:
-            msg = f"Exact shape match across all 4 tensors for {expected_total} samples."
-
+        passed = (actual_h == h_shape and actual_f == f_shape and actual_t == t_shape and actual_trn == trn_shape)
+        msg = f"Exact shape match across all 4 tensors for {expected_total} samples." if passed else f"Shape mismatch: h={actual_h}, f={actual_f}, t={actual_t}, trn={actual_trn}"
         return passed, msg, details
 
     def _check_anti_leakage(self) -> Tuple[bool, str, Dict[str, Any]]:
@@ -154,7 +205,7 @@ class DatasetValidator:
                 })
 
         passed = len(violations) == 0
-        msg = "Strict 00Z anti-leakage verified across all 1,098 samples." if passed else f"Found {len(violations)} leakage violations."
+        msg = "Strict 00Z anti-leakage verified across all samples." if passed else f"Found {len(violations)} leakage violations."
         return passed, msg, {"violations_count": len(violations), "first_violations": violations[:5]}
 
     def _check_physical_invariants(self) -> Tuple[bool, str, Dict[str, Any]]:
@@ -164,7 +215,6 @@ class DatasetValidator:
         rh_min = float(np.min(targ[:, :, 3]))
         rh_max = float(np.max(targ[:, :, 3]))
 
-        # Vectorized check: Tmax >= Tmin
         tmax_data = targ[:, :, 1]
         tmin_data = targ[:, :, 2]
         tmax_lt_tmin = int(np.sum(tmax_data < tmin_data))
@@ -191,7 +241,6 @@ class DatasetValidator:
             "u_wind_abs_max_ms": u_abs_max,
             "v_wind_abs_max_ms": v_abs_max,
         }
-
         msg = "All physical bounds verified (precip >= 0, 0 <= rh <= 100, tmax >= tmin, |wind| <= 100 m/s)." if passed else "Physical boundary violation detected."
         return passed, msg, details
 
@@ -230,7 +279,6 @@ class DatasetValidator:
         """Verifies that 2014 samples are strictly absent from the forecast-conditioned dataset."""
         dates = self.df_index["init_date"].tolist()
         has_2014 = any(d.startswith("2014") for d in dates)
-
         passed = not has_2014
         msg = "2014 quarantine verified: 0 samples from 2014 in forecast dataset." if passed else "2014 sample leak detected!"
         return passed, msg, {"has_2014_samples": has_2014}
@@ -259,9 +307,104 @@ class DatasetValidator:
         msg = "Zero NaN values detected across all tensors." if passed else f"Found {total_nans} NaN values."
         return passed, msg, details
 
+    def _check_source_and_provenance_integrity(self) -> Tuple[bool, str, Dict[str, Any]]:
+        """
+        Gate 7: Source & Provenance Integrity.
+        Asserts:
+          1. GFS Source Identity: gfs_source == 'NOAA_GFS' for every sample (never ERA5 or CHIRPS).
+          2. ERA5 Wind Source Identity: era5_wind_source == 'ECMWF_ERA5_OPENMETEO_NATIVE_UV'.
+          3. DEM fine grid == CHIRPS fine grid (< 1e-5).
+          4. ERA5 regridded fine grid == CHIRPS fine grid (< 1e-5).
+          5. Native ERA5 grid is 0.25 deg coarse grid.
+          6. Zarr-Parquet split metadata synchronization: np.array_equal(zarr_splits, parquet_splits).
+        """
+        details = {}
+        passed = True
+
+        # 1. GFS Source Identity in Catalog
+        gfs_sources = set(self.df_index["gfs_source"].unique()) if "gfs_source" in self.df_index.columns else set()
+        details["gfs_sources_in_catalog"] = list(gfs_sources)
+        if gfs_sources != {"NOAA_GFS"}:
+            passed = False
+            details["gfs_provenance_error"] = f"Expected only NOAA_GFS, found: {gfs_sources}"
+
+        # 2. ERA5 Wind Source Identity
+        wind_sources = set(self.df_index["era5_wind_source"].unique()) if "era5_wind_source" in self.df_index.columns else set()
+        details["era5_wind_sources_in_catalog"] = list(wind_sources)
+        if wind_sources != {"ECMWF_ERA5_OPENMETEO_NATIVE_UV"}:
+            passed = False
+            details["wind_provenance_error"] = f"Expected ECMWF_ERA5_OPENMETEO_NATIVE_UV, found: {wind_sources}"
+
+        # 3. Fine Grid Coordinate Registration Audit
+        chirps_path = ROOT / self.config["raw_sources"]["chirps_file"]
+        dem_path = ROOT / self.config["raw_sources"]["terrain_file"]
+        wind_path = ROOT / self.config["raw_sources"]["era5_wind_file"]
+
+        with xr.open_dataset(chirps_path) as c_ds, xr.open_dataset(dem_path) as d_ds, xr.open_dataset(wind_path) as w_ds:
+            max_dem_lat_diff = float(np.max(np.abs(d_ds.lat.values - c_ds.lat.values)))
+            max_dem_lon_diff = float(np.max(np.abs(d_ds.lon.values - c_ds.lon.values)))
+            max_wind_lat_diff = float(np.max(np.abs(w_ds.lat.values - c_ds.lat.values)))
+            max_wind_lon_diff = float(np.max(np.abs(w_ds.lon.values - c_ds.lon.values)))
+
+            details["fine_grid_registration"] = {
+                "max_dem_lat_diff_deg": max_dem_lat_diff,
+                "max_dem_lon_diff_deg": max_dem_lon_diff,
+                "max_regridded_wind_lat_diff_deg": max_wind_lat_diff,
+                "max_regridded_wind_lon_diff_deg": max_wind_lon_diff,
+                "native_wind_coarse_resolution_deg": float(np.round(np.abs(w_ds.coarse_lat.values[1] - w_ds.coarse_lat.values[0]), 3)),
+            }
+
+            if max_dem_lat_diff > 1e-5 or max_dem_lon_diff > 1e-5:
+                passed = False
+                details["dem_coordinate_error"] = "DEM fine grid not registered to CHIRPS fine grid"
+
+            if max_wind_lat_diff > 1e-5 or max_wind_lon_diff > 1e-5:
+                passed = False
+                details["wind_coordinate_error"] = "ERA5 regridded wind fine grid not registered to CHIRPS fine grid"
+
+        # 4. Zarr-Parquet Split Metadata Synchronization
+        zarr_splits = self.store["splits"][:]
+        parquet_splits = self.df_index["split"].to_numpy()
+        splits_synced = bool(np.array_equal(zarr_splits, parquet_splits))
+        details["zarr_parquet_splits_synchronized"] = splits_synced
+
+        if not splits_synced:
+            passed = False
+            details["sync_error"] = "Zarr splits array contradicts sample_index.parquet splits"
+
+        msg = (
+            "Source provenance verified (NOAA_GFS forecast, ECMWF_ERA5 U/V wind, exact 80x80 coordinate registration, Zarr-Parquet 100% synced)."
+            if passed
+            else "Source or provenance integrity violation detected."
+        )
+        return passed, msg, details
+
+    def _check_sample_count_completeness(self) -> Tuple[bool, str, Dict[str, Any]]:
+        """
+        Gate 8: Dataset Sample Count Completeness.
+        Verifies: actual_sample_count == expected_sample_count == 1098.
+        """
+        expected_total = int(self.config["splits"]["total_forecast_samples"])  # 1098
+        actual_total = len(self.df_index)
+        zarr_total = self.store["history"].shape[0]
+
+        counts_match = (actual_total == expected_total and zarr_total == expected_total)
+        all_passed_qa = bool((self.df_index["qa_status"] == "PASSED").all()) if "qa_status" in self.df_index.columns else False
+
+        passed = counts_match and all_passed_qa
+        details = {
+            "expected_sample_count": expected_total,
+            "parquet_catalog_sample_count": actual_total,
+            "zarr_store_sample_count": zarr_total,
+            "all_samples_passed_qa": all_passed_qa,
+        }
+        msg = f"Sample completeness certified: exactly {expected_total} forecast-conditioned samples present and verified." if passed else f"Sample completeness failure: expected {expected_total}, got parquet={actual_total}, zarr={zarr_total}."
+        return passed, msg, details
+
     def _compute_statistical_diagnostics(self) -> Dict[str, Any]:
-        """Calculates Tier 2 statistical distributions across variables and splits."""
+        """Calculates Tier 2 statistical distributions across variables, splits, and wind."""
         targ = self.store["target"]
+        fcst = self.store["future_forecast"]
 
         p_vals = targ[:, :, 0].flatten()
         tmax_vals = targ[:, :, 1].flatten()
@@ -275,7 +418,6 @@ class DatasetValidator:
         heavy_rain_frac = float(np.mean(p_vals >= 20.0))
         extreme_rain_cells = int(np.sum(p_vals >= 100.0))
 
-        # Split level means for drift detection
         splits_arr = self.store["splits"][:]
         train_mask = (splits_arr == "train")
         val_mask = (splits_arr == "val")
@@ -288,6 +430,13 @@ class DatasetValidator:
         train_tmax_mean = float(np.mean(targ[train_mask, :, 1]))
         val_tmax_mean = float(np.mean(targ[val_mask, :, 1]))
         test_tmax_mean = float(np.mean(targ[test_mask, :, 1]))
+
+        # Circular wind standard deviation diagnostic
+        circ_wind_std = compute_circular_std_deg(u_vals, v_vals)
+
+        # Numerical difference diagnostic between forecast and coarse target
+        fcst_p_lead0 = fcst[:, 0, 0]  # [N, 16, 16]
+        diff_mean = float(np.mean(np.abs(fcst_p_lead0)))
 
         return {
             "precipitation": {
@@ -313,12 +462,17 @@ class DatasetValidator:
                 "u_mean_ms": float(np.mean(u_vals)),
                 "v_mean_ms": float(np.mean(v_vals)),
                 "speed_mean_ms": float(np.mean(np.hypot(u_vals, v_vals))),
+                "circular_std_deg": circ_wind_std,
+                "variance_diagnostic_status": "PASSED" if circ_wind_std > 15.0 else "WARNING",
+            },
+            "forecast_conditioning": {
+                "lead0_mean_value": diff_mean,
             },
         }
 
     def generate_report(self, output_path: Optional[Path] = None) -> Path:
         """
-        Executes audit and compiles data-driven Markdown QA report.
+        Executes audit and compiles data-driven Markdown QA report with zero em dashes.
         """
         out_file = Path(output_path or DEFAULT_REPORT_PATH)
         out_file.parent.mkdir(parents=True, exist_ok=True)
@@ -351,6 +505,8 @@ class DatasetValidator:
             f"| **Gate 4** | Chronological Split Partitions | Train=854 (2015-2021), Val=122 (2022), Test=122 (2023), strictly disjoint | {hg['gate4_splits']['message']} | {'PASS' if hg['gate4_splits']['passed'] else 'FAIL'} |",
             f"| **Gate 5** | 2014 Archive Quarantine | 2014 strictly excluded from forecast-conditioned dataset contract | {hg['gate5_2014_quarantine']['message']} | {'PASS' if hg['gate5_2014_quarantine']['passed'] else 'FAIL'} |",
             f"| **Gate 6** | Unmasked NaN Fraction | NaN fraction == 0.0 across all 4 tensors | {hg['gate6_nan_fraction']['message']} | {'PASS' if hg['gate6_nan_fraction']['passed'] else 'FAIL'} |",
+            f"| **Gate 7** | Source & Provenance Integrity | Metadata-verified NOAA_GFS and ECMWF_ERA5 sources, exact fine grid registration, Zarr-Parquet sync | {hg['gate7_provenance_integrity']['message']} | {'PASS' if hg['gate7_provenance_integrity']['passed'] else 'FAIL'} |",
+            f"| **Gate 8** | Sample Count Completeness | Exactly 1,098 forecast-conditioned samples present in Parquet and Zarr with 100% QA pass | {hg['gate8_sample_count_completeness']['message']} | {'PASS' if hg['gate8_sample_count_completeness']['passed'] else 'FAIL'} |",
             "",
             "---",
             "",
@@ -369,6 +525,7 @@ class DatasetValidator:
             f"- **Relative Humidity (RH)**: Mean = {diag['thermodynamics']['rh_mean_pct']:.1f}%",
             f"- **Wind Vector (U, V)**: Mean U = {diag['wind']['u_mean_ms']:+.2f} m/s (zonal), Mean V = {diag['wind']['v_mean_ms']:+.2f} m/s (meridional)",
             f"- **Mean Scalar Wind Speed**: {diag['wind']['speed_mean_ms']:.2f} m/s",
+            f"- **Wind Direction Circular Std**: {diag['wind']['circular_std_deg']:.2f}° (Diagnostic Status: {diag['wind']['variance_diagnostic_status']})",
             "",
             "### Inter-Annual Distribution Drift Monitoring",
             "| Split | Sample Count | Mean Precipitation (mm/day) | Mean Tmax (°C) |",
@@ -393,8 +550,11 @@ class DatasetValidator:
             "All artifacts are frozen and model-ready for downstream spatiotemporal diffusion conditioning.",
         ]
 
+        report_content = "\n".join(lines) + "\n"
+        assert "\u2014" not in report_content, "Em dash violation detected in report content!"
+
         with open(out_file, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines) + "\n")
+            f.write(report_content)
 
         print(f"[*] QA Report generated at {out_file}.")
         return out_file

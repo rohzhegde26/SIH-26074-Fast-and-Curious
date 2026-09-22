@@ -77,6 +77,32 @@ def test_channel_order_and_zero_fallback_policy():
     policy = cfg["zero_fallback_policy"]
     assert policy["allow_openmeteo_construction_fallback"] is False
     assert policy["missing_data_action"] == "flag_and_exclude_sample"
+    assert "ERA5" in policy["forbidden_sources_in_forecast"]
+    assert "CHIRPS" in policy["forbidden_sources_in_forecast"]
+
+
+def test_provenance_contract_in_config():
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+
+    prov = cfg["provenance_contract"]
+    assert prov["gfs_source"] == "NOAA_GFS"
+    assert prov["era5_wind_source"] == "ECMWF_ERA5_OPENMETEO_NATIVE_UV"
+    assert "ncar_rda_ds084_1" in prov["gfs_archive_tiers"]["ncar_tier_name"]
+    assert "aws_open_data" in prov["gfs_archive_tiers"]["aws_tier_name"]
+
+
+def test_daily_forecast_rules_in_config():
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+
+    rules = cfg["daily_forecast_rules"]
+    assert "max" in rules["tmax_rule"]
+    assert "min" in rules["tmin_rule"]
+    assert "mean" in rules["rh_rule"]
+    assert "mean" in rules["wind_u_rule"]
+    assert "mean" in rules["wind_v_rule"]
+    assert "sum" in rules["precip_rule"]
 
 
 def test_separate_era5_land_and_wind_sources():
@@ -408,7 +434,7 @@ def test_dataset_qa_report_and_manifest():
     with open(qa_path, "r", encoding="utf-8") as f:
         qa_text = f.read()
     assert "[PASS] ALL GATES PASSED (100%)" in qa_text
-    assert "—" not in qa_text, "Em dash violation detected in QA report!"
+    assert "\u2014" not in qa_text, "Em dash violation detected in QA report!"
 
 
 # ---------------------------------------------------------------------------
@@ -444,3 +470,70 @@ def test_pytorch_spatiotemporal_dataset_and_loaders():
     unnorm = train_ds.unnormalize_target(sample["target"])
     assert unnorm.shape == (7, 6, 80, 80)
     assert np.all(unnorm[:, 0] >= 0.0), "Unnormalized precipitation must be non-negative"
+
+
+# ---------------------------------------------------------------------------
+# Slice 9: Provenance Integrity, Dual Backends & Gate 7/8 Verification
+# ---------------------------------------------------------------------------
+
+def test_circular_wind_std_calculation():
+    from src.data.era5_wind_ingestion import compute_circular_std_deg
+
+    # Synthetic fixed 250 deg wind must yield ~0.0 deg variance
+    s = np.array([5.0, 10.0, 15.0])
+    theta = np.radians(250.0)
+    u_fix = -s * np.sin(theta)
+    v_fix = -s * np.cos(theta)
+    assert compute_circular_std_deg(u_fix, v_fix) < 1.0
+
+    # Authentic variable wind must yield > 15.0 deg variance
+    u_var = np.array([5.0, -3.0, 8.0, -10.0, 2.0])
+    v_var = np.array([2.0, 6.0, -4.0, 1.0, -8.0])
+    assert compute_circular_std_deg(u_var, v_var) > 15.0
+
+
+def test_fine_grid_coordinate_registration():
+    import xarray as xr
+    ch_path = ROOT / "data" / "raw" / "chirps" / "chirps_daily.nc"
+    dem_path = ROOT / "data" / "raw" / "dem" / "glo30_mandya_terrain.nc"
+
+    with xr.open_dataset(ch_path) as ch, xr.open_dataset(dem_path) as dem:
+        assert ch.lat.shape == (80,)
+        assert dem.lat.shape == (80,)
+        # Exact DEM fine grid equality with CHIRPS fine grid
+        max_dem_lat_diff = float(np.max(np.abs(dem.lat.values - ch.lat.values)))
+        max_dem_lon_diff = float(np.max(np.abs(dem.lon.values - ch.lon.values)))
+        assert max_dem_lat_diff < 1e-5, f"DEM lat mismatch: {max_dem_lat_diff}"
+        assert max_dem_lon_diff < 1e-5, f"DEM lon mismatch: {max_dem_lon_diff}"
+
+
+def test_dual_gfs_backends_routing():
+    from src.data.gfs_slice_downloader import AWSGFSBackend, NCARGFSBackend
+
+    aws_backend = AWSGFSBackend()
+    ncar_backend = NCARGFSBackend()
+
+    # AWS key formatting for 2023
+    key_2023 = aws_backend.format_s3_key(date(2023, 7, 15), cycle_hour=0, forecast_hour=24)
+    assert "gfs.20230715/00/atmos/gfs.t00z.pgrb2.0p25.f024" in key_2023
+
+    # NCAR URL formatting for 2018
+    url_2018 = ncar_backend.format_fileserver_url(date(2018, 7, 15), cycle_hour=0, forecast_hour=24)
+    assert "thredds.rda.ucar.edu" in url_2018
+    assert "2018071500.f024.grib2" in url_2018
+
+
+def test_validator_gate7_and_gate8():
+    from src.data.validate_dataset import DatasetValidator
+
+    validator = DatasetValidator()
+    results = validator.run_all_gates()
+
+    hg = results["hard_gates"]
+    assert "gate7_provenance_integrity" in hg
+    assert "gate8_sample_count_completeness" in hg
+
+    assert hg["gate7_provenance_integrity"]["passed"] is True, f"Gate 7 failed: {hg['gate7_provenance_integrity']['details']}"
+    assert hg["gate8_sample_count_completeness"]["passed"] is True, f"Gate 8 failed: {hg['gate8_sample_count_completeness']['details']}"
+    assert results["all_hard_gates_passed"] is True
+

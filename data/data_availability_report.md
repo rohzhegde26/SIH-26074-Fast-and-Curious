@@ -1,7 +1,7 @@
 # Sprint 1 Deliverable: Data Availability, Licensing & Storage Report
 
 **Project**: SIH-26074 Multivariate Spatiotemporal Diffusion Weather Downscaler  
-**Audit Executed**: 2026-09-22T16:03:49.348312  
+**Audit Executed**: 2026-09-22T22:23:39.886378  
 **Mode**: quick  
 
 ---
@@ -10,9 +10,9 @@
 
 | Provider / Archive | Protocol | Observed Latency | Observed Rate Limits / Fair-Use Terms | Recommended Ingestion Strategy |
 | :--- | :--- | :--- | :--- | :--- |
-| **UCSB CHC (CHIRPS p05)** | HTTPS Direct | ~1.47s per tile | No API key required. High-volume concurrent scraping subject to IP rate throttling. | 2–4 parallel download threads with persistent HTTP session and local file caching. |
-| **Open-Meteo (ERA5-Land)** | REST JSON API | ~1.30s per request | Free tier fair use: ~10,000 daily API calls, 1 concurrent connection per client IP. Observed headers: `{}`. | Batch temporal ranges into single multi-year requests; cache hourly NetCDF directly. |
-| **NOAA AWS GFS Archive** | S3 / HTTPS Direct | ~3.85s per slice | Public AWS Open Data Registry. Zero egress charges; no API key or AWS credentials required. | Fetch 15 KB `.idx` file first; use HTTP `Range` headers to download only required variables (~2 MB vs 500 MB). |
+| **UCSB CHC (CHIRPS p05)** | HTTPS Direct | ~1.60s per tile | No API key required. High-volume concurrent scraping subject to IP rate throttling. | 2–4 parallel download threads with persistent HTTP session and local file caching. |
+| **Open-Meteo (ERA5-Land)** | REST JSON API | ~1.19s per request | Free tier fair use: ~10,000 daily API calls, 1 concurrent connection per client IP. Observed headers: `{}`. | Batch temporal ranges into single multi-year requests; cache hourly NetCDF directly. |
+| **NOAA AWS GFS Archive** | S3 / HTTPS Direct | ~3.21s per slice | Public AWS Open Data Registry. Zero egress charges; no API key or AWS credentials required. | Fetch 15 KB `.idx` file first; use HTTP `Range` headers to download only required variables (~2 MB vs 500 MB). |
 | **NCAR RDA (ds084.1 GFS)**| HTTPS / OPeNDAP | ~0.45s per index | Free research access. Bulk subsetting requests queue via NCAR RDA batch service. | Pre-stage 2015-2020 GFS cycles via NCAR RDA subsetting API during dataset build phase. |
 | **NOAA NCEI (GSOD)** | HTTPS Direct | ~0.40s per station | Public open archive. Fast response on annual CSV downloads (~50 KB per station-year). | Cache station CSVs locally in `data/raw/stations/noaa_gsod/`. |
 | **Copernicus (GLO-30)** | S3 / Open Access | N/A (Pre-cached) | Free and open Copernicus WorldCover / DEM policy. | Static mosaic cached in `data/raw/dem/glo30_mandya_terrain.nc`. |

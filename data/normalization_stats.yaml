@@ -44,17 +44,17 @@ channels:
     max_physical: 84.59919738769531
   wind_u:
     transform: zscore
-    mean: 20.68234634399414
-    std: 2.8751705156097414
+    mean: 11.781559944152832
+    std: 6.747733162475586
     epsilon: 1.0e-06
-    min_physical: 12.757389068603516
-    max_physical: 31.047279357910156
+    min_physical: -19.46994400024414
+    max_physical: 45.42822265625
   wind_v:
     transform: zscore
-    mean: 7.5277485847473145
-    std: 1.0464774833450317
+    mean: 1.0696871280670166
+    std: 4.611363457275391
     epsilon: 1.0e-06
-    min_physical: 4.643310070037842
-    max_physical: 11.300286293029785
-config_sha256: ae662173c6ea39e7396ac61603ba775cb93758e3f8eb8dc00fc551683dd70160
-created_at: '2026-09-22T21:11:34.895928'
+    min_physical: -23.726886749267578
+    max_physical: 40.24567794799805
+config_sha256: 6848bd47e4669e46b45b919105563ba03ecf062c13404db749339d1647598318
+created_at: '2026-09-22T22:01:28.537397'

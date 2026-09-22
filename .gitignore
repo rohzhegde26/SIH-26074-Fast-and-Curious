@@ -46,6 +46,10 @@ data/raw/era5_land/*
 !data/raw/chirps/
 data/raw/chirps/*
 !data/raw/chirps/provenance.json
+!data/raw/era5/
+data/raw/era5/*
+!data/raw/era5/provenance.json
+data/raw/forecast/*
 data/raw/geodata/*.parquet
 data/cache/
 data/processed/

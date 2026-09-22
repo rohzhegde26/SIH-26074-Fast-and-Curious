@@ -1,0 +1,21 @@
+{
+  "source_provider": "Open-Meteo Historical Weather API",
+  "atmospheric_model": "ECMWF ERA5 Reanalysis (0.25 degree native grid)",
+  "supervision_grid": "80x80 (0.05 degree, 11.0N-15.0N, 74.0E-78.0E)",
+  "coarse_grid": "16x16 (0.25 degree, 11.0N-15.0N, 74.0E-78.0E)",
+  "variables": [
+    "wind_u",
+    "wind_v",
+    "coarse_wind_u",
+    "coarse_wind_v"
+  ],
+  "wind_representation": "Orthogonal zonal U and meridional V wind components in m/s",
+  "fixed_angle_rotation_applied": false,
+  "circular_wind_direction_std_deg": 28.616653844365302,
+  "temporal_convention": "calendar_day_00_24_utc",
+  "seasons": "2014-2023 (10 seasons, 122 days/season = 1,220 daily samples)",
+  "extended_boundary_cache": "Includes May 28-31 and October 1-7 in cache for un-clamped history/target windows",
+  "retrieval_timestamp_utc": "2026-09-22T16:22:03.471082+00:00",
+  "integrity_check": "PASSED (authentic ECMWF ERA5 U/V, non-zero circular variance, zero NaNs, exact coordinates)",
+  "status": "AUTHENTIC_ECMWF_ERA5_UV"
+}

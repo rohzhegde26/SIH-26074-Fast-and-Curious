@@ -1,7 +1,7 @@
 # Sprint 1 Deliverable: Source Coverage Report
 
 **Project**: SIH-26074 Multivariate Spatiotemporal Diffusion Weather Downscaler  
-**Audit Executed**: 2026-09-22T16:03:49.348312  
+**Audit Executed**: 2026-09-22T22:23:39.886378  
 **Mode**: quick  
 **Audit Engine**: `scripts/audit_sprint1_sources.py`  
 **Decision Gates Status**: 3 Ratified / Passed, 1 Configuration-Ready (Gate 4), 1 Sample-Verified (Gate 2: 4/9 GFS years; run --full for exhaustive 9-year audit)  
@@ -13,9 +13,9 @@
 | Stream | Source | Temporal Range | Variables | Native Res | Provenance Class | Role in Pipeline | Live Audit Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **History Context** | ECMWF ERA5-Land (Thermo) / ERA5 (Wind) | 2014–2023 | Tmax, Tmin, RH, U, V | 0.1° / 0.25° | `mixed` | Past atmospheric context | Verified (HTTP 200, 72 hrs, zero NaNs) |
-| **History Context** | UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Past precipitation context | Verified (HTTP 200, 1.47s latency) |
+| **History Context** | UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Past precipitation context | Verified (HTTP 200, 1.60s latency) |
 | **Future Forecast** | NOAA GFS 0.25° | 2015–2023 | P, Tmax, Tmin, RH, U, V | 0.25° | `numerical_weather_prediction` | Coarse 7-day forecast conditioning | Verified (4/9 sampled years [2015, 2018, 2021, 2023] + live byte-range slice HTTP 206; full 9-yr audit in --full mode) |
-| **Supervision Target**| UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Fine precipitation supervision | Verified (HTTP 200, 1.47s latency) |
+| **Supervision Target**| UCSB CHIRPS p05 | 2014–2023 | Precipitation | 0.05° | `mixed` | Fine precipitation supervision | Verified (HTTP 200, 1.60s latency) |
 | **Supervision Target**| ECMWF ERA5-Land (Thermo) / ERA5 (Wind) | 2014–2023 | Tmax, Tmin, RH, U, V | (0.1°/0.25°) → 0.05° | `mixed` | Fine thermodynamic & wind supervision | Verified (HTTP 200, 72 hrs, zero NaNs) |
 | **Station Check** | NOAA GSOD | 2014–2023 | Subset (T, P, DewPt) | Point AWS | `direct_observation` | Independent point validation | Verified (8/10 station-years available, header validated) |
 | **Geophysical Prior**| Copernicus GLO-30| Static | Elev, Slope, Aspect, Curv, Lift | 30 m → 0.05° | `terrain_dsm` | Static topographical input | Verified (NetCDF 80x80, Pixel-Is-Area aligned) |
@@ -47,7 +47,7 @@
 - **Relative Humidity ($RH$)**: RH 2m (or derived via August-Roche-Magnus from 2m temperature and dew point) clipped to [0, 100]%.
 - **Zonal Wind ($U$) & Meridional Wind ($V$)**: UGRD and VGRD at 10m above ground (3-hourly sequence and daily vector mean in m/s).
 - **Meteorological Wind Vector Formula**: $U = -S \cdot \sin(\theta \cdot \pi / 180)$, $V = -S \cdot \cos(\theta \cdot \pi / 180)$.
-- **Empirical Live Derivation Sample (Central Mandya via Open-Meteo)**: `Tmax=25.8°C, Tmin=20.1°C, RH=85.2%, U=15.21 m/s, V=-0.86 m/s`.
+- **Empirical Live Derivation Sample (Central Mandya via Open-Meteo)**: `Tmax=33.3°C, Tmin=23.9°C, RH=69.6%, U=8.47 m/s, V=-0.27 m/s`.
 - **Sprint 2 Implementation Note**: Full multi-channel extraction of all 6 variables across all grid cells will be executed during the Sprint 2 data generation pipeline.
 
 ### Gate 4: Configuration-Ready for 2.5M Maximum Spatial Context (Scalability M to 2.5M)
@@ -71,17 +71,17 @@
 ### A. NOAA GFS 0.25° Forecast Archive (Sampled Benchmark Years 2015–2023; 4/9 Years in Quick Mode)
 | Year | Forecast Cycle | Audit Status | Archive Tier | Authoritative Repository | Probe Latency |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **2015** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) (`gfs.0p25.2015071500.f024.grib2`) | 3.57s |
-| **2018** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) (`gfs.0p25.2018071500.f024.grib2`) | 3.34s |
-| **2021** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) (`gfs.20210715/00/atmos/gfs.t00z.pgrb2.0p25.f024`) | 1.51s |
-| **2023** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) (`gfs.20230715/00/atmos/gfs.t00z.pgrb2.0p25.f024`) | 1.82s |
+| **2015** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) (`gfs.0p25.2015071500.f024.grib2`) | 3.62s |
+| **2018** | 00Z f024 | Available | `ncar_rda_ds084_1` | NCAR RDA ds084.1 (NCEP GFS 0.25 Degree Global Forecast Grids) (`gfs.0p25.2018071500.f024.grib2`) | 3.69s |
+| **2021** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) (`gfs.20210715/00/atmos/gfs.t00z.pgrb2.0p25.f024`) | 1.35s |
+| **2023** | 00Z f024 | Available | `aws_open_data` | AWS Open Data Registry (s3://noaa-gfs-bdp-pds) (`gfs.20230715/00/atmos/gfs.t00z.pgrb2.0p25.f024`) | 1.27s |
 | **2014** | 00Z f024 | Expected Absent | `pre_operational` | None (0.25° started Jan 2015, HTTP 404) | N/A |
 
 ### B. UCSB CHIRPS v2.0 p05 Daily COG Archive
 | Sample File | HTTP Status | Content Length | Probe Latency |
 | :--- | :--- | :--- | :--- |
-| chirps-v2.0.2018.07.15.cog | HTTP 200 | 7.34 MB | 1.47s |
-| chirps-v2.0.2023.07.15.cog | HTTP 200 | 6.45 MB | 1.33s |
+| chirps-v2.0.2018.07.15.cog | HTTP 200 | 7.34 MB | 1.60s |
+| chirps-v2.0.2023.07.15.cog | HTTP 200 | 6.45 MB | 1.69s |
 
 ---
 
