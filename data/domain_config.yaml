@@ -5,6 +5,12 @@
 version: "1.0.0"
 project: "SIH-26074 Multivariate Spatiotemporal Diffusion Weather Downscaler"
 
+# Temporal Convention Specification (Exit Gate 1 Ratification)
+temporal_convention:
+  selected: "calendar_day_00_24_utc"
+  status: "binding"
+  scientific_rationale: "Aligns natively with UCSB CHIRPS v2.0 p05 daily precipitation product without temporal interpolation artifacts; hourly ERA5-Land and GFS forecast cycles are cleanly aggregated to 00:00-24:00 UTC."
+
 # 1. Core Downscaling Target Domain (M)
 # Spans 4.0° x 4.0° covering Karnataka, Western Ghats, Mandya, Mysore, and coastal zones.
 core_target_domain:

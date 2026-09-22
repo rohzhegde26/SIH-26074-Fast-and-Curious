@@ -44,6 +44,7 @@ def test_source_manifest_provenance_and_licensing():
         "numerical_weather_prediction",
         "terrain_dsm",
         "direct_observation",
+        "mixed",
     }
 
     streams = manifest.get("streams", {})
@@ -60,6 +61,26 @@ def test_source_manifest_provenance_and_licensing():
         )
         assert "license" in stream_cfg, f"Stream '{stream_name}' must document dataset license"
         assert "access_terms" in stream_cfg, f"Stream '{stream_name}' must document API access terms"
+
+
+def test_temporal_convention_binding():
+    manifest_path = ROOT / "data" / "source_manifest.yaml"
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = yaml.safe_load(f)
+
+    domain_path = ROOT / "data" / "domain_config.yaml"
+    with open(domain_path, "r", encoding="utf-8") as f:
+        domain = yaml.safe_load(f)
+
+    for doc_name, doc in [("source_manifest.yaml", manifest), ("domain_config.yaml", domain)]:
+        assert "temporal_convention" in doc, f"Missing 'temporal_convention' in {doc_name}"
+        tc = doc["temporal_convention"]
+        assert tc.get("selected") == "calendar_day_00_24_utc", (
+            f"Expected selected: 'calendar_day_00_24_utc' in {doc_name}, got {tc.get('selected')}"
+        )
+        assert tc.get("status") == "binding", (
+            f"Expected status: 'binding' in {doc_name}, got {tc.get('status')}"
+        )
 
 
 def test_no_ground_truth_claims_in_manifest():
@@ -255,4 +276,123 @@ def test_gfs_s3_key_formatter_and_idx_parser():
     assert ranges["TMP:2 m above ground"] == (0, 2048499)
     assert ranges["RH:2 m above ground"] == (2048500, 4104999)
     assert ranges["APCP:surface"] == (8300000, None)
+
+
+def test_meteorological_wind_vector_conversion():
+    from src.data.source_auditor import derive_vector_wind_from_speed_direction
+
+    speed = 10.0  # m/s
+
+    # 1. North wind (0°): blowing towards south => U = 0, V = -10
+    u, v = derive_vector_wind_from_speed_direction(speed, 0.0)
+    assert np.isclose(u, 0.0, atol=1e-6)
+    assert np.isclose(v, -10.0, atol=1e-6)
+
+    # 2. East wind (90°): blowing towards west => U = -10, V = 0
+    u, v = derive_vector_wind_from_speed_direction(speed, 90.0)
+    assert np.isclose(u, -10.0, atol=1e-6)
+    assert np.isclose(v, 0.0, atol=1e-6)
+
+    # 3. South wind (180°): blowing towards north => U = 0, V = +10
+    u, v = derive_vector_wind_from_speed_direction(speed, 180.0)
+    assert np.isclose(u, 0.0, atol=1e-6)
+    assert np.isclose(v, 10.0, atol=1e-6)
+
+    # 4. West wind (270°): blowing towards east => U = +10, V = 0
+    u, v = derive_vector_wind_from_speed_direction(speed, 270.0)
+    assert np.isclose(u, 10.0, atol=1e-6)
+    assert np.isclose(v, 0.0, atol=1e-6)
+
+    # 5. Calm (0 m/s): U = 0, V = 0 regardless of angle
+    u, v = derive_vector_wind_from_speed_direction(0.0, 45.0)
+    assert np.isclose(u, 0.0, atol=1e-6)
+    assert np.isclose(v, 0.0, atol=1e-6)
+
+    # 6. Vectorized numpy array operation
+    speeds = np.array([10.0, 5.0, 0.0])
+    angles = np.array([0.0, 180.0, 90.0])
+    u_arr, v_arr = derive_vector_wind_from_speed_direction(speeds, angles)
+    assert len(u_arr) == 3 and len(v_arr) == 3
+    assert np.isclose(u_arr[0], 0.0) and np.isclose(v_arr[0], -10.0)
+    assert np.isclose(u_arr[1], 0.0) and np.isclose(v_arr[1], 5.0)
+
+
+def test_era5_hourly_to_daily_derivation():
+    from src.data.source_auditor import derive_era5_daily_from_hourly
+
+    # Create 24 hours of synthetic hourly data
+    times = [f"2023-07-15T{h:02d}:00" for h in range(24)]
+    # Diurnal temperature cycle: min 20°C at dawn, max 32°C at afternoon
+    temps = [20.0 + 12.0 * np.sin(np.pi * h / 24.0) for h in range(24)]
+    rhs = [85.0 - 30.0 * np.sin(np.pi * h / 24.0) for h in range(24)]
+    speeds = [4.0] * 24
+    dirs = [270.0] * 24  # Pure westerly wind
+
+    hourly_dict = {
+        "time": times,
+        "temperature_2m": temps,
+        "relative_humidity_2m": rhs,
+        "wind_speed_10m": speeds,
+        "wind_direction_10m": dirs,
+    }
+
+    daily = derive_era5_daily_from_hourly(hourly_dict)
+    assert np.isclose(daily["tmax"], 32.0, atol=0.1)
+    assert np.isclose(daily["tmin"], 20.0, atol=0.1)
+    assert daily["tmax"] >= daily["tmin"]
+    assert 0.0 <= daily["rh"] <= 100.0
+    assert np.isclose(daily["wind_u"], 4.0, atol=1e-4)  # West wind blowing east => +U
+    assert np.isclose(daily["wind_v"], 0.0, atol=1e-4)
+
+    # Check error on non-multiple of 24
+    invalid_dict = {k: v[:20] for k, v in hourly_dict.items()}
+    with pytest.raises(ValueError):
+        derive_era5_daily_from_hourly(invalid_dict)
+
+    # Check error on NaNs
+    nan_dict = {k: list(v) for k, v in hourly_dict.items()}
+    nan_dict["temperature_2m"][5] = np.nan
+    with pytest.raises(ValueError):
+        derive_era5_daily_from_hourly(nan_dict)
+
+
+def test_on_disk_spatial_registration():
+    from src.data.source_auditor import audit_dataset_spatial_registration
+
+    res = audit_dataset_spatial_registration(root_dir=ROOT)
+    assert res["all_datasets_registered"] is True, f"Spatial registration failed: {res}"
+    assert res["pixel_convention"] == "Pixel-Is-Area"
+    assert res["scale_factor"] == 5
+
+    files = res["files"]
+    for key in ["glo30_dem", "chirps_daily", "era5_land_daily"]:
+        assert key in files
+        f = files[key]
+        assert f["exists"] is True
+        assert f["verified"] is True
+        assert f["fine_dims"] == [80, 80]
+        # Pixel-Is-Area cell-center check: [11.025, 14.975] and [74.025, 77.975]
+        assert np.isclose(f["lat_range"][0], 11.025, atol=1e-3)
+        assert np.isclose(f["lat_range"][1], 14.975, atol=1e-3)
+        assert np.isclose(f["lon_range"][0], 74.025, atol=1e-3)
+        assert np.isclose(f["lon_range"][1], 77.975, atol=1e-3)
+
+
+def test_gfs_archive_tier_routing():
+    from src.data.gfs_archive_auditor import audit_gfs_archive_source
+
+    # 2023 -> AWS Open Data tier
+    res_2023 = audit_gfs_archive_source(2023)
+    assert res_2023["tier"] == "aws_open_data"
+    assert "noaa-gfs-bdp-pds" in res_2023["repository"]
+
+    # 2018 -> NCAR RDA ds084.1 tier
+    res_2018 = audit_gfs_archive_source(2018)
+    assert res_2018["tier"] == "ncar_rda_ds084_1"
+    assert "NCAR RDA ds084.1" in res_2018["repository"]
+
+    # 2014 -> Pre-operational (unsupported)
+    res_2014 = audit_gfs_archive_source(2014)
+    assert res_2014["available"] is False
+    assert res_2014["tier"] == "pre_operational"
 

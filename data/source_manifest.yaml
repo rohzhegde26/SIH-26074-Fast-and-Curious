@@ -6,10 +6,15 @@ version: "1.0.0"
 project: "SIH-26074 Multivariate Spatiotemporal Diffusion Weather Downscaler"
 date_created: "2026-09-22"
 
+temporal_convention:
+  selected: "calendar_day_00_24_utc"
+  status: "binding"
+  scientific_rationale: "Aligns natively with UCSB CHIRPS v2.0 p05 daily precipitation product without temporal interpolation artifacts; hourly ERA5-Land and GFS forecast cycles are cleanly aggregated to 00:00-24:00 UTC."
+
 streams:
   history:
     name: "Historical Meteorological Context"
-    provenance_class: "reanalysis"  # Primary thermodynamic provenance; precipitation is satellite_gauge_product
+    provenance_class: "mixed"  # Composite stream combining reanalysis thermodynamics with satellite_gauge precipitation
     temporal_coverage: [2014, 2023]
     role: "model_history_context"
     license: "CC-BY-4.0 (ECMWF) / Public Domain (UCSB CHC)"
@@ -112,7 +117,7 @@ streams:
 
   target:
     name: "Fine-Resolution Reference Target Stack"
-    provenance_class: "reanalysis"  # Joint classification (reanalysis thermodynamics + satellite_gauge precipitation)
+    provenance_class: "mixed"  # Composite reference target (reanalysis thermodynamics + satellite_gauge precipitation)
     description: "High-resolution 0.05° reference supervision target (not direct ground observational telemetry)"
     temporal_coverage: [2014, 2023]
     role: "supervision_target"
