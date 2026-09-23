@@ -1,3 +1,15 @@
+## Active Compute Budget & Live Kaggle GPU Quota
+> **LIVE STATUS (Updated 2026-09-23 10:02:30):**
+> - **Total GPU Allowance:** 6.0 hours (21600 s)
+> - **GPU Time Consumed:** 0.0 hours (0 s)
+> - **GPU TIME REMAINING:** **6.0 hours (360.0 minutes)**
+> - **Quota Refreshes At:** 2026-09-26T00:00:00.000Z
+>
+> ⚠️ **HARD CONSTRAINT FOR AGENTS:**
+> You have AT MOST **6.0 hours** of GPU time remaining for this cycle.
+> Every training run depletes this quota. Budget your experiments carefully. If you run 5-minute runs,
+> you have at most ~72 candidate iterations left before quota exhaustion!
+
 # AutoResearch Master Playbook: SIH 26074 Weather Downscaling
 
 ## Active Compute Budget & Live Kaggle Accelerator Quota
