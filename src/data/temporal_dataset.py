@@ -41,6 +41,7 @@ class SpatiotemporalDownscalingDataset(Dataset):
         stats_path: Optional[Path] = None,
         split: str = "train",
         normalize: bool = True,
+        history_len: int = 3,
         transform: Optional[Callable] = None,
     ):
         self.zarr_path = Path(zarr_path or DEFAULT_ZARR_PATH)
@@ -48,6 +49,9 @@ class SpatiotemporalDownscalingDataset(Dataset):
         self.stats_path = Path(stats_path or DEFAULT_STATS_PATH)
         self.split = str(split).lower()
         self.normalize = bool(normalize)
+        self.history_len = int(history_len)
+        if self.history_len not in (1, 2, 3):
+            raise ValueError(f"history_len must be in {{1, 2, 3}}, got {history_len}")
         self.transform = transform
 
         if not self.zarr_path.exists():
@@ -93,6 +97,8 @@ class SpatiotemporalDownscalingDataset(Dataset):
 
         # Read contiguous sample arrays from Zarr store
         raw_hist = np.asarray(self.store["history"][global_idx], dtype=np.float32)  # [3, 6, 16, 16]
+        if self.history_len < 3:
+            raw_hist = raw_hist[-self.history_len:]  # [H, 6, 16, 16] (most recent antecedent days)
         raw_fcst = np.asarray(self.store["future_forecast"][global_idx], dtype=np.float32)  # [7, 6, 16, 16]
         raw_targ = np.asarray(self.store["target"][global_idx], dtype=np.float32)  # [7, 6, 80, 80]
 

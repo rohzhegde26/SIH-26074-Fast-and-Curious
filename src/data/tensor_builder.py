@@ -198,6 +198,16 @@ def apply_normalization(
                 normalized[:, c_idx] = (log_val - mean) / std
             else:
                 normalized[:, c_idx] = (normalized[:, c_idx] - mean) / std
+    elif normalized.ndim == 5 and normalized.shape[2] == len(channels):
+        for c_idx, ch_name in enumerate(channels):
+            st = stats[ch_name]
+            mean = st["mean"]
+            std = st["std"]
+            if st.get("transform") == "log1p_zscore":
+                log_val = np.log1p(np.maximum(0.0, normalized[:, :, c_idx]))
+                normalized[:, :, c_idx] = (log_val - mean) / std
+            else:
+                normalized[:, :, c_idx] = (normalized[:, :, c_idx] - mean) / std
     else:
         raise ValueError(f"Array shape {array.shape} does not match channel count {len(channels)}")
 
@@ -242,6 +252,18 @@ def invert_normalization(
                 reconstructed[:, c_idx] = reconstructed[:, c_idx] * std + mean
                 if ch_name == "rh":
                     reconstructed[:, c_idx] = np.clip(reconstructed[:, c_idx], 0.0, 100.0)
+    elif reconstructed.ndim == 5 and reconstructed.shape[2] == len(channels):
+        for c_idx, ch_name in enumerate(channels):
+            st = stats[ch_name]
+            mean = st["mean"]
+            std = st["std"]
+            if st.get("transform") == "log1p_zscore":
+                log_val = reconstructed[:, :, c_idx] * std + mean
+                reconstructed[:, :, c_idx] = np.maximum(0.0, np.expm1(log_val))
+            else:
+                reconstructed[:, :, c_idx] = reconstructed[:, :, c_idx] * std + mean
+                if ch_name == "rh":
+                    reconstructed[:, :, c_idx] = np.clip(reconstructed[:, :, c_idx], 0.0, 100.0)
     else:
         raise ValueError(f"Array shape {normalized_array.shape} does not match channel count {len(channels)}")
 

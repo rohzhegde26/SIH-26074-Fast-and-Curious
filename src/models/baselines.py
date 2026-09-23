@@ -110,3 +110,83 @@ class DeepSDBaseline(nn.Module):
         out = self.relu3(self.conv3(feat2))
 
         return out
+
+
+class BilinearTemporalBaseline(nn.Module):
+    """
+    Baseline 0B: All-Bilinear 5x Temporal Interpolation.
+    Directly upsamples all 7 leads and 6 variables from 16x16 to 80x80.
+    """
+
+    def __init__(self, scale_factor: float = 5.0):
+        super().__init__()
+        self.scale_factor = scale_factor
+
+    def forward(self, future_forecast: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            future_forecast: [B, 7, 6, 16, 16]
+        Returns:
+            [B, 7, 6, 80, 80]
+        """
+        b, leads, c, h, w = future_forecast.shape
+        flat = future_forecast.view(b * leads, c, h, w)
+        up = F.interpolate(flat, scale_factor=self.scale_factor, mode="bilinear", align_corners=False)
+        return up.view(b, leads, c, 80, 80)
+
+
+class ChannelAwareTemporalBaseline(nn.Module):
+    """
+    Baseline 0A: Channel-Aware Coarse-to-Fine Interpolation.
+    - Precipitation (ch 0): Conservative nearest 5x block disaggregation preserving cell mean.
+    - Thermodynamics and Wind (ch 1..5): Bilinear 5x interpolation.
+    """
+
+    def __init__(self, scale_factor: float = 5.0):
+        super().__init__()
+        self.scale_factor = scale_factor
+
+    def forward(self, future_forecast: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            future_forecast: [B, 7, 6, 16, 16]
+        Returns:
+            [B, 7, 6, 80, 80]
+        """
+        b, leads, c, h, w = future_forecast.shape
+        flat = future_forecast.view(b * leads, c, h, w)
+
+        # Precipitation: conservative block nearest disaggregation
+        p_coarse = flat[:, 0:1, :, :]
+        p_fine = F.interpolate(p_coarse, scale_factor=self.scale_factor, mode="nearest")
+
+        # Thermodynamics & Wind (Tmax, Tmin, RH, U, V): bilinear
+        other_coarse = flat[:, 1:, :, :]
+        other_fine = F.interpolate(other_coarse, scale_factor=self.scale_factor, mode="bilinear", align_corners=False)
+
+        combined = torch.cat([p_fine, other_fine], dim=1)
+        return combined.view(b, leads, c, 80, 80)
+
+
+class PersistenceTemporalBaseline(nn.Module):
+    """
+    Baseline 0C: Persistence Baseline.
+    Repeats the latest historical observation day (D-1) across all 7 future leads.
+    """
+
+    def __init__(self, scale_factor: float = 5.0):
+        super().__init__()
+        self.scale_factor = scale_factor
+
+    def forward(self, history: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            history: [B, H, 6, 16, 16]
+        Returns:
+            [B, 7, 6, 80, 80]
+        """
+        b, h_len, c, h, w = history.shape
+        latest_day = history[:, -1, :, :, :]  # [B, 6, 16, 16] (D-1)
+        latest_up = F.interpolate(latest_day, scale_factor=self.scale_factor, mode="bilinear", align_corners=False)  # [B, 6, 80, 80]
+        return latest_up.unsqueeze(1).expand(b, 7, c, 80, 80).contiguous()
+
