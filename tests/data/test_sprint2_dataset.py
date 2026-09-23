@@ -537,3 +537,61 @@ def test_validator_gate7_and_gate8():
     assert hg["gate8_sample_count_completeness"]["passed"] is True, f"Gate 8 failed: {hg['gate8_sample_count_completeness']['details']}"
     assert results["all_hard_gates_passed"] is True
 
+
+def test_ncar_ncss_subset_extraction():
+    from src.data.gfs_slice_downloader import NCARGFSBackend
+    ncar = NCARGFSBackend()
+    res = ncar.fetch_ncss_subset(date(2018, 7, 15), cycle_hour=0, forecast_hour=6)
+    assert res["t2m"].shape == (16, 16)
+    assert res["rh"].shape == (16, 16)
+    assert res["u"].shape == (16, 16)
+    assert res["v"].shape == (16, 16)
+    assert res["p"] is not None and res["p"].shape == (16, 16)
+    assert "thredds.rda.ucar.edu" in res["source_url"]
+
+
+def test_gfs_3hourly_aggregation_math():
+    from src.data.gfs_slice_downloader import extract_daily_gfs_lead_aggregated
+    lead_arr, cum_p, files = extract_daily_gfs_lead_aggregated(date(2018, 7, 15), day_offset=0)
+    assert lead_arr.shape == (6, 16, 16)
+    tmax = lead_arr[1]
+    tmin = lead_arr[2]
+    assert np.all(tmax >= tmin), "Tmax must be >= Tmin across all grid cells"
+    assert np.all(lead_arr[0] >= 0.0), "Daily precipitation must be non-negative"
+    assert len(files) == 8, f"Expected 8 3-hourly step files, got {len(files)}"
+
+
+def test_boundary_observations_all_channels():
+    import xarray as xr
+    ch = xr.open_dataset(ROOT / "data" / "raw" / "chirps" / "chirps_daily.nc")
+    w = xr.open_dataset(ROOT / "data" / "raw" / "era5" / "era5_wind_daily.nc")
+
+    boundary_dates = ["2023-05-28", "2023-05-31", "2023-10-01", "2023-10-07"]
+    times_ch = [str(t)[:10] for t in ch.time.values]
+    times_w = [str(t)[:10] for t in w.time.values]
+
+    for d in boundary_dates:
+        assert d in times_ch, f"{d} missing in CHIRPS"
+        assert d in times_w, f"{d} missing in ERA5 wind"
+
+
+def test_gate7_rejects_synthetic_cache():
+    from src.data.validate_dataset import DatasetValidator
+    validator = DatasetValidator()
+
+    fake_file = ROOT / "data" / "raw" / "forecast" / "gfs" / "gfs_fake_synthetic_16x16.npz"
+    try:
+        np.savez_compressed(
+            fake_file,
+            forecast=np.zeros((7, 6, 16, 16), dtype=np.float32),
+            is_synthetic=True,
+            grib_magic_verified=False,
+            source_files=[],
+        )
+        passed, msg, details = validator._check_source_and_provenance_integrity()
+        assert passed is False, "Gate 7 must reject synthetic GFS cache"
+        assert any("fake_synthetic" in s for s in details["synthetic_or_invalid_gfs_caches"])
+    finally:
+        if fake_file.exists():
+            fake_file.unlink()
+

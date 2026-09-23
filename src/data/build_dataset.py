@@ -141,28 +141,6 @@ class DatasetBuilder:
             ], axis=0).astype(np.float32)
             return arr, True
 
-        # Check extended season cache in data/raw/era5/cache if available
-        wind_cache_file = ROOT / "data" / "raw" / "era5" / "cache" / f"era5_wind_coarse_{year}.npz"
-        if wind_cache_file.exists():
-            w_data = np.load(wind_cache_file)
-            w_dates = w_data["dates"].tolist()
-            if date_str in w_dates:
-                w_idx = w_dates.index(date_str)
-                # Available in extended boundary cache: use boundary values
-                u_val = w_data["coarse_u"][w_idx]
-                v_val = w_data["coarse_v"][w_idx]
-                # For thermo/precip fallback to earliest season observation without duplication
-                idx = self.date_to_idx.get(f"{year}-06-01", 0)
-                arr = np.stack([
-                    self.chirps_ds["coarse_precip"][idx].values,
-                    self.era5_ds["coarse_tmax"][idx].values,
-                    self.era5_ds["coarse_tmin"][idx].values,
-                    self.era5_ds["coarse_rh"][idx].values,
-                    u_val,
-                    v_val,
-                ], axis=0).astype(np.float32)
-                return arr, True
-
         # Date completely absent from observation records
         return np.zeros((6, 16, 16), dtype=np.float32), False
 
@@ -182,39 +160,6 @@ class DatasetBuilder:
                 self.wind_ds["wind_v"][idx].values,
             ], axis=0).astype(np.float32)
             return arr, True
-
-        # Check extended season cache in data/raw/era5/cache if available (Oct 1..Oct 7)
-        wind_cache_file = ROOT / "data" / "raw" / "era5" / "cache" / f"era5_wind_coarse_{year}.npz"
-        if wind_cache_file.exists():
-            w_data = np.load(wind_cache_file)
-            w_dates = w_data["dates"].tolist()
-            if date_str in w_dates:
-                w_idx = w_dates.index(date_str)
-                u_coarse = w_data["coarse_u"][w_idx]
-                v_coarse = w_data["coarse_v"][w_idx]
-
-                # Bilinearly regrid coarse 16x16 to fine 80x80
-                from scipy.interpolate import RegularGridInterpolator
-                coarse_lat = np.linspace(14.875, 11.125, 16)
-                coarse_lon = np.linspace(74.125, 77.875, 16)
-                interp_u = RegularGridInterpolator((coarse_lat[::-1], coarse_lon), u_coarse[::-1, :], bounds_error=False, fill_value=None)
-                interp_v = RegularGridInterpolator((coarse_lat[::-1], coarse_lon), v_coarse[::-1, :], bounds_error=False, fill_value=None)
-                fine_lats = self.chirps_ds.lat.values
-                fine_lons = self.chirps_ds.lon.values
-                mesh_lat, mesh_lon = np.meshgrid(fine_lats, fine_lons, indexing="ij")
-                u_fine = interp_u((mesh_lat, mesh_lon)).astype(np.float32)
-                v_fine = interp_v((mesh_lat, mesh_lon)).astype(np.float32)
-
-                idx = self.date_to_idx.get(f"{year}-09-30", len(self.date_to_idx) - 1)
-                arr = np.stack([
-                    self.chirps_ds["precip"][idx].values,
-                    self.era5_ds["tmax"][idx].values,
-                    self.era5_ds["tmin"][idx].values,
-                    self.era5_ds["rh"][idx].values,
-                    u_fine,
-                    v_fine,
-                ], axis=0).astype(np.float32)
-                return arr, True
 
         # Boundary date absent from observation records
         return np.zeros((6, 80, 80), dtype=np.float32), False
@@ -278,15 +223,23 @@ class DatasetBuilder:
         # Strictly authentic NOAA GFS forecast: ZERO REANALYSIS FALLBACK
         gfs_cache_file = self.gfs_cache_dir / f"gfs_{init_dt.strftime('%Y%m%d')}_00z_16x16.npz"
         gfs_archive_tier = "aws_open_data" if year >= 2021 else "ncar_rda_ds084_1"
-        gfs_extraction_backend = "aws_http_range" if year >= 2021 else "ncar_thredds_subset"
+        gfs_extraction_backend = "aws_http_range" if year >= 2021 else "ncar_thredds_ncss"
         gfs_source_files = [f"gfs.{init_dt.strftime('%Y%m%d')}/00/atmos/gfs.t00z.pgrb2.0p25.f024"]
 
         if gfs_cache_file.exists():
             loaded = np.load(gfs_cache_file)
-            forecast_tensor = loaded["forecast"].astype(np.float32)
-            gfs_archive_tier = str(loaded.get("gfs_archive_tier", gfs_archive_tier))
-            gfs_extraction_backend = str(loaded.get("extraction_backend", gfs_extraction_backend))
-            if "source_files" in loaded:
+            is_synthetic = bool(loaded.get("is_synthetic", False))
+            is_reanalysis = bool(loaded.get("is_reanalysis_derived", False))
+            magic_verified = bool(loaded.get("grib_magic_verified", True))
+            source_files_present = bool("source_files" in loaded and len(loaded["source_files"]) > 0)
+
+            if is_synthetic or is_reanalysis or not magic_verified or not source_files_present:
+                qa_flags.append(f"UNVERIFIED_OR_SYNTHETIC_GFS_CACHE:{gfs_cache_file.name}")
+                forecast_tensor = np.zeros((self.lead_days, 6, 16, 16), dtype=np.float32)
+            else:
+                forecast_tensor = loaded["forecast"].astype(np.float32)
+                gfs_archive_tier = str(loaded.get("gfs_archive_tier", gfs_archive_tier))
+                gfs_extraction_backend = str(loaded.get("extraction_backend", gfs_extraction_backend))
                 gfs_source_files = [str(f) for f in loaded["source_files"]]
         else:
             # Attempt genuine extraction from authoritative GFS archive

@@ -372,8 +372,29 @@ class DatasetValidator:
             passed = False
             details["sync_error"] = "Zarr splits array contradicts sample_index.parquet splits"
 
+        # 5. GFS Cache Authenticity Verification
+        gfs_cache_dir = ROOT / self.config["raw_sources"].get("gfs_cache_dir", "data/raw/forecast/gfs")
+        synthetic_or_invalid_caches = []
+        if gfs_cache_dir.exists():
+            for c_file in gfs_cache_dir.glob("gfs_*_16x16.npz"):
+                try:
+                    c_data = np.load(c_file)
+                    is_synth = bool(c_data.get("is_synthetic", False))
+                    is_reanal = bool(c_data.get("is_reanalysis_derived", False))
+                    magic = bool(c_data.get("grib_magic_verified", True))
+                    has_sources = "source_files" in c_data and len(c_data["source_files"]) > 0
+                    if is_synth or is_reanal or not magic or not has_sources:
+                        synthetic_or_invalid_caches.append(c_file.name)
+                except Exception as e:
+                    synthetic_or_invalid_caches.append(f"{c_file.name}:{e}")
+
+        details["synthetic_or_invalid_gfs_caches"] = synthetic_or_invalid_caches
+        if len(synthetic_or_invalid_caches) > 0:
+            passed = False
+            details["gfs_authenticity_error"] = f"Detected {len(synthetic_or_invalid_caches)} synthetic or unverified GFS caches: {synthetic_or_invalid_caches[:5]}"
+
         msg = (
-            "Source provenance verified (NOAA_GFS forecast, ECMWF_ERA5 U/V wind, exact 80x80 coordinate registration, Zarr-Parquet 100% synced)."
+            "Source provenance verified (NOAA_GFS forecast, ECMWF_ERA5 U/V wind, exact 80x80 coordinate registration, Zarr-Parquet 100% synced, zero synthetic NWP)."
             if passed
             else "Source or provenance integrity violation detected."
         )
