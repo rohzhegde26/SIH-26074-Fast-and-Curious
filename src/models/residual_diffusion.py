@@ -431,3 +431,22 @@ class SpatiotemporalResidualDiffusion(nn.Module):
         # Final reconstruction = baseline + predicted fine residual
         y_downscaled_norm = baseline_up + r_cur
         return y_downscaled_norm
+
+    @torch.no_grad()
+    def sample_ddim(
+        self,
+        history: torch.Tensor,
+        future_forecast: torch.Tensor,
+        terrain: torch.Tensor,
+        steps: int = 32,
+        eta: float = 0.0,
+        seed: Optional[int] = None,
+    ) -> torch.Tensor:
+        """Alias for DDIM sampling across specified steps."""
+        return self.sample(
+            history=history,
+            future_forecast=future_forecast,
+            terrain=terrain,
+            num_steps=steps,
+            seed=seed,
+        )

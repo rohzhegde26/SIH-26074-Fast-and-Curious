@@ -50,8 +50,6 @@ class SpatiotemporalDownscalingDataset(Dataset):
         self.split = str(split).lower()
         self.normalize = bool(normalize)
         self.history_len = int(history_len)
-        if self.history_len not in (1, 2, 3):
-            raise ValueError(f"history_len must be in {{1, 2, 3}}, got {history_len}")
         self.transform = transform
 
         if not self.zarr_path.exists():
@@ -60,6 +58,12 @@ class SpatiotemporalDownscalingDataset(Dataset):
             raise FileNotFoundError(f"Index parquet not found at {self.index_path}")
 
         self.store = zarr.open_group(str(self.zarr_path), mode="r")
+        self.store_history_len = int(self.store["history"].shape[1])
+        if not (1 <= self.history_len <= self.store_history_len):
+            raise ValueError(
+                f"history_len must be between 1 and {self.store_history_len}, got {history_len}"
+            )
+
         self.df_all = pd.read_parquet(self.index_path)
 
         if self.split != "all":
@@ -96,9 +100,9 @@ class SpatiotemporalDownscalingDataset(Dataset):
         meta = self.df.iloc[idx]
 
         # Read contiguous sample arrays from Zarr store
-        raw_hist = np.asarray(self.store["history"][global_idx], dtype=np.float32)  # [3, 6, 16, 16]
-        if self.history_len < 3:
-            raw_hist = raw_hist[-self.history_len:]  # [H, 6, 16, 16] (most recent antecedent days)
+        raw_hist = np.asarray(self.store["history"][global_idx], dtype=np.float32)  # [store_h, 6, 16, 16]
+        if self.history_len < raw_hist.shape[0]:
+            raw_hist = raw_hist[-self.history_len:]  # [H, 6, 16, 16] (most recent antecedent days ending at D-1)
         raw_fcst = np.asarray(self.store["future_forecast"][global_idx], dtype=np.float32)  # [7, 6, 16, 16]
         raw_targ = np.asarray(self.store["target"][global_idx], dtype=np.float32)  # [7, 6, 80, 80]
 

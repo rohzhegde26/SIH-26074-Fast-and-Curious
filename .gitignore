@@ -174,4 +174,6 @@ node_modules/
 # -- Temporary inventory files ----------------------------------------------
 _*.csv
 .kaggle_multitask_staging/
+.kaggle_staging*/
+data/kaggle_dataset_v2_staging/
 output/

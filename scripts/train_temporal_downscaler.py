@@ -47,26 +47,33 @@ from src.losses.conservation import coarsen_hr_to_lr_torch
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Train Sprint 3 Spatiotemporal Downscaler")
-    parser.add_argument("--mode", type=str, default="deterministic", choices=["deterministic", "diffusion"])
-    parser.add_argument("--history_len", type=int, default=3, choices=[1, 2, 3], help="Antecedent history days")
-    parser.add_argument("--model_size", type=str, default="base", choices=["small", "base", "large"])
-    parser.add_argument("--epochs", type=int, default=1, help="Number of training epochs (1 for probe)")
+    parser = argparse.ArgumentParser(description="Train Sprint 4 Scaled Spatiotemporal Downscaler")
+    parser.add_argument("--mode", type=str, default="diffusion", choices=["deterministic", "diffusion"])
+    parser.add_argument("--history_len", type=int, default=3, choices=[1, 2, 3, 5, 7, 10, 14], help="Antecedent history days")
+    parser.add_argument("--model_size", type=str, default="ultra", choices=["small", "base", "large", "ultra"])
+    parser.add_argument("--base_channels", type=int, default=None, help="Explicit override for model base channels")
+    parser.add_argument("--zarr_path", type=str, default=None, help="Path to Zarr dataset store")
+    parser.add_argument("--index_path", type=str, default=None, help="Path to sample index parquet")
+    parser.add_argument("--stats_path", type=str, default=None, help="Path to normalization stats YAML")
+    parser.add_argument("--epochs", type=int, default=30, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=8, help="Batch size per GPU")
-    parser.add_argument("--lr", type=float, default=5e-4, help="Peak learning rate")
+    parser.add_argument("--lr", type=float, default=3e-4, help="Peak learning rate")
     parser.add_argument("--weight_decay", type=float, default=1e-4, help="Weight decay")
     parser.add_argument("--device", type=str, default="auto", help="Device (cuda, cpu, auto)")
     parser.add_argument("--num_workers", type=int, default=2, help="DataLoader workers")
     parser.add_argument("--output_dir", type=str, default=None, help="Root directory for checkpoints & reports")
-    parser.add_argument("--ddim_steps", type=int, default=16, help="Sampling steps for diffusion evaluation")
-    parser.add_argument("--early_stopping_patience", type=int, default=10, help="Epoch patience for early stop")
+    parser.add_argument("--ddim_steps", type=int, default=32, help="Sampling steps for diffusion evaluation")
+    parser.add_argument("--eval_sampling_interval", type=int, default=5, help="Epoch interval to run full DDIM reverse diffusion sampling on validation")
+    parser.add_argument("--early_stopping_patience", type=int, default=7, help="Epoch patience for early stop")
     parser.add_argument("--max_batches", type=int, default=None, help="Limit batches per epoch for quick smoke test")
     return parser.parse_args()
 
 
-def get_model_channels(model_size: str) -> int:
-    sizes = {"small": 16, "base": 24, "large": 32}
-    return sizes.get(model_size, 24)
+def get_model_channels(model_size: str, base_channels: Optional[int] = None) -> int:
+    if base_channels is not None:
+        return int(base_channels)
+    sizes = {"small": 16, "base": 24, "large": 32, "ultra": 96}
+    return sizes.get(model_size, 96)
 
 
 def compute_lead_metrics(
@@ -187,54 +194,69 @@ def run_training():
     models_dir.mkdir(parents=True, exist_ok=True)
     reports_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load frozen datasets
-    print("[*] Loading frozen datasets (multitask_temporal_v1.zarr)...")
-    # Resolve Zarr path (support Kaggle attached input or local workspace)
-    # Dynamic Zarr path resolution
-    zarr_candidates = [
-        ROOT / "datasets" / "multitask_temporal_v1.zarr",
-        Path("/kaggle/working/datasets/multitask_temporal_v1.zarr"),
-        Path("/kaggle/input/sih26074-multitask-temporal-v1/multitask_temporal_v1.zarr"),
-        Path("/kaggle/input/sih26074-multitask-temporal-v1/multitask_temporal_v1.zarr/multitask_temporal_v1.zarr"),
-    ]
-    zarr_path = None
-    for cand in zarr_candidates:
-        if cand.exists() and ((cand / ".zgroup").exists() or (cand / "dates").exists()):
-            zarr_path = cand
-            break
-    if zarr_path is None and Path("/kaggle/input").exists():
-        for d in Path("/kaggle/input").rglob("multitask_temporal_v1.zarr"):
-            if (d / ".zgroup").exists() or (d / "dates").exists():
-                zarr_path = d
+    # Load dataset
+    print("[*] Resolving datasets and contracts...")
+    if args.zarr_path:
+        zarr_path = Path(args.zarr_path)
+    else:
+        zarr_candidates = [
+            ROOT / "datasets" / "multitask_temporal_v2_h14.zarr",
+            Path("/kaggle/working/datasets/multitask_temporal_v2_h14.zarr"),
+            Path("/kaggle/input/sih26074-multitask-temporal-v2-h14/multitask_temporal_v2_h14.zarr"),
+            ROOT / "datasets" / "multitask_temporal_v1.zarr",
+            Path("/kaggle/working/datasets/multitask_temporal_v1.zarr"),
+            Path("/kaggle/input/sih26074-multitask-temporal-v1/multitask_temporal_v1.zarr"),
+        ]
+        zarr_path = None
+        for cand in zarr_candidates:
+            if cand.exists() and ((cand / ".zgroup").exists() or (cand / "dates").exists()):
+                zarr_path = cand
                 break
-    if zarr_path is None:
-        zarr_path = ROOT / "datasets" / "multitask_temporal_v1.zarr"
+        if zarr_path is None and Path("/kaggle/input").exists():
+            for d in Path("/kaggle/input").rglob("*.zarr"):
+                if (d / ".zgroup").exists() or (d / "dates").exists():
+                    zarr_path = d
+                    break
+        if zarr_path is None:
+            zarr_path = ROOT / "datasets" / "multitask_temporal_v2_h14.zarr"
 
-    index_candidates = [
-        ROOT / "data" / "sample_index.parquet",
-        Path("/kaggle/working/data/sample_index.parquet"),
-        Path("/kaggle/input/sih26074-multitask-temporal-v1/sample_index.parquet"),
-    ]
-    index_path = next((p for p in index_candidates if p.exists()), None)
-    if index_path is None and Path("/kaggle/input").exists():
-        found = list(Path("/kaggle/input").rglob("sample_index.parquet"))
-        if found:
-            index_path = found[0]
-    if index_path is None:
-        index_path = ROOT / "data" / "sample_index.parquet"
+    if args.index_path:
+        index_path = Path(args.index_path)
+    else:
+        index_candidates = [
+            ROOT / "data" / "sample_index_v2_h14.parquet",
+            Path("/kaggle/working/data/sample_index_v2_h14.parquet"),
+            Path("/kaggle/input/sih26074-multitask-temporal-v2-h14/sample_index_v2_h14.parquet"),
+            ROOT / "data" / "sample_index.parquet",
+            Path("/kaggle/working/data/sample_index.parquet"),
+            Path("/kaggle/input/sih26074-multitask-temporal-v1/sample_index.parquet"),
+        ]
+        index_path = next((p for p in index_candidates if p.exists()), None)
+        if index_path is None and Path("/kaggle/input").exists():
+            found = list(Path("/kaggle/input").rglob("sample_index*.parquet"))
+            if found:
+                index_path = found[0]
+        if index_path is None:
+            index_path = ROOT / "data" / "sample_index_v2_h14.parquet"
 
-    stats_candidates = [
-        ROOT / "data" / "normalization_stats.yaml",
-        Path("/kaggle/working/data/normalization_stats.yaml"),
-        Path("/kaggle/input/sih26074-multitask-temporal-v1/normalization_stats.yaml"),
-    ]
-    stats_path = next((p for p in stats_candidates if p.exists()), None)
-    if stats_path is None and Path("/kaggle/input").exists():
-        found = list(Path("/kaggle/input").rglob("normalization_stats.yaml"))
-        if found:
-            stats_path = found[0]
-    if stats_path is None:
-        stats_path = ROOT / "data" / "normalization_stats.yaml"
+    if args.stats_path:
+        stats_path = Path(args.stats_path)
+    else:
+        stats_candidates = [
+            ROOT / "data" / "normalization_stats_v2.yaml",
+            Path("/kaggle/working/data/normalization_stats_v2.yaml"),
+            Path("/kaggle/input/sih26074-multitask-temporal-v2-h14/normalization_stats_v2.yaml"),
+            ROOT / "data" / "normalization_stats.yaml",
+            Path("/kaggle/working/data/normalization_stats.yaml"),
+            Path("/kaggle/input/sih26074-multitask-temporal-v1/normalization_stats.yaml"),
+        ]
+        stats_path = next((p for p in stats_candidates if p.exists()), None)
+        if stats_path is None and Path("/kaggle/input").exists():
+            found = list(Path("/kaggle/input").rglob("normalization_stats*.yaml"))
+            if found:
+                stats_path = found[0]
+        if stats_path is None:
+            stats_path = ROOT / "data" / "normalization_stats_v2.yaml"
 
     print(f"[+] Resolved Zarr store:  {zarr_path}")
     print(f"[+] Resolved Index table: {index_path}")
@@ -256,9 +278,18 @@ def run_training():
         history_len=args.history_len,
         normalize=True,
     )
+    test_ds = SpatiotemporalDownscalingDataset(
+        zarr_path=zarr_path,
+        index_path=index_path,
+        stats_path=stats_path,
+        split="test",
+        history_len=args.history_len,
+        normalize=True,
+    )
 
     print(f"[+] Loaded Train samples: {len(train_ds)} (2015-2021)")
     print(f"[+] Loaded Val samples:   {len(val_ds)} (2022)")
+    print(f"[+] Loaded Test samples:  {len(test_ds)} (2023)")
 
     train_loader = DataLoader(
         train_ds,
@@ -274,14 +305,30 @@ def run_training():
         num_workers=args.num_workers if device.type == "cuda" else 0,
         pin_memory=(device.type == "cuda"),
     )
+    test_loader = DataLoader(
+        test_ds,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers if device.type == "cuda" else 0,
+        pin_memory=(device.type == "cuda"),
+    )
 
     # Build model and optimizer
-    base_ch = get_model_channels(args.model_size)
+    base_ch = get_model_channels(args.model_size, args.base_channels)
+    embed_dim = base_ch if base_ch >= 48 else 32
+    num_heads = 8 if base_ch >= 48 else 4
     if args.mode == "deterministic":
-        model = TemporalMultiTaskUNet5x(base_channels=base_ch)
+        model = TemporalMultiTaskUNet5x(
+            base_channels=base_ch,
+            embed_dim=embed_dim,
+            num_heads=num_heads,
+        )
         criterion = SpatiotemporalMultiTaskLoss().to(device)
     else:
-        model = SpatiotemporalResidualDiffusion(timesteps=100, base_channels=base_ch)
+        model = SpatiotemporalResidualDiffusion(
+            timesteps=100,
+            base_channels=base_ch,
+        )
         criterion = None
 
     model = model.to(device)
@@ -354,6 +401,8 @@ def run_training():
         val_targets_list = []
         val_coarse_list = []
 
+        should_sample = (args.mode == "deterministic") or (epoch % args.eval_sampling_interval == 0) or (epoch == args.epochs)
+
         with torch.no_grad():
             for batch in val_loader:
                 history = batch["history"].to(device)
@@ -374,45 +423,55 @@ def run_training():
                             future_forecast=fcst,
                             terrain=terrain,
                         )
-                        # For evaluation on validation, sample with DDIM
-                        preds = model.sample(
-                            history=history,
-                            future_forecast=fcst,
-                            terrain=terrain,
-                            num_steps=args.ddim_steps,
-                        )
+                        if should_sample:
+                            preds = model.sample(
+                                history=history,
+                                future_forecast=fcst,
+                                terrain=terrain,
+                                num_steps=args.ddim_steps,
+                            )
 
                 val_loss_sum += loss.item()
                 val_batches += 1
-                val_preds_list.append(preds.cpu().numpy())
-                val_targets_list.append(target.cpu().numpy())
-                val_coarse_list.append(fcst.cpu().numpy())
+                if should_sample:
+                    val_preds_list.append(preds.cpu().numpy())
+                    val_targets_list.append(target.cpu().numpy())
+                    val_coarse_list.append(fcst.cpu().numpy())
                 if args.max_batches is not None and val_batches >= args.max_batches:
                     break
 
         avg_val_loss = val_loss_sum / max(1, val_batches)
 
-        # De-normalize validation samples to physical space for meteorological metrics
-        val_preds_all = np.concatenate(val_preds_list, axis=0)
-        val_targets_all = np.concatenate(val_targets_list, axis=0)
-        val_coarse_all = np.concatenate(val_coarse_list, axis=0)
+        metrics = None
+        if should_sample:
+            # De-normalize validation samples to physical space for meteorological metrics
+            val_preds_all = np.concatenate(val_preds_list, axis=0)
+            val_targets_all = np.concatenate(val_targets_list, axis=0)
+            val_coarse_all = np.concatenate(val_coarse_list, axis=0)
 
-        preds_phys = invert_normalization(val_preds_all, train_ds.stats)
-        targets_phys = invert_normalization(val_targets_all, train_ds.stats)
-        coarse_phys = invert_normalization(val_coarse_all, train_ds.stats)
+            preds_phys = invert_normalization(val_preds_all, train_ds.stats)
+            targets_phys = invert_normalization(val_targets_all, train_ds.stats)
+            coarse_phys = invert_normalization(val_coarse_all, train_ds.stats)
 
-        metrics = compute_lead_metrics(preds_phys, targets_phys, coarse_phys)
-        agg_m = metrics["aggregate"]
+            metrics = compute_lead_metrics(preds_phys, targets_phys, coarse_phys)
+            agg_m = metrics["aggregate"]
 
-        print(
-            f"[Epoch {epoch:02d}/{args.epochs:02d}] "
-            f"Train Loss: {avg_train_loss:.4f} | "
-            f"Val Loss: {avg_val_loss:.4f} | "
-            f"Wet-MAE: {agg_m['precip_wet_mae']:.2f} mm | "
-            f"Tmax-MAE: {agg_m['tmax_mae']:.2f} C | "
-            f"Wind-RMSE: {agg_m['wind_vector_rmse']:.2f} m/s | "
-            f"Time: {epoch_duration:.1f}s"
-        )
+            print(
+                f"[Epoch {epoch:02d}/{args.epochs:02d}] "
+                f"Train Loss: {avg_train_loss:.4f} | "
+                f"Val Loss: {avg_val_loss:.4f} | "
+                f"Wet-MAE: {agg_m['precip_wet_mae']:.2f} mm | "
+                f"Tmax-MAE: {agg_m['tmax_mae']:.2f} C | "
+                f"Wind-RMSE: {agg_m['wind_vector_rmse']:.2f} m/s | "
+                f"Time: {epoch_duration:.1f}s"
+            )
+        else:
+            print(
+                f"[Epoch {epoch:02d}/{args.epochs:02d}] "
+                f"Train Loss: {avg_train_loss:.4f} | "
+                f"Val Loss: {avg_val_loss:.4f} | "
+                f"Time: {epoch_duration:.1f}s (fast val loss pass)"
+            )
 
         epoch_record = {
             "epoch": epoch,
@@ -427,19 +486,18 @@ def run_training():
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             patience_counter = 0
-            ckpt_path = models_dir / f"temporal_{args.mode}_champion.pt"
-            torch.save(
-                {
-                    "epoch": epoch,
-                    "model_state_dict": model.state_dict(),
-                    "optimizer_state_dict": optimizer.state_dict(),
-                    "val_loss": avg_val_loss,
-                    "metrics": metrics,
-                    "args": vars(args),
-                    "normalization_stats": train_ds.stats,
-                },
-                ckpt_path,
-            )
+            ckpt_path = models_dir / f"temporal_{args.mode}_h{args.history_len:02d}_champion.pt"
+            state_dict = {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "val_loss": avg_val_loss,
+                "metrics": metrics,
+                "args": vars(args),
+                "normalization_stats": train_ds.stats,
+            }
+            torch.save(state_dict, ckpt_path)
+            torch.save(state_dict, models_dir / f"temporal_{args.mode}_champion.pt")
             print(f"    [+] Saved champion checkpoint: {ckpt_path.name}")
         else:
             patience_counter += 1
@@ -453,8 +511,65 @@ def run_training():
     print(f"    Measured 1-Epoch Rate: {history_log[0]['epoch_duration_sec']:.2f}s/epoch.")
     print("=" * 70)
 
+    # Final Test Set Evaluation on Champion Checkpoint (2023 Season Holdout)
+    print("=" * 70)
+    print("[*] Running final DDIM-32 evaluation on Test Set (2023 holdout) with Champion Checkpoint...")
+    print("=" * 70)
+    champion_ckpt = torch.load(ckpt_path, map_location=device)
+    model.load_state_dict(champion_ckpt["model_state_dict"])
+    model.eval()
+
+    test_preds_list = []
+    test_targets_list = []
+    test_coarse_list = []
+    test_eval_start = time.time()
+
+    with torch.no_grad():
+        for batch in test_loader:
+            history = batch["history"].to(device)
+            fcst = batch["future_forecast"].to(device)
+            terrain = batch["terrain"].to(device)
+            target = batch["target"].to(device)
+
+            with torch.amp.autocast("cuda", enabled=(device.type == "cuda")):
+                if args.mode == "deterministic":
+                    preds = model(history=history, future_forecast=fcst, terrain=terrain)
+                else:
+                    preds = model.sample(
+                        history=history,
+                        future_forecast=fcst,
+                        terrain=terrain,
+                        num_steps=args.ddim_steps,
+                    )
+
+            test_preds_list.append(preds.cpu().numpy())
+            test_targets_list.append(target.cpu().numpy())
+            test_coarse_list.append(fcst.cpu().numpy())
+            if args.max_batches is not None and len(test_preds_list) >= args.max_batches:
+                break
+
+    test_preds_all = np.concatenate(test_preds_list, axis=0)
+    test_targets_all = np.concatenate(test_targets_list, axis=0)
+    test_coarse_all = np.concatenate(test_coarse_list, axis=0)
+
+    test_preds_phys = invert_normalization(test_preds_all, train_ds.stats)
+    test_targets_phys = invert_normalization(test_targets_all, train_ds.stats)
+    test_coarse_phys = invert_normalization(test_coarse_all, train_ds.stats)
+
+    test_metrics = compute_lead_metrics(test_preds_phys, test_targets_phys, test_coarse_phys)
+    test_agg = test_metrics["aggregate"]
+    test_duration = time.time() - test_eval_start
+
+    print(
+        f"[+] Test Evaluation (2023 Season): "
+        f"Wet-MAE: {test_agg['precip_wet_mae']:.2f} mm | "
+        f"Tmax-MAE: {test_agg['tmax_mae']:.2f} C | "
+        f"Wind-RMSE: {test_agg['wind_vector_rmse']:.2f} m/s | "
+        f"Duration: {test_duration:.1f}s"
+    )
+
     # Persist report JSON
-    report_file = reports_dir / f"training_{args.mode}_h{args.history_len}_history.json"
+    report_file = reports_dir / f"training_{args.mode}_h{args.history_len:02d}_history.json"
     with open(report_file, "w", encoding="utf-8") as f:
         json.dump(
             {
@@ -466,6 +581,7 @@ def run_training():
                 "seconds_per_epoch": history_log[0]["epoch_duration_sec"],
                 "best_val_loss": best_val_loss,
                 "history": history_log,
+                "test_metrics": test_metrics,
             },
             f,
             indent=2,

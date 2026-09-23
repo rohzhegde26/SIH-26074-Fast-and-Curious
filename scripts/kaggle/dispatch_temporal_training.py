@@ -92,35 +92,31 @@ if str(_cur) not in sys.path:
     sys.path.insert(0, str(_cur))
 
 # 2. Extract dataset from Kaggle dataset input if present
-_input_dir = Path("/kaggle/input/sih26074-multitask-temporal-v1")
-_zarr_zip = _input_dir / "multitask_temporal_v1.zarr.zip"
-if not _zarr_zip.exists() and Path("/kaggle/input").exists():
-    _candidates = list(Path("/kaggle/input").rglob("multitask_temporal_v1.zarr.zip"))
-    if _candidates:
-        _zarr_zip = _candidates[0]
+_zarr_zip = None
+if Path("/kaggle/input").exists():
+    for _cand in Path("/kaggle/input").rglob("*.zarr.zip"):
+        _zarr_zip = _cand
         _input_dir = _zarr_zip.parent
+        break
 
-_target_zarr = _cur / "datasets" / "multitask_temporal_v1.zarr"
-
-if _zarr_zip.exists() and not _target_zarr.exists():
-    print(f"[*] Extracting Zarr archive {{_zarr_zip}} to {{_cur / 'datasets'}}...", flush=True)
-    (_cur / "datasets").mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(_zarr_zip, "r") as _zf:
-        _zf.extractall(_cur / "datasets")
-    print("[+] Extracted Zarr archive successfully.", flush=True)
+if _zarr_zip and _zarr_zip.exists():
+    _stem_name = _zarr_zip.name.replace(".zip", "")
+    _target_zarr = _cur / "datasets" / _stem_name
+    if not _target_zarr.exists():
+        print(f"[*] Extracting Zarr archive {{_zarr_zip}} to {{_cur / 'datasets'}}...", flush=True)
+        (_cur / "datasets").mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(_zarr_zip, "r") as _zf:
+            _zf.extractall(_cur / "datasets")
+        print("[+] Extracted Zarr archive successfully.", flush=True)
 
 # Copy parquet index and normalization stats
 (_cur / "data").mkdir(parents=True, exist_ok=True)
-for _f in ["sample_index.parquet", "normalization_stats.yaml"]:
-    _src_f = _input_dir / _f
-    if not _src_f.exists() and Path("/kaggle/input").exists():
-        _found = list(Path("/kaggle/input").rglob(_f))
-        if _found:
-            _src_f = _found[0]
-    _dst_f = _cur / "data" / _f
-    if _src_f.exists() and not _dst_f.exists():
-        import shutil
-        shutil.copy(_src_f, _dst_f)
+if Path("/kaggle/input").exists():
+    import shutil
+    for _f in Path("/kaggle/input").rglob("*.parquet"):
+        shutil.copy(_f, _cur / "data" / _f.name)
+    for _f in Path("/kaggle/input").rglob("*.yaml"):
+        shutil.copy(_f, _cur / "data" / _f.name)
 
 # Override CLI args if invoked directly
 if len(sys.argv) <= 1:
@@ -148,7 +144,7 @@ if len(sys.argv) <= 1:
         "is_private": "true",
         "enable_gpu": "true",
         "enable_internet": "true",
-        "dataset_sources": ["rohitajitbharadwaj/sih26074-multitask-temporal-v1"],
+        "dataset_sources": ["rohitajitbharadwaj/sih26074-multitask-temporal-v2-h14"],
     }
 
     with open(staging_dir / "kernel-metadata.json", "w", encoding="utf-8") as f:
@@ -162,7 +158,7 @@ def dispatch_temporal_job(
     slug: str,
     title: str,
     train_args: list,
-    max_wait_minutes: int = 40,
+    max_wait_minutes: int = 60,
     poll_interval_sec: int = 20,
 ) -> bool:
     """Dispatches temporal training job to Kaggle Dual T4 GPUs and monitors execution."""
@@ -201,6 +197,13 @@ def dispatch_temporal_job(
         return False
     print(f"[+] Successfully pushed! {res.stdout.strip()}", flush=True)
 
+    import re
+    match = re.search(r"kaggle\.com/code/[^/]+/([a-zA-Z0-9\-_]+)", res.stdout)
+    if match:
+        actual_slug = match.group(1)
+        kernel_id = f"{username}/{actual_slug}"
+        print(f"[*] Aligned kernel ID from Kaggle response: {kernel_id}", flush=True)
+
     print(f"[*] Monitoring live execution of '{kernel_id}'...", flush=True)
     start_time = time.time()
     max_sec = max_wait_minutes * 60
@@ -228,11 +231,14 @@ def dispatch_temporal_job(
     # Download output artifacts
     output_dir = ROOT / "output" / "kaggle" / slug
     output_dir.mkdir(parents=True, exist_ok=True)
-    print(f"[*] Downloading logs and artifacts to {output_dir}...")
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
     subprocess.run(
         ["kaggle", "kernels", "output", kernel_id, "-p", str(output_dir)],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
     )
 
     # Copy checkpoints and reports to canonical repository directories
@@ -262,21 +268,24 @@ def dispatch_temporal_job(
 
 
 def parse_dispatch_args():
-    parser = argparse.ArgumentParser(description="Dispatch Sprint 3 training to Kaggle GPU")
-    parser.add_argument("--mode", type=str, default="deterministic", choices=["deterministic", "diffusion"])
-    parser.add_argument("--history_len", type=int, default=3, choices=[1, 2, 3])
-    parser.add_argument("--model_size", type=str, default="base", choices=["small", "base", "large"])
-    parser.add_argument("--epochs", type=int, default=1, help="Epoch count (1 for timing probe)")
+    parser = argparse.ArgumentParser(description="Dispatch Sprint 4 training to Kaggle GPU")
+    parser.add_argument("--mode", type=str, default="diffusion", choices=["deterministic", "diffusion"])
+    parser.add_argument("--history_len", type=int, default=3, choices=[1, 2, 3, 5, 7, 10, 14])
+    parser.add_argument("--model_size", type=str, default="ultra", choices=["small", "base", "large", "ultra"])
+    parser.add_argument("--base_channels", type=int, default=None)
+    parser.add_argument("--epochs", type=int, default=30, help="Epoch count (1 for timing probe)")
     parser.add_argument("--batch_size", type=int, default=8)
-    parser.add_argument("--ddim_steps", type=int, default=8, help="DDIM sampling steps for validation")
+    parser.add_argument("--ddim_steps", type=int, default=32, help="DDIM sampling steps for validation")
+    parser.add_argument("--eval_sampling_interval", type=int, default=5, help="Interval for full DDIM validation sampling")
+    parser.add_argument("--early_stopping_patience", type=int, default=7)
     parser.add_argument("--slug", type=str, default=None)
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_dispatch_args()
-    slug = args.slug or f"sih26074-s3-{args.mode}-h{args.history_len}-e{args.epochs}"
-    title = slug.replace("-", " ")
+    slug = args.slug or f"sih26074-s4-{args.mode}-h{args.history_len:02d}-e{args.epochs}"
+    title = slug
 
     train_cli = [
         "--mode", args.mode,
@@ -285,6 +294,10 @@ if __name__ == "__main__":
         "--epochs", str(args.epochs),
         "--batch_size", str(args.batch_size),
         "--ddim_steps", str(args.ddim_steps),
+        "--eval_sampling_interval", str(args.eval_sampling_interval),
+        "--early_stopping_patience", str(args.early_stopping_patience),
     ]
+    if args.base_channels is not None:
+        train_cli.extend(["--base_channels", str(args.base_channels)])
 
     dispatch_temporal_job(slug=slug, title=title, train_args=train_cli)
