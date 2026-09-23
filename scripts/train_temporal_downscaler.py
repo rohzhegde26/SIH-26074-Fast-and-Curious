@@ -66,6 +66,8 @@ def parse_args():
     parser.add_argument("--eval_sampling_interval", type=int, default=5, help="Epoch interval to run full DDIM reverse diffusion sampling on validation")
     parser.add_argument("--early_stopping_patience", type=int, default=7, help="Epoch patience for early stop")
     parser.add_argument("--max_batches", type=int, default=None, help="Limit batches per epoch for quick smoke test")
+    parser.add_argument("--context_size", type=int, default=16, choices=[16, 20, 24, 32], help="Spatial context dimension N (N/M experiments)")
+    parser.add_argument("--spatial_mode", action="store_true", help="Sprint 5 spatial context experiment mode")
     return parser.parse_args()
 
 
@@ -268,6 +270,7 @@ def run_training():
         stats_path=stats_path,
         split="train",
         history_len=args.history_len,
+        context_size=args.context_size,
         normalize=True,
     )
     val_ds = SpatiotemporalDownscalingDataset(
@@ -276,6 +279,7 @@ def run_training():
         stats_path=stats_path,
         split="val",
         history_len=args.history_len,
+        context_size=args.context_size,
         normalize=True,
     )
     test_ds = SpatiotemporalDownscalingDataset(
@@ -284,6 +288,7 @@ def run_training():
         stats_path=stats_path,
         split="test",
         history_len=args.history_len,
+        context_size=args.context_size,
         normalize=True,
     )
 
@@ -486,7 +491,10 @@ def run_training():
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             patience_counter = 0
-            ckpt_path = models_dir / f"temporal_{args.mode}_h{args.history_len:02d}_champion.pt"
+            if args.spatial_mode or args.context_size != 16:
+                ckpt_path = models_dir / f"spatial_{args.mode}_n{args.context_size:02d}_champion.pt"
+            else:
+                ckpt_path = models_dir / f"temporal_{args.mode}_h{args.history_len:02d}_champion.pt"
             state_dict = {
                 "epoch": epoch,
                 "model_state_dict": model.state_dict(),
@@ -569,16 +577,23 @@ def run_training():
     )
 
     # Persist report JSON
-    report_file = reports_dir / f"training_{args.mode}_h{args.history_len:02d}_history.json"
+    if args.spatial_mode or args.context_size != 16:
+        report_file = reports_dir / f"training_spatial_n{args.context_size:02d}_history.json"
+    else:
+        report_file = reports_dir / f"training_{args.mode}_h{args.history_len:02d}_history.json"
+
     with open(report_file, "w", encoding="utf-8") as f:
         json.dump(
             {
                 "mode": args.mode,
                 "history_len": args.history_len,
+                "context_size": args.context_size,
+                "linear_ratio": float(args.context_size) / 16.0,
+                "area_ratio": float((args.context_size / 16.0) ** 2),
                 "model_size": args.model_size,
                 "total_epochs": len(history_log),
                 "total_seconds": total_training_sec,
-                "seconds_per_epoch": history_log[0]["epoch_duration_sec"],
+                "seconds_per_epoch": history_log[0]["epoch_duration_sec"] if history_log else 0.0,
                 "best_val_loss": best_val_loss,
                 "history": history_log,
                 "test_metrics": test_metrics,

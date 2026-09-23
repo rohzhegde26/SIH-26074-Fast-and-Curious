@@ -27,6 +27,7 @@ INDEX_PATH = ROOT / "data" / "sample_index.parquet"
 STATS_PATH = ROOT / "data" / "normalization_stats.yaml"
 
 
+@pytest.mark.skipif(not ZARR_PATH.exists(), reason="Zarr v1 store not locally present")
 def test_split_counts_and_isolation():
     """Verify split membership matches contract exactly without positional assumptions."""
     train_ds = SpatiotemporalDownscalingDataset(split="train")
@@ -47,6 +48,7 @@ def test_split_counts_and_isolation():
     assert len(val_ids.intersection(test_ids)) == 0, "Val and Test overlap detected!"
 
 
+@pytest.mark.skipif(not ZARR_PATH.exists(), reason="Zarr v1 store not locally present")
 def test_configurable_history_length():
     """Verify H in {1, 2, 3} produces correct shapes [H, 6, 16, 16]."""
     for h in [1, 2, 3]:
@@ -58,6 +60,7 @@ def test_configurable_history_length():
         assert sample["terrain"].shape == (5, 80, 80)
 
 
+@pytest.mark.skipif(not ZARR_PATH.exists(), reason="Zarr v1 store not locally present")
 def test_anti_leakage_and_lead_alignment():
     """Verify history ends at D-1 and forecast spans D to D+6."""
     ds = SpatiotemporalDownscalingDataset(split="val")
@@ -78,6 +81,7 @@ def test_anti_leakage_and_lead_alignment():
         assert (fcst_end - fcst_start).days == 6, f"Forecast interval must be exactly 6 days delta (7 days total)"
 
 
+@pytest.mark.skipif(not ZARR_PATH.exists(), reason="Zarr v1 store not locally present")
 def test_invertible_normalization_round_trip():
     """Verify inverse normalization produces finite physical fields with round-trip error < 1e-4."""
     ds = SpatiotemporalDownscalingDataset(split="val", normalize=True)

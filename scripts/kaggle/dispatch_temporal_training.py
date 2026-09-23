@@ -144,7 +144,11 @@ if len(sys.argv) <= 1:
         "is_private": "true",
         "enable_gpu": "true",
         "enable_internet": "true",
-        "dataset_sources": ["rohitajitbharadwaj/sih26074-multitask-temporal-v2-h14"],
+        "dataset_sources": [
+            f"{username}/sih26074-multitask-temporal-v2-h14"
+            if username != "rohitajitbharadwaj"
+            else "rohitajitbharadwaj/sih26074-multitask-temporal-v2-h14"
+        ],
     }
 
     with open(staging_dir / "kernel-metadata.json", "w", encoding="utf-8") as f:

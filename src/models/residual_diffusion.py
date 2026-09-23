@@ -27,16 +27,23 @@ import torch.nn.functional as F
 def compute_residual_target(y_fine_norm: torch.Tensor, future_forecast_norm: torch.Tensor) -> torch.Tensor:
     """
     Computes fine spatial residual in normalized model space:
-    r_0 = y_fine_norm - upsample(future_forecast_norm).
+    r_0 = y_fine_norm - upsample(future_forecast_central_16).
 
     Args:
         y_fine_norm: [B, 7, 6, 80, 80]
-        future_forecast_norm: [B, 7, 6, 16, 16]
+        future_forecast_norm: [B, 7, 6, N, N] where N >= 16
     Returns:
         r_0: [B, 7, 6, 80, 80]
     """
     b, leads, c, h, w = future_forecast_norm.shape
-    fcst_flat = future_forecast_norm.view(b * leads, c, h, w)
+    if h > 16 or w > 16:
+        offset_h = (h - 16) // 2
+        offset_w = (w - 16) // 2
+        fcst_crop = future_forecast_norm[:, :, :, offset_h : offset_h + 16, offset_w : offset_w + 16]
+    else:
+        fcst_crop = future_forecast_norm
+
+    fcst_flat = fcst_crop.reshape(b * leads, c, 16, 16)
     fcst_up = F.interpolate(
         fcst_flat,
         size=(80, 80),
@@ -225,13 +232,14 @@ class SpatiotemporalDenoiser(nn.Module):
         t_emb_flat = t_emb.unsqueeze(1).expand(b, num_leads, self.time_emb_dim).reshape(b * num_leads, self.time_emb_dim)
 
         # 2. Encode history: [B, H, embed_dim]
-        hist_flat = history.view(b * h_len, self.in_weather_channels, 16, 16)
+        _, _, _, n_lat, n_lon = history.shape
+        hist_flat = history.reshape(b * h_len, self.in_weather_channels, n_lat, n_lon)
         hist_feats = self.hist_proj(hist_flat)
         hist_tokens = F.adaptive_avg_pool2d(hist_feats, 1).view(b, h_len, self.embed_dim)
         hist_context, _ = self.hist_self_attn(hist_tokens, hist_tokens, hist_tokens)
 
         # 3. Encode future forecast leads with lead embeddings
-        coarse_flat = future_forecast.view(b * num_leads, self.in_weather_channels, 16, 16)
+        coarse_flat = future_forecast.reshape(b * num_leads, self.in_weather_channels, n_lat, n_lon)
         fcst_feats = self.fcst_proj(coarse_flat)
         fcst_tokens = F.adaptive_avg_pool2d(fcst_feats, 1).view(b, num_leads, self.embed_dim)
         lead_idx = torch.arange(num_leads, device=r_t.device)
@@ -242,9 +250,19 @@ class SpatiotemporalDenoiser(nn.Module):
         cross_context, _ = self.hist_future_cross_attn(query=fcst_tokens, key=hist_context, value=hist_context)
         fused_tokens = self.cross_norm(fcst_tokens + cross_context)
 
-        # 5. Spatial upsampling to 80x80: [B * leads, base_channels, 80, 80]
+        # 5. Spatial context fusion and Central RoI Cropping
         fused_spatial = fcst_feats + fused_tokens.view(b * num_leads, self.embed_dim, 1, 1)
-        atmos_80 = self.spatial_up(fused_spatial)
+
+        # Central RoI Crop from N x N to fixed target footprint M x M (16 x 16)
+        if n_lat > 16 or n_lon > 16:
+            crop_lat = (n_lat - 16) // 2
+            crop_lon = (n_lon - 16) // 2
+            fused_spatial_16 = fused_spatial[:, :, crop_lat : crop_lat + 16, crop_lon : crop_lon + 16]
+        else:
+            fused_spatial_16 = fused_spatial
+
+        # 5x Upsampling from 16x16 to target 80x80: [B * leads, base_channels, 80, 80]
+        atmos_80 = self.spatial_up(fused_spatial_16)
 
         # 6. Terrain encoding expanded across 7 leads
         terr_feats = self.terrain_enc(terrain)  # [B, base_channels, 80, 80]
@@ -380,8 +398,15 @@ class SpatiotemporalResidualDiffusion(nn.Module):
         b, leads, c, h, w = future_forecast.shape
         device = future_forecast.device
 
-        # Coarse baseline upsampled to 80x80
-        fcst_flat = future_forecast.view(b * leads, c, h, w)
+        # Coarse baseline upsampled to 80x80 from central target footprint
+        if h > 16 or w > 16:
+            offset_h = (h - 16) // 2
+            offset_w = (w - 16) // 2
+            fcst_crop = future_forecast[:, :, :, offset_h : offset_h + 16, offset_w : offset_w + 16]
+        else:
+            fcst_crop = future_forecast
+
+        fcst_flat = fcst_crop.reshape(b * leads, c, 16, 16)
         baseline_up = F.interpolate(
             fcst_flat,
             size=(80, 80),

@@ -42,6 +42,7 @@ class SpatiotemporalDownscalingDataset(Dataset):
         split: str = "train",
         normalize: bool = True,
         history_len: int = 3,
+        context_size: int = 16,
         transform: Optional[Callable] = None,
     ):
         self.zarr_path = Path(zarr_path or DEFAULT_ZARR_PATH)
@@ -50,6 +51,7 @@ class SpatiotemporalDownscalingDataset(Dataset):
         self.split = str(split).lower()
         self.normalize = bool(normalize)
         self.history_len = int(history_len)
+        self.context_size = int(context_size)
         self.transform = transform
 
         if not self.zarr_path.exists():
@@ -100,11 +102,21 @@ class SpatiotemporalDownscalingDataset(Dataset):
         meta = self.df.iloc[idx]
 
         # Read contiguous sample arrays from Zarr store
-        raw_hist = np.asarray(self.store["history"][global_idx], dtype=np.float32)  # [store_h, 6, 16, 16]
+        raw_hist = np.asarray(self.store["history"][global_idx], dtype=np.float32)  # [store_h, 6, H_s, W_s]
         if self.history_len < raw_hist.shape[0]:
-            raw_hist = raw_hist[-self.history_len:]  # [H, 6, 16, 16] (most recent antecedent days ending at D-1)
-        raw_fcst = np.asarray(self.store["future_forecast"][global_idx], dtype=np.float32)  # [7, 6, 16, 16]
+            raw_hist = raw_hist[-self.history_len:]  # [H, 6, H_s, W_s] (most recent antecedent days ending at D-1)
+        raw_fcst = np.asarray(self.store["future_forecast"][global_idx], dtype=np.float32)  # [7, 6, H_s, W_s]
         raw_targ = np.asarray(self.store["target"][global_idx], dtype=np.float32)  # [7, 6, 80, 80]
+
+        # Dynamic spatial context slicing if store spatial resolution exceeds context_size
+        _, _, h_spat, w_spat = raw_hist.shape
+        if h_spat > self.context_size or w_spat > self.context_size:
+            crop_h = (h_spat - self.context_size) // 2
+            crop_w = (w_spat - self.context_size) // 2
+            raw_hist = raw_hist[:, :, crop_h : crop_h + self.context_size, crop_w : crop_w + self.context_size]
+            raw_fcst = raw_fcst[:, :, crop_h : crop_h + self.context_size, crop_w : crop_w + self.context_size]
+        elif h_spat < self.context_size or w_spat < self.context_size:
+            raise ValueError(f"Requested context_size {self.context_size} exceeds store dimensions ({h_spat}x{w_spat})")
 
         if self.normalize:
             # Apply train-fitted normalization per channel
