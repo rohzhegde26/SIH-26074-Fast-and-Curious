@@ -324,9 +324,15 @@ class SpatiotemporalResidualDiffusion(nn.Module):
         beta_start: float = 1e-4,
         beta_end: float = 0.035,
         base_channels: int = 20,
+        prediction_type: str = "epsilon",
+        loss_weighting: str = "uniform",
     ):
         super().__init__()
+        assert prediction_type in ["epsilon", "v_prediction"], f"Unknown prediction_type: {prediction_type}"
+        assert loss_weighting in ["uniform", "group_tail"], f"Unknown loss_weighting: {loss_weighting}"
         self.timesteps = timesteps
+        self.prediction_type = prediction_type
+        self.loss_weighting = loss_weighting
 
         # Linear beta schedule (Nichol & Dhariwal / Ho et al.)
         betas = torch.linspace(beta_start, beta_end, timesteps, dtype=torch.float32)
@@ -353,29 +359,66 @@ class SpatiotemporalResidualDiffusion(nn.Module):
         r_t = sqrt_alpha_bar * r_0 + sqrt_one_minus_alpha_bar * noise
         return r_t, noise
 
+    def compute_v_target(self, r_0: torch.Tensor, t: torch.Tensor, noise: torch.Tensor) -> torch.Tensor:
+        """
+        Salimans & Ho (2022) velocity parameterization:
+        v_t = sqrt(alpha_bar_t) * noise - sqrt(1 - alpha_bar_t) * r_0
+        """
+        sqrt_alpha_bar = self.sqrt_alphas_cumprod[t].view(-1, 1, 1, 1, 1)
+        sqrt_one_minus_alpha_bar = self.sqrt_one_minus_alphas_cumprod[t].view(-1, 1, 1, 1, 1)
+        return sqrt_alpha_bar * noise - sqrt_one_minus_alpha_bar * r_0
+
     def compute_training_loss(
         self,
         r_0: torch.Tensor,
         history: torch.Tensor,
         future_forecast: torch.Tensor,
         terrain: torch.Tensor,
+        target_norm: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        Samples random timestep t, adds noise, and computes MSE(eps_theta, eps).
+        Samples random timestep t, adds noise, and computes training loss (epsilon or v_prediction).
         """
         b = r_0.shape[0]
         t = torch.randint(0, self.timesteps, (b,), device=r_0.device)
         r_t, noise = self.q_sample(r_0, t)
 
-        eps_pred = self.denoiser(
+        model_pred = self.denoiser(
             r_t=r_t,
             t=t,
             history=history,
             future_forecast=future_forecast,
             terrain=terrain,
         )
-        loss = F.mse_loss(eps_pred, noise)
-        return loss, eps_pred, noise
+
+        if self.prediction_type == "v_prediction":
+            target_val = self.compute_v_target(r_0, t, noise)
+        else:
+            target_val = noise
+
+        if self.loss_weighting == "group_tail":
+            # Multi-Task Variable-Aware Noise Weighting with Convective-Tail Calibration
+            # Channel 0: Precipitation (focal tail weighting on extreme wet cells > 15 mm)
+            # In normalized space: norm_thresh = (15.0 - 6.266) / 18.620 approx 0.469
+            ref_precip = target_norm[:, :, 0:1] if target_norm is not None else r_0[:, :, 0:1]
+            tail_mask = (ref_precip > 0.469).float()
+            precip_weights = 1.0 + 2.0 * tail_mask  # 3.0 for extreme wet cells (> 15mm)
+            precip_diff_sq = (model_pred[:, :, 0:1] - target_val[:, :, 0:1]) ** 2
+            precip_loss = (precip_weights * precip_diff_sq).mean()
+
+            # Channels 1-3: Thermodynamic variables (Tmax, Tmin, RH)
+            thermo_loss = F.mse_loss(model_pred[:, :, 1:4], target_val[:, :, 1:4])
+
+            # Channels 4-5: Dynamic Wind Vector (U, V)
+            wind_loss = F.mse_loss(model_pred[:, :, 4:6], target_val[:, :, 4:6])
+
+            # Group Balancing Weights (Plan Section 5.1 EXP-03):
+            # lambda_precip = 1.0, lambda_thermo = 1.2, lambda_wind = 1.1
+            loss = 1.0 * precip_loss + 1.2 * thermo_loss + 1.1 * wind_loss
+        else:
+            loss = F.mse_loss(model_pred, target_val)
+
+        return loss, model_pred, target_val
 
     @torch.no_grad()
     def sample(
@@ -433,7 +476,7 @@ class SpatiotemporalResidualDiffusion(nn.Module):
             t_curr = time_seq[i]
             t_tensor = torch.full((b,), t_curr, device=device, dtype=torch.long)
 
-            eps = self.denoiser(
+            model_output = self.denoiser(
                 r_t=r_cur,
                 t=t_tensor,
                 history=history,
@@ -442,14 +485,24 @@ class SpatiotemporalResidualDiffusion(nn.Module):
             )
 
             alpha_bar_curr = self.alphas_cumprod[t_curr]
-            # Predict r_0
-            r_0_pred = (r_cur - torch.sqrt(1.0 - alpha_bar_curr) * eps) / torch.sqrt(alpha_bar_curr)
+            sqrt_alpha_bar_curr = torch.sqrt(alpha_bar_curr)
+            sqrt_one_minus_alpha_bar_curr = torch.sqrt(1.0 - alpha_bar_curr)
+
+            if self.prediction_type == "v_prediction":
+                # Salimans & Ho (2022) exact inversion:
+                # r_0 = sqrt(alpha_bar) * r_t - sqrt(1 - alpha_bar) * v
+                # eps = sqrt(1 - alpha_bar) * r_t + sqrt(alpha_bar) * v
+                r_0_pred = sqrt_alpha_bar_curr * r_cur - sqrt_one_minus_alpha_bar_curr * model_output
+                eps_pred = sqrt_one_minus_alpha_bar_curr * r_cur + sqrt_alpha_bar_curr * model_output
+            else:
+                eps_pred = model_output
+                r_0_pred = (r_cur - sqrt_one_minus_alpha_bar_curr * eps_pred) / sqrt_alpha_bar_curr
 
             if i > 0:
                 t_prev = time_seq[i - 1]
                 alpha_bar_prev = self.alphas_cumprod[t_prev]
                 # Deterministic DDIM trajectory (eta=0)
-                r_cur = torch.sqrt(alpha_bar_prev) * r_0_pred + torch.sqrt(1.0 - alpha_bar_prev) * eps
+                r_cur = torch.sqrt(alpha_bar_prev) * r_0_pred + torch.sqrt(1.0 - alpha_bar_prev) * eps_pred
             else:
                 r_cur = r_0_pred
 

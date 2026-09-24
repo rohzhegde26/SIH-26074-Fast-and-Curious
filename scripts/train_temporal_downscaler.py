@@ -68,6 +68,10 @@ def parse_args():
     parser.add_argument("--max_batches", type=int, default=None, help="Limit batches per epoch for quick smoke test")
     parser.add_argument("--context_size", type=int, default=16, choices=[16, 20, 24, 32], help="Spatial context dimension N (N/M experiments)")
     parser.add_argument("--spatial_mode", action="store_true", help="Sprint 5 spatial context experiment mode")
+    parser.add_argument("--prediction_type", type=str, default="epsilon", choices=["epsilon", "v_prediction"], help="Diffusion prediction parameterization")
+    parser.add_argument("--loss_weighting", type=str, default="uniform", choices=["uniform", "group_tail"], help="Multi-task loss weighting scheme")
+    parser.add_argument("--checkpoint_criterion", type=str, default="loss", choices=["loss", "cmvs"], help="Checkpoint selection criterion")
+    parser.add_argument("--exp_name", type=str, default=None, help="Explicit experiment name prefix for checkpoints and reports")
     return parser.parse_args()
 
 
@@ -333,6 +337,8 @@ def run_training():
         model = SpatiotemporalResidualDiffusion(
             timesteps=100,
             base_channels=base_ch,
+            prediction_type=args.prediction_type,
+            loss_weighting=args.loss_weighting,
         )
         criterion = None
 
@@ -347,6 +353,7 @@ def run_training():
     # Training Loop
     history_log = []
     best_val_loss = float("inf")
+    best_cmvs = float("inf")
     patience_counter = 0
 
     print("=" * 70)
@@ -381,6 +388,7 @@ def run_training():
                         history=history,
                         future_forecast=fcst,
                         terrain=terrain,
+                        target_norm=target,
                     )
 
             scaler.scale(loss).backward()
@@ -427,6 +435,7 @@ def run_training():
                             history=history,
                             future_forecast=fcst,
                             terrain=terrain,
+                            target_norm=target,
                         )
                         if should_sample:
                             preds = model.sample(
@@ -461,11 +470,22 @@ def run_training():
             metrics = compute_lead_metrics(preds_phys, targets_phys, coarse_phys)
             agg_m = metrics["aggregate"]
 
+            # Compute Composite Meteorological Validation Score (CMVS)
+            cmvs_val = (
+                0.35 * (agg_m["precip_wet_mae"] / 8.70)
+                + 0.35 * max(0.0, 1.0 - (agg_m["precip_csi30"] / 0.631))
+                + 0.15 * (agg_m["tmax_mae"] / 0.37)
+                + 0.15 * (agg_m["wind_vector_rmse"] / 1.69)
+            )
+            agg_m["cmvs"] = float(cmvs_val)
+
             print(
                 f"[Epoch {epoch:02d}/{args.epochs:02d}] "
                 f"Train Loss: {avg_train_loss:.4f} | "
                 f"Val Loss: {avg_val_loss:.4f} | "
+                f"CMVS: {cmvs_val:.4f} | "
                 f"Wet-MAE: {agg_m['precip_wet_mae']:.2f} mm | "
+                f"CSI@30: {agg_m['precip_csi30']:.3f} | "
                 f"Tmax-MAE: {agg_m['tmax_mae']:.2f} C | "
                 f"Wind-RMSE: {agg_m['wind_vector_rmse']:.2f} m/s | "
                 f"Time: {epoch_duration:.1f}s"
@@ -487,11 +507,31 @@ def run_training():
         }
         history_log.append(epoch_record)
 
-        # Save Best Checkpoint
-        if avg_val_loss < best_val_loss:
-            best_val_loss = avg_val_loss
+        # Checkpoint Selection: either CMVS or validation loss
+        is_best = False
+        current_cmvs = (
+            agg_m["cmvs"]
+            if (metrics is not None and "aggregate" in metrics and "cmvs" in metrics["aggregate"])
+            else None
+        )
+
+        if args.checkpoint_criterion == "cmvs":
+            if current_cmvs is not None and current_cmvs < best_cmvs:
+                best_cmvs = current_cmvs
+                is_best = True
+            elif current_cmvs is None and avg_val_loss < best_val_loss and best_cmvs == float("inf"):
+                best_val_loss = avg_val_loss
+                is_best = True
+        else:
+            if avg_val_loss < best_val_loss:
+                best_val_loss = avg_val_loss
+                is_best = True
+
+        if is_best:
             patience_counter = 0
-            if args.spatial_mode or args.context_size != 16:
+            if args.exp_name:
+                ckpt_path = models_dir / f"{args.exp_name}_champion.pt"
+            elif args.spatial_mode or args.context_size != 16:
                 ckpt_path = models_dir / f"spatial_{args.mode}_n{args.context_size:02d}_champion.pt"
             else:
                 ckpt_path = models_dir / f"temporal_{args.mode}_h{args.history_len:02d}_champion.pt"
@@ -500,6 +540,8 @@ def run_training():
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 "val_loss": avg_val_loss,
+                "cmvs": current_cmvs,
+                "best_cmvs": best_cmvs,
                 "metrics": metrics,
                 "args": vars(args),
                 "normalization_stats": train_ds.stats,
@@ -577,7 +619,9 @@ def run_training():
     )
 
     # Persist report JSON
-    if args.spatial_mode or args.context_size != 16:
+    if args.exp_name:
+        report_file = reports_dir / f"{args.exp_name}_history.json"
+    elif args.spatial_mode or args.context_size != 16:
         report_file = reports_dir / f"training_spatial_n{args.context_size:02d}_history.json"
     else:
         report_file = reports_dir / f"training_{args.mode}_h{args.history_len:02d}_history.json"
