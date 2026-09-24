@@ -144,11 +144,7 @@ if len(sys.argv) <= 1:
         "is_private": "true",
         "enable_gpu": "true",
         "enable_internet": "true",
-        "dataset_sources": [
-            f"{username}/sih26074-multitask-temporal-v2-h14"
-            if username != "rohitajitbharadwaj"
-            else "rohitajitbharadwaj/sih26074-multitask-temporal-v2-h14"
-        ],
+        "dataset_sources": ["rohitajitbharadwaj/sih26074-multitask-temporal-v2-h14"],
     }
 
     with open(staging_dir / "kernel-metadata.json", "w", encoding="utf-8") as f:
@@ -192,7 +188,7 @@ def dispatch_temporal_job(
 
     print(f"[*] Pushing kernel '{kernel_id}' to Kaggle Dual T4 GPU...", flush=True)
     res = subprocess.run(
-        ["kaggle", "kernels", "push", "-p", str(staging_dir)],
+        [sys.executable, "-m", "kaggle", "kernels", "push", "-p", str(staging_dir)],
         capture_output=True,
         text=True,
     )
@@ -208,6 +204,11 @@ def dispatch_temporal_job(
         kernel_id = f"{username}/{actual_slug}"
         print(f"[*] Aligned kernel ID from Kaggle response: {kernel_id}", flush=True)
 
+    watch_url = f"https://www.kaggle.com/code/{kernel_id}"
+    print(f"\n=======================================================", flush=True)
+    print(f"[+] LIVE KAGGLE WATCH LINK: {watch_url}", flush=True)
+    print(f"=======================================================\n", flush=True)
+
     print(f"[*] Monitoring live execution of '{kernel_id}'...", flush=True)
     start_time = time.time()
     max_sec = max_wait_minutes * 60
@@ -216,7 +217,7 @@ def dispatch_temporal_job(
     while time.time() - start_time < max_sec:
         time.sleep(poll_interval_sec)
         status_res = subprocess.run(
-            ["kaggle", "kernels", "status", kernel_id],
+            [sys.executable, "-m", "kaggle", "kernels", "status", kernel_id],
             capture_output=True,
             text=True,
         )
@@ -235,9 +236,9 @@ def dispatch_temporal_job(
     # Download output artifacts
     output_dir = ROOT / "output" / "kaggle" / slug
     output_dir.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
     subprocess.run(
-        ["kaggle", "kernels", "output", kernel_id, "-p", str(output_dir)],
+        [sys.executable, "-X", "utf8", "-m", "kaggle", "kernels", "output", kernel_id, "-p", str(output_dir)],
         capture_output=True,
         text=True,
         encoding="utf-8",

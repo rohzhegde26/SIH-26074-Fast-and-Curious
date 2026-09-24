@@ -108,7 +108,7 @@ class SpatiotemporalDownscalingDataset(Dataset):
         raw_fcst = np.asarray(self.store["future_forecast"][global_idx], dtype=np.float32)  # [7, 6, H_s, W_s]
         raw_targ = np.asarray(self.store["target"][global_idx], dtype=np.float32)  # [7, 6, 80, 80]
 
-        # Dynamic spatial context slicing if store spatial resolution exceeds context_size
+        # Dynamic spatial context slicing / padding to target context_size
         _, _, h_spat, w_spat = raw_hist.shape
         if h_spat > self.context_size or w_spat > self.context_size:
             crop_h = (h_spat - self.context_size) // 2
@@ -116,7 +116,20 @@ class SpatiotemporalDownscalingDataset(Dataset):
             raw_hist = raw_hist[:, :, crop_h : crop_h + self.context_size, crop_w : crop_w + self.context_size]
             raw_fcst = raw_fcst[:, :, crop_h : crop_h + self.context_size, crop_w : crop_w + self.context_size]
         elif h_spat < self.context_size or w_spat < self.context_size:
-            raise ValueError(f"Requested context_size {self.context_size} exceeds store dimensions ({h_spat}x{w_spat})")
+            pad_h_before = (self.context_size - h_spat) // 2
+            pad_h_after = self.context_size - h_spat - pad_h_before
+            pad_w_before = (self.context_size - w_spat) // 2
+            pad_w_after = self.context_size - w_spat - pad_w_before
+            raw_hist = np.pad(
+                raw_hist,
+                ((0, 0), (0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after)),
+                mode="edge",
+            )
+            raw_fcst = np.pad(
+                raw_fcst,
+                ((0, 0), (0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after)),
+                mode="edge",
+            )
 
         if self.normalize:
             # Apply train-fitted normalization per channel
