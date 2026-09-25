@@ -125,6 +125,14 @@ if Path("/kaggle/input").exists():
     for _f in Path("/kaggle/input").rglob("*.yaml"):
         shutil.copy(_f, _cur / "data" / _f.name)
 
+# Copy checkpoint files if present
+(_cur / "models" / "checkpoints").mkdir(parents=True, exist_ok=True)
+if Path("/kaggle/input").exists():
+    import shutil
+    for _f in Path("/kaggle/input").rglob("*.pt"):
+        shutil.copy(_f, _cur / "models" / "checkpoints" / _f.name)
+        print(f"[+] Staged checkpoint: {_f.name} into {_cur / 'models' / 'checkpoints'}", flush=True)
+
 # Override CLI args if invoked directly
 if len(sys.argv) <= 1:
     sys.argv = ["train.py"] + [{', '.join(repr(a) for a in eval_args)}]
@@ -150,7 +158,10 @@ if len(sys.argv) <= 1:
         "is_private": "true",
         "enable_gpu": "true",
         "enable_internet": "true",
-        "dataset_sources": ["rohitajitbharadwaj/sih26074-multitask-temporal-v2-h14"],
+        "dataset_sources": [
+            "rohitajitbharadwaj/sih26074-multitask-temporal-v2-h14",
+            "ssachithananthan/sih26074-sprint6-checkpoints",
+        ],
     }
 
     with open(staging_dir / "kernel-metadata.json", "w", encoding="utf-8") as f:

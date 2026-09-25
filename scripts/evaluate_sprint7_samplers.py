@@ -364,6 +364,10 @@ def run_evaluation():
         ckpt_path = Path(args.checkpoint_path)
     else:
         ckpt_cands = [
+            out_root / "models" / "checkpoints" / "sprint6_candidate2_vpred_champion.pt",
+            ROOT / "models" / "checkpoints" / "sprint6_candidate2_vpred_champion.pt",
+            Path("/kaggle/input/sih26074-sprint6-checkpoints/sprint6_candidate2_vpred_champion.pt"),
+            Path("/kaggle/working/models/checkpoints/sprint6_candidate2_vpred_champion.pt"),
             out_root / "models" / "checkpoints" / "sprint6_candidate3_multitask_champion.pt",
             ROOT / "models" / "checkpoints" / "sprint6_candidate3_multitask_champion.pt",
             Path("/kaggle/input/sih26074-s6-diff-multitask/sprint6_candidate3_multitask_champion.pt"),
@@ -373,13 +377,21 @@ def run_evaluation():
             if c.exists():
                 ckpt_path = c
                 break
+        if ckpt_path is None and Path("/kaggle/input").exists():
+            for p in Path("/kaggle/input").rglob("*.pt"):
+                ckpt_path = p
+                break
 
     if ckpt_path and ckpt_path.exists():
         print(f"[+] Loading Champion weights from: {ckpt_path}")
         sd = torch.load(ckpt_path, map_location=device)
-        model.load_state_dict(sd.get("model_state_dict", sd))
+        state_dict = sd.get("model_state_dict", sd)
+        load_res = model.load_state_dict(state_dict, strict=False)
+        print(f"[+] Weights loaded successfully! Missing: {len(load_res.missing_keys)}, Unexpected: {len(load_res.unexpected_keys)}")
+        if "epoch" in sd:
+            print(f"    Checkpoint Epoch: {sd.get('epoch')}, Best CMVS: {sd.get('best_cmvs', sd.get('cmvs'))}")
     else:
-        print("[*] Note: No external weights checkpoint detected. Running with Candidate 3 validated initialization.")
+        print("[!] WARNING: No external weights checkpoint detected! Running with Candidate 3 validated initialization.")
 
     selected_conditions = []
     for c in CONDITIONS:
