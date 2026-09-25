@@ -131,7 +131,7 @@ if Path("/kaggle/input").exists():
     import shutil
     for _f in Path("/kaggle/input").rglob("*.pt"):
         shutil.copy(_f, _cur / "models" / "checkpoints" / _f.name)
-        print(f"[+] Staged checkpoint: {_f.name} into {_cur / 'models' / 'checkpoints'}", flush=True)
+        print(f"[+] Staged checkpoint: {{_f.name}} into {{_cur / 'models' / 'checkpoints'}}", flush=True)
 
 # Override CLI args if invoked directly
 if len(sys.argv) <= 1:

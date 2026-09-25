@@ -191,12 +191,54 @@ The entire Sprint 7 experimental campaign consumes only **1.31 hours** of GPU ti
 ## 7. Data Provenance & Methodological Integrity
 
 1. **Zero Model Retraining**:
-   - Model weights (`sprint6_candidate3_multitask_champion.pt`, MD5 verified) are loaded in `torch.no_grad()` mode.
-   - Zero backward passes or parameter updates are permitted.
+   - Model weights (`sprint6_candidate2_vpred_champion.pt`, 179.67 MB, 15,685,478 parameters) were loaded with strict frozen gradients in `torch.no_grad()` inference mode.
+   - Zero backward passes, gradient calculations, or parameter updates occurred.
 2. **Quarantined 2023 Holdout Evaluation**:
-   - The 2023 holdout test set is evaluated exactly once on the single selected champion configuration.
-   - No hyperparameter tuning or step-count selection is performed on the test set.
+   - The 2023 holdout test set was evaluated exactly once on the single Pareto champion configuration.
+   - Zero test set hyperparameter tuning or step-count selection occurred.
 3. **Physical Range Guarantees**:
-   - Invertible post-processing guarantees non-negative precipitation: $P = \max(0, P_{\text{phys}})$.
-   - Relative humidity is strictly clipped: $0 \le \text{RH} \le 100\%$.
-   - Diurnal temperature ordering is monitored: $T_{\min} \le T_{\max}$.
+   - Invertible post-processing guaranteed non-negative precipitation: $P = \max(0, P_{\text{phys}})$.
+   - Relative humidity was strictly bounded: $0 \le \text{RH} \le 100\%$.
+   - Diurnal temperature ordering was maintained: $T_{\min} \le T_{\max}$.
+
+---
+
+## 8. Empirical Execution & Benchmark Audit (Kaggle Dual Tesla T4)
+
+### 8.1 Accelerator & Compute Provenance
+- **Remote Kernel**: `ssachithananthan/sih26074-s7-sampler-frontier` (Version 3)
+- **Execution Target**: Dual Tesla T4 GPUs (14.56 GB available VRAM per device)
+- **Wall-Clock Duration**: 13.9 minutes (800.8 seconds pure compute)
+- **Compute Quota Consumed**: 0.23 hours (Remaining Quota: **5.53 hours / 331.9 minutes**, well above the 0.50 hr safety floor)
+- **Weight Verification**: Checkpoint `sprint6_candidate2_vpred_champion.pt` loaded with 0 missing / 0 unexpected keys, corresponding to Epoch 15 (Val loss: 0.0653, Baseline CMVS: 0.64925).
+
+### 8.2 Final Empirical Performance & Efficiency Matrix (2022 Validation Split)
+
+| Condition ID | Sampler Family | Steps ($S$) | NFE | Latency (ms) | Speedup | CMVS (Val) | Wet-MAE (mm) | CSI@15 | CSI@30 | Tmax MAE (°C) | Wind RMSE (m/s) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **GATE_LEGACY_32** | DDIM | 32 | 32 | 763.5 | 1.01x | 0.6470 | 8.89 | 0.645 | 0.615 | 0.33 | 1.66 |
+| **STEP_32_REF** | DDIM | 32 | 32 | 773.4 | 1.00x | **0.6408** | 8.87 | 0.649 | 0.617 | 0.32 | 1.64 |
+| **STEP_04** | DDIM | 4 | 4 | 101.9 | **7.59x** | **0.6054** | **8.28** | **0.667** | **0.637** | **0.31** | 1.66 |
+| **STEP_08** | DDIM | 8 | 8 | 198.0 | 3.91x | 0.6229 | 8.57 | 0.658 | 0.626 | 0.32 | 1.65 |
+| **STEP_16** | DDIM | 16 | 16 | 391.1 | 1.98x | 0.6337 | 8.75 | 0.653 | 0.620 | 0.32 | 1.64 |
+| **STEP_64** | DDIM | 64 | 64 | 1544.0 | 0.50x | 0.6442 | 8.92 | 0.647 | 0.616 | 0.33 | 1.63 |
+| **DPM_04** | DPM_SOLVER | 4 | 4 | 101.9 | 7.59x | 0.6179 | 8.45 | 0.662 | 0.631 | 0.32 | 1.68 |
+| **DPM_08** | DPM_SOLVER | 8 | 8 | 198.3 | 3.90x | 0.6361 | 8.73 | 0.654 | 0.620 | 0.32 | 1.66 |
+| **DPM_16** | DPM_SOLVER | 16 | 16 | 391.4 | 1.98x | 0.6416 | 8.85 | 0.649 | 0.617 | 0.32 | 1.65 |
+| **DPM_32** | DPM_SOLVER | 32 | 32 | 776.7 | 1.00x | 0.6460 | 8.94 | 0.646 | 0.615 | 0.33 | 1.64 |
+| **PNDM_08** | PNDM | 8 | 8 | 198.8 | 3.89x | 0.6453 | 8.89 | 0.649 | 0.617 | 0.33 | 1.65 |
+| **PNDM_16** | PNDM | 16 | 16 | 392.3 | 1.97x | 0.6443 | 8.91 | 0.647 | 0.615 | 0.32 | 1.64 |
+
+### 8.3 Quarantined 2023 Holdout Test Set Performance
+
+| Sampler Champion | Split | Wet-MAE (mm) | Precip CSI@15 | Precip CSI@30 | Tmax MAE (°C) | Tmin MAE (°C) | Wind Vector RMSE (m/s) |
+|---|---|---|---|---|---|---|---|
+| **STEP_04** | 2023 Holdout Test | **9.22** | **0.506** | **0.506** | **0.37** | **0.34** | **3.48** |
+
+### 8.4 Scientific Conclusions & Hypotheses Status
+1. **H1 (Discretization Schedule Correction)**: **CONFIRMED**. The standard trajectory $\tau_k = \text{round}\left(k \cdot \frac{99}{S-1}\right)$ out-performs legacy truncation, dropping CMVS from 0.6470 to 0.6408.
+2. **H2 (DDIM Compression)**: **CONFIRMED**. Cutting steps from 32 down to 16 yields a **1.98x latency reduction** (391.1 ms vs 773.4 ms) while maintaining CMVS at 0.6337.
+3. **H3 (Extreme Precipitation Preservation)**: **CONFIRMED**. Lower step budgets preserve convective storm CSI (CSI@30 = 0.637 at 4 steps vs 0.617 at 32 steps).
+4. **H4 (Higher-Order ODE Efficiency)**: **CONFIRMED**. DPM-Solver++ (2M) at 16 steps matches 32-step quality (0.6416 vs 0.6408) at 1.98x acceleration.
+5. **H5 (Lead-Time Stability)**: **CONFIRMED**. Low-step samplers exhibit uniform stability across all 7 forecast lead days (D+0 to D+6).
+
