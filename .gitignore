@@ -59,8 +59,10 @@ data/processed/
 # -- Model Checkpoints (large binary files) ------------------------------------
 models/checkpoints/*
 !models/checkpoints/multitask_5x_champion.pt
+!models/checkpoints/sprint6_candidate2_vpred_champion.pt
 *.pt
 !models/checkpoints/multitask_5x_champion.pt
+!models/checkpoints/sprint6_candidate2_vpred_champion.pt
 *.pth
 *.ckpt
 *.h5
@@ -140,8 +142,10 @@ data/processed/
 # -- Model Checkpoints (large binary files) ------------------------------------
 models/checkpoints/*
 !models/checkpoints/multitask_5x_champion.pt
+!models/checkpoints/sprint6_candidate2_vpred_champion.pt
 *.pt
 !models/checkpoints/multitask_5x_champion.pt
+!models/checkpoints/sprint6_candidate2_vpred_champion.pt
 *.pth
 *.ckpt
 *.h5
