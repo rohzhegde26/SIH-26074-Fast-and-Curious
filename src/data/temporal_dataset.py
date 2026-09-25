@@ -44,10 +44,14 @@ class SpatiotemporalDownscalingDataset(Dataset):
         history_len: int = 3,
         context_size: int = 16,
         transform: Optional[Callable] = None,
+        index_parquet_path: Optional[Path] = None,
+        stats_yaml_path: Optional[Path] = None,
     ):
         self.zarr_path = Path(zarr_path or DEFAULT_ZARR_PATH)
-        self.index_path = Path(index_path or DEFAULT_SAMPLE_INDEX_PATH)
-        self.stats_path = Path(stats_path or DEFAULT_STATS_PATH)
+        actual_index = index_path or index_parquet_path or DEFAULT_SAMPLE_INDEX_PATH
+        actual_stats = stats_path or stats_yaml_path or DEFAULT_STATS_PATH
+        self.index_path = Path(actual_index)
+        self.stats_path = Path(actual_stats)
         self.split = str(split).lower()
         self.normalize = bool(normalize)
         self.history_len = int(history_len)

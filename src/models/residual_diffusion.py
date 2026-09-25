@@ -23,6 +23,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from src.models.samplers import (
+    get_sampling_timesteps,
+    sample_ddim_trajectory,
+    sample_dpm_solver_2m_trajectory,
+    sample_pndm_trajectory,
+)
+
 
 def compute_residual_target(y_fine_norm: torch.Tensor, future_forecast_norm: torch.Tensor) -> torch.Tensor:
     """
@@ -430,9 +437,18 @@ class SpatiotemporalResidualDiffusion(nn.Module):
         seed: Optional[int] = None,
         init_residual: Optional[torch.Tensor] = None,
         init_noise_level: Optional[int] = None,
+        schedule_type: str = "standard",
+        sampler: str = "ddim",
+        eta: float = 0.0,
     ) -> torch.Tensor:
         """
-        DDIM Reverse Sampling across configurable steps (e.g. 4, 8, 16, 32).
+        Reverse Sampling across configurable steps (e.g. 4, 8, 16, 32, 64) and ODE solvers:
+          - "ddim": 1st-order pseudo-Euler ODE
+          - "dpm_solver": 2nd-order DPM-Solver++(2M) in data space
+          - "pndm": 4th-order Adams-Bashforth multi-step in eps space
+        Schedule types:
+          - "standard": Canonical uniform schedule tau_k = round(k * (T - 1) / (S - 1)) spanning 99 to 0.
+          - "legacy": Sprint 5/6 stride slicing schedule.
         Returns final predicted weather cube [B, 7, 6, 80, 80] in normalized space.
         """
         if seed is not None:
@@ -457,57 +473,60 @@ class SpatiotemporalResidualDiffusion(nn.Module):
             align_corners=False,
         ).view(b, leads, c, 80, 80)
 
-        # Select DDIM timestep trajectory
-        step_stride = self.timesteps // num_steps
-        time_seq = list(range(0, self.timesteps, step_stride))
-        time_seq = time_seq[:num_steps]
+        # Timestep trajectory
+        timesteps_desc = get_sampling_timesteps(
+            total_timesteps=self.timesteps,
+            num_steps=num_steps,
+            schedule_type=schedule_type,
+        )
 
         # Initial noise: start from pure Gaussian noise unless refinement mode is active
         if init_residual is not None and init_noise_level is not None:
             t_init = torch.full((b,), init_noise_level, device=device, dtype=torch.long)
             r_cur, _ = self.q_sample(init_residual, t_init)
-            start_idx = min(range(len(time_seq)), key=lambda i: abs(time_seq[i] - init_noise_level))
-            time_seq = time_seq[:start_idx + 1]
+            start_idx = min(range(len(timesteps_desc)), key=lambda i: abs(timesteps_desc[i] - init_noise_level))
+            timesteps_desc = timesteps_desc[start_idx:]
         else:
             r_cur = torch.randn(b, leads, c, 80, 80, device=device)
 
-        # Reverse diffusion loop
-        for i in reversed(range(len(time_seq))):
-            t_curr = time_seq[i]
-            t_tensor = torch.full((b,), t_curr, device=device, dtype=torch.long)
-
-            model_output = self.denoiser(
-                r_t=r_cur,
+        def denoise_fn(r_in: torch.Tensor, t_tensor: torch.Tensor) -> torch.Tensor:
+            return self.denoiser(
+                r_t=r_in,
                 t=t_tensor,
                 history=history,
                 future_forecast=future_forecast,
                 terrain=terrain,
             )
 
-            alpha_bar_curr = self.alphas_cumprod[t_curr]
-            sqrt_alpha_bar_curr = torch.sqrt(alpha_bar_curr)
-            sqrt_one_minus_alpha_bar_curr = torch.sqrt(1.0 - alpha_bar_curr)
-
-            if self.prediction_type == "v_prediction":
-                # Salimans & Ho (2022) exact inversion:
-                # r_0 = sqrt(alpha_bar) * r_t - sqrt(1 - alpha_bar) * v
-                # eps = sqrt(1 - alpha_bar) * r_t + sqrt(alpha_bar) * v
-                r_0_pred = sqrt_alpha_bar_curr * r_cur - sqrt_one_minus_alpha_bar_curr * model_output
-                eps_pred = sqrt_one_minus_alpha_bar_curr * r_cur + sqrt_alpha_bar_curr * model_output
-            else:
-                eps_pred = model_output
-                r_0_pred = (r_cur - sqrt_one_minus_alpha_bar_curr * eps_pred) / sqrt_alpha_bar_curr
-
-            if i > 0:
-                t_prev = time_seq[i - 1]
-                alpha_bar_prev = self.alphas_cumprod[t_prev]
-                # Deterministic DDIM trajectory (eta=0)
-                r_cur = torch.sqrt(alpha_bar_prev) * r_0_pred + torch.sqrt(1.0 - alpha_bar_prev) * eps_pred
-            else:
-                r_cur = r_0_pred
+        sampler_clean = sampler.lower().replace("-", "_")
+        if sampler_clean in ("dpm_solver", "dpm_solver_2m", "dpmsolver"):
+            r_sampled = sample_dpm_solver_2m_trajectory(
+                denoise_fn=denoise_fn,
+                r_init=r_cur,
+                timesteps_desc=timesteps_desc,
+                alphas_cumprod=self.alphas_cumprod,
+                prediction_type=self.prediction_type,
+            )
+        elif sampler_clean == "pndm":
+            r_sampled = sample_pndm_trajectory(
+                denoise_fn=denoise_fn,
+                r_init=r_cur,
+                timesteps_desc=timesteps_desc,
+                alphas_cumprod=self.alphas_cumprod,
+                prediction_type=self.prediction_type,
+            )
+        else:
+            r_sampled = sample_ddim_trajectory(
+                denoise_fn=denoise_fn,
+                r_init=r_cur,
+                timesteps_desc=timesteps_desc,
+                alphas_cumprod=self.alphas_cumprod,
+                prediction_type=self.prediction_type,
+                eta=eta,
+            )
 
         # Final reconstruction = baseline + predicted fine residual
-        y_downscaled_norm = baseline_up + r_cur
+        y_downscaled_norm = baseline_up + r_sampled
         return y_downscaled_norm
 
     @torch.no_grad()
@@ -519,12 +538,17 @@ class SpatiotemporalResidualDiffusion(nn.Module):
         steps: int = 32,
         eta: float = 0.0,
         seed: Optional[int] = None,
+        schedule_type: str = "standard",
+        sampler: str = "ddim",
     ) -> torch.Tensor:
-        """Alias for DDIM sampling across specified steps."""
+        """Alias for sampling across specified steps, schedule, and solver."""
         return self.sample(
             history=history,
             future_forecast=future_forecast,
             terrain=terrain,
             num_steps=steps,
             seed=seed,
+            schedule_type=schedule_type,
+            sampler=sampler,
+            eta=eta,
         )
