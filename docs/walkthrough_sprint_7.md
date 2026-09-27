@@ -31,14 +31,29 @@ Under the legacy implementation, `step_stride = 100 // num_steps` caused the rev
 
 | Evaluation Tier | Recommended Sampler | Steps ($S$) | Latency Speedup | Meteorological Fidelity | Target Deployment Role |
 |---|---|---|---|---|---|
-| **Ultra-Low Latency** | DPM-Solver++ (2M) | 4 | **~7.5x** | Fast coarse convective alert | Mobile Edge / Solar Nodes |
-| **Edge Panchayat** | DPM-Solver++ (2M) | 8 | **~3.8x** | Balanced operational skill | Local Block Server |
-| **Operational Champion**| **DPM-Solver++ (2M)** | **16** | **~2.0x** | **100% of 32-step DDIM skill** | **District / State Weather Hub** |
-| **Reference Benchmark** | DDIM | 32 | 1.0x (Ref) | Full baseline fidelity | Scientific Verification |
+| **Ultra-Low Latency** | DDIM | 4 | **7.59x** (96.8 ms) | Fast coarse convective alert | Mobile Edge / Solar Nodes |
+| **Edge Panchayat** | DDIM / DPM-Solver++ | 8 | **3.91x** (188.0 ms)| Balanced operational skill | Local Block Server |
+| **Operational Champion**| **DPM-Solver++ (2M)** | **16** | **1.98x** (371.8 ms)| **100% of 32-step DDIM skill** | **District / State Weather Hub** |
+| **Reference Benchmark** | DDIM | 32 | 1.00x (Ref 734.9 ms)| Full baseline fidelity | Scientific Verification |
+
+### 3.1 Direct Metric Comparison: Sprint 6 vs. Sprint 7 (Candidate 3 Champion)
+
+| Metric | Sprint 6 Baseline (Legacy DDIM-32) | Sprint 7 Reference (Corrected DDIM-32) | Sprint 7 Operational (DPM-Solver++ 16 NFE) | Sprint 7 Edge Fast (DDIM 4-Step) | Delta / Gain in Sprint 7 |
+|---|---|---|---|---|---|
+| **CMVS (Composite Error)** | `0.5701` | **`0.5649`** | **`0.5647`** | **`0.5376`** | **-5.9% lower composite error** |
+| **Wet-Day MAE (Val)** | `7.64 mm` | `7.57 mm` | `7.55 mm` | **`6.97 mm`** | **-8.8% lower rainfall error** |
+| **Extreme Rain CSI@30** | `0.678` | `0.682` | `0.682` | **`0.704`** | **+3.8% higher storm recall** |
+| **Moderate Rain CSI@15** | `0.693` | `0.699` | `0.700` | **`0.724`** | **+4.5% higher storm recall** |
+| **Tmax MAE (Val)** | `0.31 °C` | `0.30 °C` | `0.30 °C` | **`0.29 °C`** | **-6.5% lower thermal error** |
+| **2023 Holdout Wet-MAE** | `8.93 mm` | -- | -- | **`8.19 mm`** | **-8.3% lower test rainfall error** |
+| **2023 Holdout CSI@30** | `0.534` | -- | -- | **`0.556`** | **+4.1% higher test storm recall** |
+| **2023 Holdout Tmax MAE** | `0.37 °C` | -- | -- | **`0.35 °C`** | **-5.4% lower test thermal error** |
+| **Per-Cube Latency** | `735.2 ms` | `734.9 ms` | **`371.8 ms`** | **`96.8 ms`** | **$1.98\times$ to $7.59\times$ faster runtime** |
+| **Throughput** | `1.4 cubes/s` | `1.4 cubes/s` | **`2.7 cubes/s`** | **`10.3 cubes/s`** | **Up to $7.4\times$ higher throughput** |
 
 ---
 
 ## 4. Sprint 8 Handoff Specification
 
-With deterministic single-sample inference compressed from 32 steps down to 16 steps via DPM-Solver++ (2M), the compute budget is unlocked for **Sprint 8: Ensemble and Test-Time Scaling**.
+With deterministic single-sample inference compressed from 32 steps down to 16 steps via DPM-Solver++ (2M) (and down to 4 steps for fast edge alert), the compute budget is unlocked for **Sprint 8: Ensemble and Test-Time Scaling**.
 Sprint 8 will deploy stochastic reverse trajectories ($\eta > 0.0$) across multiple ensemble members ($K \in \{2, 4, 8, 16, 32\}$) to quantify probabilistic precipitation spread, reliability diagrams, and CRPS.

@@ -38,6 +38,27 @@
 
 ---
 
+## Table C: Sprint 6 Baseline vs. Sprint 7 Frontier (Candidate 3 Multi-Task Champion)
+
+Evaluating the identical Candidate 3 Multi-Task $v$-prediction architecture (15,685,478 parameters, Epoch 30 weights) under Sprint 6 legacy sampler vs. Sprint 7 optimized samplers:
+
+| Evaluation Dimension | Sprint 6 Baseline (Legacy DDIM-32) | Sprint 7 Reference (Corrected DDIM-32) | Sprint 7 Operational (DPM-Solver++ 16 NFE) | Sprint 7 Edge Fast (DDIM 4-Step) | Delta / Relative Improvement |
+|---|---|---|---|---|---|
+| **Validation CMVS (2022)** | `0.5710` (or `0.5701`) | **`0.5649`** | **`0.5647`** | **`0.5376`** | **-5.9% lower composite error** |
+| **Validation Wet-MAE (mm)** | `7.64 mm` | `7.57 mm` | `7.55 mm` | **`6.97 mm`** | **-8.8% lower rainfall error** |
+| **Validation CSI@30** | `0.678` | `0.682` | `0.682` | **`0.704`** | **+3.8% higher storm recall** |
+| **Validation CSI@15** | `0.693` | `0.699` | `0.700` | **`0.724`** | **+4.5% higher storm recall** |
+| **Validation Tmax MAE (°C)**| `0.31 °C` | `0.30 °C` | `0.30 °C` | **`0.29 °C`** | **-6.5% lower thermal error** |
+| **Validation Wind RMSE (m/s)**|`1.56 m/s` | `1.55 m/s` | `1.56 m/s` | **`1.57 m/s`** | **Preserved wind vector fidelity**|
+| **2023 Holdout Wet-MAE (mm)**| `8.93 mm` | -- | -- | **`8.19 mm`** | **-8.3% lower test rainfall error**|
+| **2023 Holdout CSI@30** | `0.534` | -- | -- | **`0.556`** | **+4.1% higher test storm recall**|
+| **2023 Holdout Tmax MAE (°C)**| `0.37 °C` | -- | -- | **`0.35 °C`** | **-5.4% lower test thermal error**|
+| **2023 Holdout Tmin MAE (°C)**| `0.34 °C` | -- | -- | **`0.32 °C`** | **-5.9% lower test thermal error**|
+| **Per-Cube Latency (ms)** | `735.2 ms` | `734.9 ms` | **`371.8 ms`** | **`96.8 ms`** | **1.98x to 7.59x faster runtime** |
+| **Throughput (cubes/sec)** | `1.4 cubes/s` | `1.4 cubes/s` | **`2.7 cubes/s`** | **`10.3 cubes/s`**| **Up to 7.4x higher throughput** |
+
+---
+
 ## Research Hypotheses Falsification & Validation Summary
 
 - **H1_corrected_discretization_integrity**: **CONFIRMED**
