@@ -12,7 +12,7 @@
 ## 1. Executive Summary
 
 Sprint 8 revealed an essential inference trade-off under a compute budget matched at approximately 32 neural function evaluations (NFEs):
-- **Deeper low-member sampling** ($K=2, S=16, \eta=0.0$) achieves the strongest continuous probabilistic distribution scores (Fair-CRPS = 0.5401, Multivariate Energy Score = 2.083).
+- **Deeper low-member sampling** ($K=2, S=16, \eta=0.0$) achieves the strongest continuous probabilistic distribution scores (Fair-CRPS = 0.5401, Multivariate Energy Score ≈ 0.2769).
 - **Broader shallow sampling** ($K=8, S=4, \eta=0.5$) achieves the strongest deterministic point accuracy and convective storm recall (Wet-MAE = 6.51 mm, CSI@30 = 0.728).
 
 However, an empirical audit of the 2022 validation metrics revealed a critical diagnostic vulnerability:
@@ -21,8 +21,8 @@ However, an empirical audit of the 2022 validation metrics revealed a critical d
 - Increasing ensemble size $K$ from 8 to 16 yields diminishing returns and fails to resolve this spread deficit.
 
 This deep research report establishes that:
-1. **The under-dispersion is variable-specific:** While precipitation exhibits severe under-dispersion (SSR = 0.438, Cov@90 = 20.9%), all five continuous thermodynamic and kinetic variables are already well-calibrated (Tmax SSR = 1.057, Cov@90 = 74.1%; Tmin SSR = 1.170, Cov@90 = 79.4%; RH SSR = 0.946, Cov@90 = 69.8%; Wind-U SSR = 0.811, Cov@90 = 71.5%; Wind-V SSR = 0.817, Cov@90 = 69.3%).
-2. **Physical clipping induces variance collapse:** 31.26% of raw precipitation predictions fall below zero and undergo non-negativity clipping ($P = \max(0, P)$). This clipping collapses inter-member variance to zero across dry and light-rain pixels, creating an artificial under-dispersion penalty whenever unpredicted localized rain occurs.
+1. **The under-dispersion is variable-specific:** Precipitation exhibits severe under-dispersion (SSR = 0.438, Cov@90 = 20.9%), while the thermodynamic and wind variables show substantially better uncertainty behavior (Tmax SSR = 1.057, Cov@90 = 74.1%; Tmin SSR = 1.170, Cov@90 = 79.4%; RH SSR = 0.946, Cov@90 = 69.8%; Wind-U SSR = 0.811, Cov@90 = 71.5%; Wind-V SSR = 0.817, Cov@90 = 69.3%). They are still imperfectly calibrated and should not be described as fully calibrated.
+2. **Physical clipping is a candidate mechanism for variance collapse:** 31.26% of raw precipitation predictions fall below zero and undergo non-negativity clipping ($P = \max(0, P)$). Clipping can collapse inter-member variance at the zero boundary, which may contribute to the observed precipitation under-dispersion. Sprint 8.5 explicitly tests the magnitude and causality of this effect.
 3. **The Phase 0 metric discrepancy is fully resolved:** The ~0.0525 difference between condition-history CRPS (~0.603) and bootstrap point estimates (~0.550) was mathematically proven to be a batch-weighting artifact on the final 2-cube batch, with zero impact on scientific ordering or point metrics.
 4. **Post-hoc calibration is mathematically viable:** Multiplicative spread rescaling, isotonic/logistic probability recalibration, and non-negative split conformal prediction can address this deficit without requiring neural model retraining.
 
@@ -81,8 +81,8 @@ $$\text{SSR} = \frac{\mathbb{E}[\text{spread}]}{\mathbb{E}[\text{RMSE}]}$$
 | **Wind U** | 32.15% | 52.34% | 71.53% | 0.648 m/s |
 | **Wind V** | 30.08% | 49.56% | 69.25% | 0.461 m/s |
 
-### 3.3 Root Cause of the Precipitation Coverage Deficit
-The data demonstrates that the diffusion backbone has successfully learned the conditional uncertainty manifold for smooth thermodynamic and wind fields. The under-dispersion is specific to precipitation.
+### 3.3 Diagnostic Interpretation of the Precipitation Coverage Deficit
+The data show substantially better uncertainty behavior for smooth thermodynamic and wind fields than for precipitation; this does not establish that the underlying conditional uncertainty manifold is fully learned or calibrated. The under-dispersion is specific to precipitation.
 
 Two physical-numerical factors drive this precipitation-specific collapse:
 1. **Zero-Bound Truncation:** 31.26% of raw precipitation predictions are clipped at $P=0$. When multiple members predict negative values, their values collapse to identical zero entries, forcing intra-ensemble variance to zero.
@@ -145,7 +145,7 @@ To determine where the uncertainty bottleneck originates, we evaluate an orthogo
 - **Calibration Modification:** Applying spread rescaling and conformal adjustments to fixed $K=8, S=4, \eta=0.5$ outputs.
 - **Joint Modification:** Sampler tuning combined with post-hoc calibration.
 
-If calibration modification alone closes $>70\%$ of the coverage and SSR gap, the bottleneck is post-processing scale. If only sampler changes close it, the bottleneck is inference dynamics. If neither succeeds, the bottleneck is representation.
+Use the explicit Sprint 8.5 decision gate rather than a generic percentage-of-gap rule: calibration is considered sufficient only if precipitation SSR reaches at least 0.85 and 90% coverage reaches at least 75% while Wet-MAE remains within 1% and CSI@30 within 0.01 absolute of the uncalibrated reference. If only sampler changes meet the dispersion target, the bottleneck is inference dynamics. If neither succeeds without degrading point skill, the bottleneck is representation.
 
 ### 4.6 Pillar F: Physical Repair-Burden and Mass Balance
 Sprint 8 recorded:
@@ -153,7 +153,7 @@ Sprint 8 recorded:
 - Mass shift: **7.76%**
 - Tmin > Tmax violations: **0.0%** (thermodynamic ordering perfectly preserved)
 
-We evaluate raw unclipped precipitation fields against clipped fields to verify whether negative values represent a systematic negative bias or zero-mean diffusion oscillation around the dry-state threshold.
+These observations do not by themselves prove that clipping is the cause of precipitation under-dispersion. We evaluate raw unclipped precipitation fields against clipped fields to determine whether negative values are associated with systematic light-rain bias, zero-bound truncation, or ordinary diffusion variability around the dry-state threshold.
 
 ### 4.7 Pillar G: Spatial Sharpness and Texture Preservation
 Ensemble averaging is a linear smoother that can blur local topography and convective cores. To ensure that point gains do not come from artificial smoothing, we benchmark:
@@ -195,3 +195,8 @@ The deep research phase has established:
 4. Clear decision criteria for Sprint 9 model capacity scaling.
 
 All planning and research artifacts are complete and pushed to GitHub. We await user review before beginning implementation.
+
+
+## 8. Distribution-Diagnostic Caveat
+
+Because precipitation has a point mass at zero and K is finite (often K=8), ordinary continuous PIT is not directly appropriate. Sprint 8.5 should use ensemble rank histograms for precipitation and only use randomized PIT when zero-mass ties and discrete support are handled explicitly.
