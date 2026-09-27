@@ -1,0 +1,88 @@
+{
+  "metadata": {
+    "num_resamples": 1000,
+    "confidence_level": 0.95,
+    "seed": 20260927,
+    "unit": "case_level_7day_spatiotemporal_cube"
+  },
+  "conditions": {
+    "REF_C_K8_S4_ETA05": {
+      "crps": {
+        "point_estimate": 0.5800549464880443,
+        "ci_lower": 0.407555898984314,
+        "ci_upper": 0.7735341853843849,
+        "n_cases": 61
+      },
+      "precip_crps": {
+        "point_estimate": 1.7994653803647542,
+        "ci_lower": 1.5170396524191392,
+        "ci_upper": 2.124123775097923,
+        "n_cases": 61
+      },
+      "wet_mae": {
+        "point_estimate": 5.16498524536852,
+        "ci_lower": 4.614147107962703,
+        "ci_upper": 5.760947346858314,
+        "n_cases": 61
+      },
+      "csi30": {
+        "point_estimate": 0.4583558612804621,
+        "ci_lower": 0.3826615852752574,
+        "ci_upper": 0.5303855095274119,
+        "n_cases": 61
+      }
+    },
+    "REF_A_K2_S16_ETA0": {
+      "crps": {
+        "point_estimate": 0.5696668698162329,
+        "ci_lower": 0.40532141986806863,
+        "ci_upper": 0.7706979382691569,
+        "n_cases": 61
+      },
+      "precip_crps": {
+        "point_estimate": 1.7511260441092193,
+        "ci_lower": 1.459639470346394,
+        "ci_upper": 2.0612810511477906,
+        "n_cases": 61
+      },
+      "wet_mae": {
+        "point_estimate": 5.467271871254092,
+        "ci_lower": 4.887464087810672,
+        "ci_upper": 6.06901701669224,
+        "n_cases": 61
+      },
+      "csi30": {
+        "point_estimate": 0.43638189059982563,
+        "ci_lower": 0.36366328263252506,
+        "ci_upper": 0.5072176933410802,
+        "n_cases": 61
+      }
+    },
+    "REF_B_K4_S8_ETA0": {
+      "crps": {
+        "point_estimate": 0.5728136793267532,
+        "ci_lower": 0.40730666728598663,
+        "ci_upper": 0.7773045145524817,
+        "n_cases": 61
+      },
+      "precip_crps": {
+        "point_estimate": 1.7666176919077263,
+        "ci_lower": 1.4608378281786305,
+        "ci_upper": 2.065438568524894,
+        "n_cases": 61
+      },
+      "wet_mae": {
+        "point_estimate": 5.236695855367379,
+        "ci_lower": 4.670903881016325,
+        "ci_upper": 5.798027847902697,
+        "n_cases": 61
+      },
+      "csi30": {
+        "point_estimate": 0.4489488087188998,
+        "ci_lower": 0.3718074536346214,
+        "ci_upper": 0.5206201320251931,
+        "n_cases": 61
+      }
+    }
+  }
+}

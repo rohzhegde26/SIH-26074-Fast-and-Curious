@@ -259,11 +259,35 @@ def monitor_kernel(
     )
 
     # Copy summary JSON to reports/
+    found_summary = False
     for rpt in list(output_dir.rglob("*.json")) + list(output_dir.rglob("*.md")):
         dst = ROOT / "reports" / rpt.name
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(rpt, dst)
         print(f"[+] Retrieved report: {dst.relative_to(ROOT)}")
+        if rpt.name == "sprint8_5_validation_summary.json":
+            found_summary = True
+
+    # Fallback: check kernel log for BEGIN_JSON_SUMMARY_EXPORT
+    if not found_summary:
+        print("[*] Checking kernel logs for embedded JSON summary...")
+        try:
+            import kaggle
+            api = kaggle.KaggleApi()
+            api.authenticate()
+            log_text = api.kernels_logs(kernel_id)
+            if "BEGIN_JSON_SUMMARY_EXPORT" in log_text:
+                start = log_text.index("BEGIN_JSON_SUMMARY_EXPORT") + len("BEGIN_JSON_SUMMARY_EXPORT")
+                end = log_text.index("END_JSON_SUMMARY_EXPORT")
+                json_str = log_text[start:end].strip()
+                summary_data = json.loads(json_str)
+                target_json = ROOT / "reports" / "sprint8_5_validation_summary.json"
+                with open(target_json, "w", encoding="utf-8") as f:
+                    json.dump(summary_data, f, indent=2)
+                print(f"[+] Successfully extracted and saved: {target_json.relative_to(ROOT)}")
+                found_summary = True
+        except Exception as e:
+            print(f"[-] Log fallback extraction error: {e}")
 
     # Check post-run quota
     time.sleep(5)
