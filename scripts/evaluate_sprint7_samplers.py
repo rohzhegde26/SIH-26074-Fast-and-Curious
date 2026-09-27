@@ -364,12 +364,14 @@ def run_evaluation():
         ckpt_path = Path(args.checkpoint_path)
     else:
         ckpt_cands = [
+            out_root / "models" / "checkpoints" / "sprint6_candidate3_multitask_champion.pt",
+            ROOT / "models" / "checkpoints" / "sprint6_candidate3_multitask_champion.pt",
+            Path("/kaggle/input/sih26074-sprint6-checkpoints/sprint6_candidate3_multitask_champion.pt"),
+            Path("/kaggle/working/models/checkpoints/sprint6_candidate3_multitask_champion.pt"),
             out_root / "models" / "checkpoints" / "sprint6_candidate2_vpred_champion.pt",
             ROOT / "models" / "checkpoints" / "sprint6_candidate2_vpred_champion.pt",
             Path("/kaggle/input/sih26074-sprint6-checkpoints/sprint6_candidate2_vpred_champion.pt"),
             Path("/kaggle/working/models/checkpoints/sprint6_candidate2_vpred_champion.pt"),
-            out_root / "models" / "checkpoints" / "sprint6_candidate3_multitask_champion.pt",
-            ROOT / "models" / "checkpoints" / "sprint6_candidate3_multitask_champion.pt",
             Path("/kaggle/input/sih26074-s6-diff-multitask/sprint6_candidate3_multitask_champion.pt"),
             Path("/kaggle/input/sih26074-multitask-temporal-v2-h14/sprint6_candidate3_multitask_champion.pt"),
         ]
