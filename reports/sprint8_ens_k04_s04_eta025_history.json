@@ -22,7 +22,7 @@
     "wind_vector_rmse": 0.8759890669776548,
     "brier_15": {
       "brier_score": 0.03539586067199707,
-      "brier_skill_score_train": 0.5190779800000398,
+      "brier_skill_score_train": 0.6393736145025365,
       "brier_skill_score_sample": 0.7018293005118934,
       "reliability": 0.0033231282230500757,
       "resolution": 0.08663732747727572,
@@ -31,7 +31,7 @@
     },
     "brier_30": {
       "brier_score": 0.019922584295272827,
-      "brier_skill_score_train": -0.016458382411878913,
+      "brier_skill_score_train": 0.6362816911210059,
       "brier_skill_score_sample": 0.7146711283957363,
       "reliability": 0.0010173680323182918,
       "resolution": 0.050918020258335105,
@@ -55,6 +55,13 @@
     "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
     "chunk_size": 4,
     "base_seed": 20260927,
-    "device": "cuda"
+    "device": "cuda",
+    "climatology_reference": {
+      "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+      "p15_base_rate": 0.110322,
+      "p30_base_rate": 0.058157,
+      "bs_clim_train_p15": 0.098151056316,
+      "bs_clim_train_p30": 0.054774763351
+    }
   }
 }

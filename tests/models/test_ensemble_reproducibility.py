@@ -21,13 +21,19 @@ import numpy as np
 from src.models.ensemble import (
     generate_nested_seeds,
     compute_crps,
+    compute_per_variable_crps,
     compute_brier_score,
     compute_pairwise_diversity,
     compute_spread_skill_ratio,
+    compute_per_variable_spread_skill,
     compute_prediction_interval_coverage,
+    compute_per_variable_prediction_interval,
     compute_multivariate_energy_score,
     apply_member_wise_physical_bounds,
     EnsembleGenerator,
+    TRAINING_CLIMATOLOGY_RATES,
+    CHANNEL_NAMES_6CH,
+    CHANNEL_UNITS_6CH,
 )
 
 
@@ -186,3 +192,63 @@ def test_ensemble_chunked_batching_equivalence():
     out_chunk, _ = gen_chunk.generate(shape, num_members=2, base_seed=base_seed, chunk_size=2)
 
     assert torch.allclose(out_seq, out_chunk, atol=1e-5), "Sequential and chunked generation must produce identical results"
+
+
+def test_per_variable_crps_decomposition():
+    """Verify that compute_per_variable_crps evaluates native-unit Fair-CRPS across all channels."""
+    # [K=2, B=1, T=7, C=6, H=8, W=8]
+    torch.manual_seed(101)
+    members = torch.randn(2, 1, 7, 6, 8, 8) + 10.0
+    targets = torch.randn(1, 7, 6, 8, 8) + 10.0
+
+    res = compute_per_variable_crps(members, targets)
+    assert len(res) == 6
+    for ch_name in CHANNEL_NAMES_6CH:
+        assert ch_name in res
+        entry = res[ch_name]
+        assert "crps" in entry and entry["crps"] >= 0.0
+        assert entry["unit"] == CHANNEL_UNITS_6CH[ch_name]
+        assert entry["is_fair"] is True
+
+
+def test_per_variable_spread_skill_and_interval():
+    """Verify that per-variable spread-skill and prediction intervals return per-channel diagnostics."""
+    torch.manual_seed(202)
+    members = torch.randn(4, 1, 7, 6, 8, 8)
+    targets = torch.randn(1, 7, 6, 8, 8)
+
+    ssr_res = compute_per_variable_spread_skill(members, targets)
+    assert len(ssr_res) == 6
+    for ch_name in CHANNEL_NAMES_6CH:
+        assert "spread_skill_ratio" in ssr_res[ch_name]
+        assert "ensemble_spread" in ssr_res[ch_name]
+        assert "rmse_ensemble_mean" in ssr_res[ch_name]
+
+    cov_res = compute_per_variable_prediction_interval(members, targets)
+    assert len(cov_res) == 6
+    for ch_name in CHANNEL_NAMES_6CH:
+        assert "coverage_80" in cov_res[ch_name]
+        assert "sharpness_80" in cov_res[ch_name]
+
+
+def test_training_climatology_exact_bss():
+    """Verify BSS calculation against the exact 2015-2021 training split climatology rates."""
+    # Perfect forecast: Brier Score = 0.0
+    probs_perfect = torch.tensor([1.0, 0.0, 1.0, 0.0])
+    obs = torch.tensor([1.0, 0.0, 1.0, 0.0])
+    clim_p15 = TRAINING_CLIMATOLOGY_RATES["p15"] # 0.110322
+    clim_p30 = TRAINING_CLIMATOLOGY_RATES["p30"] # 0.058157
+
+    res15 = compute_brier_score(probs_perfect, obs, clim_train_rate=clim_p15)
+    res30 = compute_brier_score(probs_perfect, obs, clim_train_rate=clim_p30)
+
+    assert math.isclose(res15["brier_score"], 0.0, abs_tol=1e-6)
+    assert math.isclose(res15["brier_skill_score_train"], 1.0, abs_tol=1e-5)
+    assert math.isclose(res30["brier_skill_score_train"], 1.0, abs_tol=1e-5)
+
+    # Climatological forecast evaluated on matching base-rate distribution
+    p_rate = 0.10
+    obs_dist = torch.tensor([1.0] * 10 + [0.0] * 90, dtype=torch.float32)
+    probs_clim = torch.full_like(obs_dist, fill_value=p_rate)
+    res_clim = compute_brier_score(probs_clim, obs_dist, clim_train_rate=p_rate)
+    assert math.isclose(res_clim["brier_skill_score_train"], 0.0, abs_tol=1e-4)

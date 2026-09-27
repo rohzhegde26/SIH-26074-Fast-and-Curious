@@ -56,11 +56,17 @@ from src.models.ensemble import (
     generate_nested_seeds,
     apply_member_wise_physical_bounds,
     compute_crps,
+    compute_per_variable_crps,
     compute_brier_score,
     compute_pairwise_diversity,
     compute_spread_skill_ratio,
+    compute_per_variable_spread_skill,
     compute_prediction_interval_coverage,
+    compute_per_variable_prediction_interval,
     compute_multivariate_energy_score,
+    TRAINING_CLIMATOLOGY_RATES,
+    CHANNEL_NAMES_6CH,
+    CHANNEL_UNITS_6CH,
 )
 
 
@@ -496,6 +502,10 @@ def evaluate_condition(
 
     diversity_diagnostics_accum = []
     repair_diagnostics_accum = []
+    per_var_crps_accum: Dict[str, List[float]] = {ch: [] for ch in CHANNEL_NAMES_6CH}
+    per_var_ssr_accum: Dict[str, List[Dict[str, float]]] = {ch: [] for ch in CHANNEL_NAMES_6CH}
+    per_var_cov_accum: Dict[str, List[Dict[str, float]]] = {ch: [] for ch in CHANNEL_NAMES_6CH}
+    energy_score_accum: List[float] = []
 
     with torch.no_grad():
         for b_idx, batch in enumerate(loader):
@@ -545,13 +555,32 @@ def evaluate_condition(
             members_phys, rep_diag = apply_member_wise_physical_bounds(members_phys_raw)
             repair_diagnostics_accum.append(rep_diag)
 
-            # Compute pairwise diversity diagnostics
+            # Compute pairwise diversity diagnostics (including 2D spatial correlation)
             div_diag = compute_pairwise_diversity(members_phys)
             diversity_diagnostics_accum.append(div_diag)
 
             # Compute CRPS (Fair-CRPS for K >= 2, Deterministic CRPS = MAE for K = 1)
             crps_val, is_fair = compute_crps(members_phys, target_phys_tensor)
             all_crps_list.append(crps_val)
+
+            # Per-variable Fair-CRPS in native physical units
+            pv_crps = compute_per_variable_crps(members_phys, target_phys_tensor)
+            for ch, d in pv_crps.items():
+                per_var_crps_accum[ch].append(d["crps"])
+
+            # Per-variable Spread-Skill Ratio
+            pv_ssr = compute_per_variable_spread_skill(members_phys, target_phys_tensor)
+            for ch, d in pv_ssr.items():
+                per_var_ssr_accum[ch].append(d)
+
+            # Per-variable Prediction Interval Coverage
+            pv_cov = compute_per_variable_prediction_interval(members_phys, target_phys_tensor)
+            for ch, d in pv_cov.items():
+                per_var_cov_accum[ch].append(d)
+
+            # Multivariate Energy Score on standardized variables
+            es_val = compute_multivariate_energy_score(members_norm_tensor.to(device), target_norm.to(device))
+            energy_score_accum.append(es_val)
 
             # Compute Ensemble Mean for deterministic metrics
             ens_mean_phys = members_phys.mean(dim=0).cpu().numpy() # [B, T_f, C, H, W]
@@ -627,8 +656,8 @@ def evaluate_condition(
     p30_p = torch.cat(all_p30_probs) if all_p30_probs else torch.tensor([0.0])
     p30_o = torch.cat(all_p30_obs) if all_p30_obs else torch.tensor([0.0])
 
-    clim15_rate = clim_train_rates.get("p15", 0.08) if clim_train_rates else 0.08
-    clim30_rate = clim_train_rates.get("p30", 0.02) if clim_train_rates else 0.02
+    clim15_rate = clim_train_rates.get("p15", TRAINING_CLIMATOLOGY_RATES["p15"]) if clim_train_rates else TRAINING_CLIMATOLOGY_RATES["p15"]
+    clim30_rate = clim_train_rates.get("p30", TRAINING_CLIMATOLOGY_RATES["p30"]) if clim_train_rates else TRAINING_CLIMATOLOGY_RATES["p30"]
 
     brier15 = compute_brier_score(p15_p, p15_o, clim_train_rate=clim15_rate)
     brier30 = compute_brier_score(p30_p, p30_o, clim_train_rate=clim30_rate)
@@ -644,12 +673,45 @@ def evaluate_condition(
     avg_wind_rmse = float(np.mean(all_wind_rmse_list))
 
     avg_div_rmse = float(np.mean([d["mean_pairwise_rmse"] for d in diversity_diagnostics_accum]))
-    avg_div_corr = float(np.mean([d["mean_pairwise_correlation"] for d in diversity_diagnostics_accum]))
+    avg_div_spatial_corr = float(np.mean([d.get("mean_pairwise_spatial_correlation", d.get("mean_pairwise_correlation", 1.0)) for d in diversity_diagnostics_accum]))
+    avg_div_global_corr = float(np.mean([d.get("global_member_correlation", d.get("mean_pairwise_correlation", 1.0)) for d in diversity_diagnostics_accum]))
     avg_ens_var = float(np.mean([d["ensemble_variance"] for d in diversity_diagnostics_accum]))
 
     avg_precip_clip = float(np.mean([d["precip_clipped_fraction"] for d in repair_diagnostics_accum]))
     avg_precip_mass_shift = float(np.mean([d["precip_mass_shift_pct"] for d in repair_diagnostics_accum]))
     avg_tmin_gt_tmax = float(np.mean([d["tmin_gt_tmax_rate"] for d in repair_diagnostics_accum]))
+
+    # Per-variable aggregated metrics
+    avg_per_var_crps = {
+        ch: {
+            "crps": float(np.mean(per_var_crps_accum[ch])) if per_var_crps_accum[ch] else 0.0,
+            "unit": CHANNEL_UNITS_6CH[ch],
+            "is_fair": (k_members >= 2),
+        }
+        for ch in CHANNEL_NAMES_6CH
+    }
+
+    avg_per_var_ssr = {
+        ch: {
+            "ensemble_spread": float(np.mean([x["ensemble_spread"] for x in per_var_ssr_accum[ch]])) if per_var_ssr_accum[ch] else 0.0,
+            "rmse_ensemble_mean": float(np.mean([x["rmse_ensemble_mean"] for x in per_var_ssr_accum[ch]])) if per_var_ssr_accum[ch] else 0.0,
+            "spread_skill_ratio": float(np.mean([x["spread_skill_ratio"] for x in per_var_ssr_accum[ch]])) if per_var_ssr_accum[ch] else 0.0,
+        }
+        for ch in CHANNEL_NAMES_6CH
+    }
+
+    avg_per_var_cov = {}
+    for ch in CHANNEL_NAMES_6CH:
+        if per_var_cov_accum[ch]:
+            first_keys = per_var_cov_accum[ch][0].keys()
+            avg_per_var_cov[ch] = {
+                k: float(np.mean([x[k] for x in per_var_cov_accum[ch]]))
+                for k in first_keys
+            }
+        else:
+            avg_per_var_cov[ch] = {}
+
+    avg_energy_score = float(np.mean(energy_score_accum)) if energy_score_accum else 0.0
 
     result = {
         "condition_id": cond_id,
@@ -665,6 +727,10 @@ def evaluate_condition(
         "throughput_cubes_sec": throughput,
         "metrics": {
             "crps": avg_crps,
+            "crps_per_variable": avg_per_var_crps,
+            "spread_skill_per_variable": avg_per_var_ssr,
+            "prediction_interval_coverage": avg_per_var_cov,
+            "multivariate_energy_score": avg_energy_score,
             "cmvs": avg_cmvs,
             "precip_wet_mae": avg_wet_mae,
             "precip_csi15": avg_csi15,
@@ -677,7 +743,9 @@ def evaluate_condition(
             "brier_30": brier30,
             "diversity": {
                 "mean_pairwise_rmse": avg_div_rmse,
-                "mean_pairwise_correlation": avg_div_corr,
+                "mean_pairwise_spatial_correlation": avg_div_spatial_corr,
+                "global_member_correlation": avg_div_global_corr,
+                "mean_pairwise_correlation": avg_div_global_corr,
                 "ensemble_variance": avg_ens_var,
             },
             "repair_diagnostics": {
@@ -693,6 +761,17 @@ def evaluate_condition(
             "chunk_size": chunk_size,
             "base_seed": base_seed,
             "device": str(device),
+            "climatology_reference": {
+                "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+                "p15_base_rate": clim15_rate,
+                "p30_base_rate": clim30_rate,
+                "bs_clim_train_p15": clim15_rate * (1.0 - clim15_rate),
+                "bs_clim_train_p30": clim30_rate * (1.0 - clim30_rate),
+            },
+            "execution_profile": {
+                "batching_mode": "sequential_member_loop",
+                "note": "Latency reflects sequential member evaluation looping over seeds, not batched multi-stream inference.",
+            },
         }
     }
 
@@ -785,11 +864,14 @@ def main():
                 if c["budget"] == 16 and c["id"] not in seen_ids:
                     to_run.append(c)
                     seen_ids.add(c["id"])
-        elif tok == "BUDGET64":
-            for c in CONDITIONS:
-                if c["budget"] == 64 and c["id"] not in seen_ids:
-                    to_run.append(c)
-                    seen_ids.add(c["id"])
+        elif tok in ["TARGETED", "TARGETED_AUDIT", "AUDIT4"]:
+            target_ids = ["B32_K2_S16", "B32_K4_S8", "B32_K8_S4", "B32_K8_S4_ETA05", "CHAMPION_HOLDOUT_B32_K8_S4_ETA05"]
+            for tid in target_ids:
+                matched = [c for c in CONDITIONS if c["id"] == tid]
+                for c in matched:
+                    if c["id"] not in seen_ids:
+                        to_run.append(c)
+                        seen_ids.add(c["id"])
         else:
             matched = [c for c in CONDITIONS if c["id"].upper() == tok]
             for c in matched:

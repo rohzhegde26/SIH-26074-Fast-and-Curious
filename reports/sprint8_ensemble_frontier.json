@@ -33,7 +33,7 @@
         "wind_vector_rmse": 0.9814229722945921,
         "brier_15": {
           "brier_score": 0.0464942567050457,
-          "brier_skill_score_train": 0.368284555637966,
+          "brier_skill_score_train": 0.5262989676305044,
           "brier_skill_score_sample": 0.6083376761935682,
           "reliability": 0.006444359488027325,
           "resolution": 0.07866016696578129,
@@ -42,7 +42,7 @@
         },
         "brier_30": {
           "brier_score": 0.02655426599085331,
-          "brier_skill_score_train": -0.3548094893292506,
+          "brier_skill_score_train": 0.515209845441194,
           "brier_skill_score_sample": 0.6196929756122339,
           "reliability": 0.0028276713409506413,
           "resolution": 0.04609663930789858,
@@ -66,7 +66,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "DET_S04": {
@@ -93,7 +100,7 @@
         "wind_vector_rmse": 0.9814229722945921,
         "brier_15": {
           "brier_score": 0.0464942567050457,
-          "brier_skill_score_train": 0.368284555637966,
+          "brier_skill_score_train": 0.5262989676305044,
           "brier_skill_score_sample": 0.6083376761935682,
           "reliability": 0.006444359488027325,
           "resolution": 0.07866016696578129,
@@ -102,7 +109,7 @@
         },
         "brier_30": {
           "brier_score": 0.02655426599085331,
-          "brier_skill_score_train": -0.3548094893292506,
+          "brier_skill_score_train": 0.515209845441194,
           "brier_skill_score_sample": 0.6196929756122339,
           "reliability": 0.0028276713409506413,
           "resolution": 0.04609663930789858,
@@ -126,7 +133,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "DET_S08": {
@@ -153,7 +167,7 @@
         "wind_vector_rmse": 0.967333742687779,
         "brier_15": {
           "brier_score": 0.048758234828710556,
-          "brier_skill_score_train": 0.3375239833055631,
+          "brier_skill_score_train": 0.5032327041725146,
           "brier_skill_score_sample": 0.5892661822973064,
           "reliability": 0.007050331396818884,
           "resolution": 0.0770021574583049,
@@ -162,7 +176,7 @@
         },
         "brier_30": {
           "brier_score": 0.02773968130350113,
-          "brier_skill_score_train": -0.41528986242352706,
+          "brier_skill_score_train": 0.49356821268686135,
           "brier_skill_score_sample": 0.6027155991570883,
           "reliability": 0.0031119472409292426,
           "resolution": 0.04519549889081854,
@@ -186,7 +200,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "DET_S16": {
@@ -213,7 +234,7 @@
         "wind_vector_rmse": 0.9569100852935545,
         "brier_15": {
           "brier_score": 0.050541751086711884,
-          "brier_skill_score_train": 0.31329142545228417,
+          "brier_skill_score_train": 0.48506156750884744,
           "brier_skill_score_sample": 0.5742420444433176,
           "reliability": 0.007541905589254747,
           "resolution": 0.0757102115363668,
@@ -222,7 +243,7 @@
         },
         "brier_30": {
           "brier_score": 0.02854563109576702,
-          "brier_skill_score_train": -0.4564097497840318,
+          "brier_skill_score_train": 0.47885432360802926,
           "brier_skill_score_sample": 0.5911728825401743,
           "reliability": 0.003322648733657724,
           "resolution": 0.04460025472738596,
@@ -246,7 +267,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "DET_S32": {
@@ -273,7 +301,7 @@
         "wind_vector_rmse": 0.9500230877630172,
         "brier_15": {
           "brier_score": 0.05171380937099457,
-          "brier_skill_score_train": 0.2973667205027912,
+          "brier_skill_score_train": 0.4731201954210198,
           "brier_skill_score_sample": 0.564368758928272,
           "reliability": 0.00787317952622682,
           "resolution": 0.07486943265888836,
@@ -282,7 +310,7 @@
         },
         "brier_30": {
           "brier_score": 0.028986571356654167,
-          "brier_skill_score_train": -0.47890670187011053,
+          "brier_skill_score_train": 0.4708042612451565,
           "brier_skill_score_sample": 0.5848577888144235,
           "reliability": 0.003444984716907901,
           "resolution": 0.04428165153368885,
@@ -306,7 +334,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "DET_S64": {
@@ -333,7 +368,7 @@
         "wind_vector_rmse": 0.9490347793025355,
         "brier_15": {
           "brier_score": 0.05230880528688431,
-          "brier_skill_score_train": 0.2892825368629849,
+          "brier_skill_score_train": 0.4670581525024582,
           "brier_skill_score_sample": 0.5593565810898118,
           "reliability": 0.008046579311649107,
           "resolution": 0.07444783140522063,
@@ -342,7 +377,7 @@
         },
         "brier_30": {
           "brier_score": 0.02921692095696926,
-          "brier_skill_score_train": -0.4906592324984318,
+          "brier_skill_score_train": 0.4665988647044358,
           "brier_skill_score_sample": 0.581558749364607,
           "reliability": 0.0035115476940310347,
           "resolution": 0.044117861533001825,
@@ -366,7 +401,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "ENS_K02_S04_ETA0": {
@@ -393,7 +435,7 @@
         "wind_vector_rmse": 0.9171850623623017,
         "brier_15": {
           "brier_score": 0.039113957434892654,
-          "brier_skill_score_train": 0.4685603609389585,
+          "brier_skill_score_train": 0.601492241622299,
           "brier_skill_score_sample": 0.6705084767909968,
           "reliability": 0.004007466425890487,
           "resolution": 0.08360356691392408,
@@ -402,7 +444,7 @@
         },
         "brier_30": {
           "brier_score": 0.022157402709126472,
-          "brier_skill_score_train": -0.13047973005747315,
+          "brier_skill_score_train": 0.5954815438062142,
           "brier_skill_score_sample": 0.6826643261247783,
           "reliability": 0.0014333259051181272,
           "resolution": 0.04909916010073523,
@@ -426,7 +468,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "ENS_K04_S04_ETA0": {
@@ -453,7 +502,7 @@
         "wind_vector_rmse": 0.8810947210557999,
         "brier_15": {
           "brier_score": 0.03543394058942795,
-          "brier_skill_score_train": 0.518560589817555,
+          "brier_skill_score_train": 0.6389856419339247,
           "brier_skill_score_sample": 0.7015085196239237,
           "reliability": 0.0033048083597025033,
           "resolution": 0.08658092667199103,
@@ -462,7 +511,7 @@
         },
         "brier_30": {
           "brier_score": 0.01994440145790577,
-          "brier_skill_score_train": -0.017571502954375928,
+          "brier_skill_score_train": 0.6358833842859195,
           "brier_skill_score_sample": 0.7143586655995748,
           "reliability": 0.0010158858070302547,
           "resolution": 0.05089471630351645,
@@ -486,7 +535,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "ENS_K08_S04_ETA0": {
@@ -513,7 +569,7 @@
         "wind_vector_rmse": 0.8617646876842745,
         "brier_15": {
           "brier_score": 0.033652931451797485,
-          "brier_skill_score_train": 0.5427590835353602,
+          "brier_skill_score_train": 0.6571312351091674,
           "brier_skill_score_sample": 0.7165115377814145,
           "reliability": 0.003186902662261704,
           "resolution": 0.08824403313931903,
@@ -522,7 +578,7 @@
         },
         "brier_30": {
           "brier_score": 0.018889695405960083,
-          "brier_skill_score_train": 0.03624003030815903,
+          "brier_skill_score_train": 0.655138712605406,
           "brier_skill_score_sample": 0.7294640396422012,
           "reliability": 0.0009515333514218982,
           "resolution": 0.051885073285278645,
@@ -546,7 +602,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "ENS_K16_S04_ETA0": {
@@ -573,7 +636,7 @@
         "wind_vector_rmse": 0.8512545175129368,
         "brier_15": {
           "brier_score": 0.03275655210018158,
-          "brier_skill_score_train": 0.5549381508127502,
+          "brier_skill_score_train": 0.6662638862008681,
           "brier_skill_score_sample": 0.7240625353614638,
           "reliability": 0.0029649452451296103,
           "resolution": 0.08854049279249146,
@@ -582,7 +645,7 @@
         },
         "brier_30": {
           "brier_score": 0.01834181696176529,
-          "brier_skill_score_train": 0.0641930121548322,
+          "brier_skill_score_train": 0.6651411007614982,
           "brier_skill_score_sample": 0.7373106892505803,
           "reliability": 0.0008438742120227567,
           "resolution": 0.05206912513476172,
@@ -606,7 +669,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "ENS_K04_S04_ETA025": {
@@ -633,7 +703,7 @@
         "wind_vector_rmse": 0.8759890669776548,
         "brier_15": {
           "brier_score": 0.03539586067199707,
-          "brier_skill_score_train": 0.5190779800000398,
+          "brier_skill_score_train": 0.6393736145025365,
           "brier_skill_score_sample": 0.7018293005118934,
           "reliability": 0.0033231282230500757,
           "resolution": 0.08663732747727572,
@@ -642,7 +712,7 @@
         },
         "brier_30": {
           "brier_score": 0.019922584295272827,
-          "brier_skill_score_train": -0.016458382411878913,
+          "brier_skill_score_train": 0.6362816911210059,
           "brier_skill_score_sample": 0.7146711283957363,
           "reliability": 0.0010173680323182918,
           "resolution": 0.050918020258335105,
@@ -666,7 +736,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "ENS_K04_S04_ETA050": {
@@ -693,7 +770,7 @@
         "wind_vector_rmse": 0.8622363248179036,
         "brier_15": {
           "brier_score": 0.03521045297384262,
-          "brier_skill_score_train": 0.52159710633366,
+          "brier_skill_score_train": 0.6412626180967262,
           "brier_skill_score_sample": 0.703391153847273,
           "reliability": 0.0033271362747926744,
           "resolution": 0.08682674405030827,
@@ -702,7 +779,7 @@
         },
         "brier_30": {
           "brier_score": 0.019848918542265892,
-          "brier_skill_score_train": -0.012699925625810904,
+          "brier_skill_score_train": 0.6376265760369821,
           "brier_skill_score_sample": 0.7157261605075259,
           "reliability": 0.0010339860961330431,
           "resolution": 0.05100830537053724,
@@ -726,7 +803,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "ENS_K04_S04_ETA100": {
@@ -753,7 +837,7 @@
         "wind_vector_rmse": 0.8237809596523162,
         "brier_15": {
           "brier_score": 0.03470071777701378,
-          "brier_skill_score_train": 0.5285228562905737,
+          "brier_skill_score_train": 0.6464559926355364,
           "brier_skill_score_sample": 0.7076851050976917,
           "reliability": 0.003404720219829022,
           "resolution": 0.08741406134295734,
@@ -762,7 +846,7 @@
         },
         "brier_30": {
           "brier_score": 0.01970466412603855,
-          "brier_skill_score_train": -0.0053400064305384465,
+          "brier_skill_score_train": 0.6402601687246028,
           "brier_skill_score_sample": 0.7177921550188828,
           "reliability": 0.0011362690395099787,
           "resolution": 0.05125484331416441,
@@ -786,7 +870,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B8_K1_S8": {
@@ -813,7 +904,7 @@
         "wind_vector_rmse": 0.967333742687779,
         "brier_15": {
           "brier_score": 0.048758234828710556,
-          "brier_skill_score_train": 0.3375239833055631,
+          "brier_skill_score_train": 0.5032327041725146,
           "brier_skill_score_sample": 0.5892661822973064,
           "reliability": 0.007050331396818884,
           "resolution": 0.0770021574583049,
@@ -822,7 +913,7 @@
         },
         "brier_30": {
           "brier_score": 0.02773968130350113,
-          "brier_skill_score_train": -0.41528986242352706,
+          "brier_skill_score_train": 0.49356821268686135,
           "brier_skill_score_sample": 0.6027155991570883,
           "reliability": 0.0031119472409292426,
           "resolution": 0.04519549889081854,
@@ -846,7 +937,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B8_K2_S4": {
@@ -873,7 +971,7 @@
         "wind_vector_rmse": 0.9171850623623017,
         "brier_15": {
           "brier_score": 0.039113957434892654,
-          "brier_skill_score_train": 0.4685603609389585,
+          "brier_skill_score_train": 0.601492241622299,
           "brier_skill_score_sample": 0.6705084767909968,
           "reliability": 0.004007466425890487,
           "resolution": 0.08360356691392408,
@@ -882,7 +980,7 @@
         },
         "brier_30": {
           "brier_score": 0.022157402709126472,
-          "brier_skill_score_train": -0.13047973005747315,
+          "brier_skill_score_train": 0.5954815438062142,
           "brier_skill_score_sample": 0.6826643261247783,
           "reliability": 0.0014333259051181272,
           "resolution": 0.04909916010073523,
@@ -906,7 +1004,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B16_K1_S16": {
@@ -933,7 +1038,7 @@
         "wind_vector_rmse": 0.9569100852935545,
         "brier_15": {
           "brier_score": 0.050541751086711884,
-          "brier_skill_score_train": 0.31329142545228417,
+          "brier_skill_score_train": 0.48506156750884744,
           "brier_skill_score_sample": 0.5742420444433176,
           "reliability": 0.007541905589254747,
           "resolution": 0.0757102115363668,
@@ -942,7 +1047,7 @@
         },
         "brier_30": {
           "brier_score": 0.02854563109576702,
-          "brier_skill_score_train": -0.4564097497840318,
+          "brier_skill_score_train": 0.47885432360802926,
           "brier_skill_score_sample": 0.5911728825401743,
           "reliability": 0.003322648733657724,
           "resolution": 0.04460025472738596,
@@ -966,7 +1071,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B16_K2_S8": {
@@ -993,7 +1105,7 @@
         "wind_vector_rmse": 0.9082191711471926,
         "brier_15": {
           "brier_score": 0.039969492703676224,
-          "brier_skill_score_train": 0.4569362404391817,
+          "brier_skill_score_train": 0.5927757254594046,
           "brier_skill_score_sample": 0.6633015451134812,
           "reliability": 0.004058849912305187,
           "resolution": 0.08279941706549654,
@@ -1002,7 +1114,7 @@
         },
         "brier_30": {
           "brier_score": 0.02253892458975315,
-          "brier_skill_score_train": -0.14994513213026295,
+          "brier_skill_score_train": 0.5885162580197315,
           "brier_skill_score_sample": 0.6772002153408487,
           "reliability": 0.0014246483549058197,
           "resolution": 0.048708960674302096,
@@ -1026,7 +1138,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B16_K4_S4": {
@@ -1053,7 +1172,7 @@
         "wind_vector_rmse": 0.8810947210557999,
         "brier_15": {
           "brier_score": 0.03543394058942795,
-          "brier_skill_score_train": 0.518560589817555,
+          "brier_skill_score_train": 0.6389856419339247,
           "brier_skill_score_sample": 0.7015085196239237,
           "reliability": 0.0033048083597025033,
           "resolution": 0.08658092667199103,
@@ -1062,7 +1181,7 @@
         },
         "brier_30": {
           "brier_score": 0.01994440145790577,
-          "brier_skill_score_train": -0.017571502954375928,
+          "brier_skill_score_train": 0.6358833842859195,
           "brier_skill_score_sample": 0.7143586655995748,
           "reliability": 0.0010158858070302547,
           "resolution": 0.05089471630351645,
@@ -1086,7 +1205,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B32_K1_S32": {
@@ -1113,7 +1239,7 @@
         "wind_vector_rmse": 0.9500230877630172,
         "brier_15": {
           "brier_score": 0.05171380937099457,
-          "brier_skill_score_train": 0.2973667205027912,
+          "brier_skill_score_train": 0.4731201954210198,
           "brier_skill_score_sample": 0.564368758928272,
           "reliability": 0.00787317952622682,
           "resolution": 0.07486943265888836,
@@ -1122,7 +1248,7 @@
         },
         "brier_30": {
           "brier_score": 0.028986571356654167,
-          "brier_skill_score_train": -0.47890670187011053,
+          "brier_skill_score_train": 0.4708042612451565,
           "brier_skill_score_sample": 0.5848577888144235,
           "reliability": 0.003444984716907901,
           "resolution": 0.04428165153368885,
@@ -1146,7 +1272,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B32_K2_S16": {
@@ -1159,10 +1292,125 @@
       "nominal_budget": 32,
       "is_fair_crps": true,
       "num_cubes_evaluated": 122,
-      "latency_ms_per_cube": 834.2641949754103,
-      "throughput_cubes_sec": 1.19866105488259,
+      "latency_ms_per_cube": 857.9689348524591,
+      "throughput_cubes_sec": 1.1655433657070173,
       "metrics": {
         "crps": 0.5927375651174976,
+        "crps_per_variable": {
+          "precipitation": {
+            "crps": 2.1723080520187654,
+            "unit": "mm/day",
+            "is_fair": true
+          },
+          "tmax": {
+            "crps": 0.2636810711795284,
+            "unit": "degC",
+            "is_fair": true
+          },
+          "tmin": {
+            "crps": 0.15350252738402737,
+            "unit": "degC",
+            "is_fair": true
+          },
+          "rh": {
+            "crps": 0.2878578733051977,
+            "unit": "%",
+            "is_fair": true
+          },
+          "wind_u": {
+            "crps": 0.40963378404417344,
+            "unit": "m/s",
+            "is_fair": true
+          },
+          "wind_v": {
+            "crps": 0.2694422040254839,
+            "unit": "m/s",
+            "is_fair": true
+          }
+        },
+        "spread_skill_per_variable": {
+          "precipitation": {
+            "ensemble_spread": 3.6369755710324934,
+            "rmse_ensemble_mean": 7.636974840394912,
+            "spread_skill_ratio": 0.5186912532715522
+          },
+          "tmax": {
+            "ensemble_spread": 0.18671947621530102,
+            "rmse_ensemble_mean": 0.42955814638445455,
+            "spread_skill_ratio": 0.9522210287077956
+          },
+          "tmin": {
+            "ensemble_spread": 0.17976908914504514,
+            "rmse_ensemble_mean": 0.28199041322354346,
+            "spread_skill_ratio": 1.0107933736893173
+          },
+          "rh": {
+            "ensemble_spread": 0.2830017324416868,
+            "rmse_ensemble_mean": 0.5244996778426632,
+            "spread_skill_ratio": 0.8867493162115876
+          },
+          "wind_u": {
+            "ensemble_spread": 0.2626319186341378,
+            "rmse_ensemble_mean": 0.7214905162972789,
+            "spread_skill_ratio": 0.705378200757806
+          },
+          "wind_v": {
+            "ensemble_spread": 0.19126872910607245,
+            "rmse_ensemble_mean": 0.5393634914390503,
+            "spread_skill_ratio": 0.7191419365713527
+          }
+        },
+        "prediction_interval_coverage": {
+          "precipitation": {
+            "coverage_50": 0.108131117758251,
+            "sharpness_50": 2.3025503446978908,
+            "coverage_80": 0.108131117758251,
+            "sharpness_80": 2.3025503446978908,
+            "coverage_90": 0.108131117758251,
+            "sharpness_90": 2.3025503446978908
+          },
+          "tmax": {
+            "coverage_50": 0.36521493186873777,
+            "sharpness_50": 0.19747567369091895,
+            "coverage_80": 0.36521493186873777,
+            "sharpness_80": 0.19747567369091895,
+            "coverage_90": 0.36521493186873777,
+            "sharpness_90": 0.19747567369091895
+          },
+          "tmin": {
+            "coverage_50": 0.38735868421293074,
+            "sharpness_50": 0.19236057996749878,
+            "coverage_80": 0.38735868421293074,
+            "sharpness_80": 0.19236057996749878,
+            "coverage_90": 0.38735868421293074,
+            "sharpness_90": 0.19236057996749878
+          },
+          "rh": {
+            "coverage_50": 0.34123415379754957,
+            "sharpness_50": 0.29796355289797627,
+            "coverage_80": 0.34123415379754957,
+            "sharpness_80": 0.29796355289797627,
+            "coverage_90": 0.34123415379754957,
+            "sharpness_90": 0.29796355289797627
+          },
+          "wind_u": {
+            "coverage_50": 0.3296354751913778,
+            "sharpness_50": 0.27786918224826934,
+            "coverage_80": 0.3296354751913778,
+            "sharpness_80": 0.27786918224826934,
+            "coverage_90": 0.3296354751913778,
+            "sharpness_90": 0.27786918224826934
+          },
+          "wind_v": {
+            "coverage_50": 0.3194866038618549,
+            "sharpness_50": 0.20093683129356754,
+            "coverage_80": 0.3194866038618549,
+            "sharpness_80": 0.20093683129356754,
+            "coverage_90": 0.3194866038618549,
+            "sharpness_90": 0.20093683129356754
+          }
+        },
+        "multivariate_energy_score": 0.2769320885981283,
         "cmvs": 0.5266560414449283,
         "precip_wet_mae": 7.109696734336115,
         "precip_csi15": 0.623597324139555,
@@ -1173,7 +1421,7 @@
         "wind_vector_rmse": 0.9029098768388072,
         "brier_15": {
           "brier_score": 0.04073386266827583,
-          "brier_skill_score_train": 0.4465507789636436,
+          "brier_skill_score_train": 0.5849880358176478,
           "brier_skill_score_sample": 0.6568625795766811,
           "reliability": 0.0041316828189571645,
           "resolution": 0.08210787264568967,
@@ -1182,7 +1430,7 @@
         },
         "brier_30": {
           "brier_score": 0.022878779098391533,
-          "brier_skill_score_train": -0.16728464787711905,
+          "brier_skill_score_train": 0.582311676058134,
           "brier_skill_score_sample": 0.6723328596794439,
           "reliability": 0.0014470001552160951,
           "resolution": 0.048391457575748635,
@@ -1191,6 +1439,8 @@
         },
         "diversity": {
           "mean_pairwise_rmse": 2.127102860519963,
+          "mean_pairwise_spatial_correlation": 0.9356381508611865,
+          "global_member_correlation": 0.9956773000378762,
           "mean_pairwise_correlation": 0.9956773000378762,
           "ensemble_variance": 2.68426960370233
         },
@@ -1206,7 +1456,18 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        },
+        "execution_profile": {
+          "batching_mode": "sequential_member_loop",
+          "note": "Latency reflects sequential member evaluation looping over seeds, not batched multi-stream inference."
+        }
       }
     },
     "B32_K4_S8": {
@@ -1219,10 +1480,125 @@
       "nominal_budget": 32,
       "is_fair_crps": true,
       "num_cubes_evaluated": 122,
-      "latency_ms_per_cube": 839.4500202704921,
-      "throughput_cubes_sec": 1.191256150875754,
+      "latency_ms_per_cube": 882.8375755573769,
+      "throughput_cubes_sec": 1.1327111891093364,
       "metrics": {
         "crps": 0.5957912144161039,
+        "crps_per_variable": {
+          "precipitation": {
+            "crps": 2.186738466543536,
+            "unit": "mm/day",
+            "is_fair": true
+          },
+          "tmax": {
+            "crps": 0.264462017003567,
+            "unit": "degC",
+            "is_fair": true
+          },
+          "tmin": {
+            "crps": 0.15403381662984048,
+            "unit": "degC",
+            "is_fair": true
+          },
+          "rh": {
+            "crps": 0.2897105959634627,
+            "unit": "%",
+            "is_fair": true
+          },
+          "wind_u": {
+            "crps": 0.41035873010273904,
+            "unit": "m/s",
+            "is_fair": true
+          },
+          "wind_v": {
+            "crps": 0.26944366866542446,
+            "unit": "m/s",
+            "is_fair": true
+          }
+        },
+        "spread_skill_per_variable": {
+          "precipitation": {
+            "ensemble_spread": 3.3951491675069256,
+            "rmse_ensemble_mean": 7.357901144412256,
+            "spread_skill_ratio": 0.5094454689866329
+          },
+          "tmax": {
+            "ensemble_spread": 0.1850575929687869,
+            "rmse_ensemble_mean": 0.40671209846773454,
+            "spread_skill_ratio": 1.0831993305393415
+          },
+          "tmin": {
+            "ensemble_spread": 0.17658390777726327,
+            "rmse_ensemble_mean": 0.2574028550617157,
+            "spread_skill_ratio": 1.1786230494991938
+          },
+          "rh": {
+            "ensemble_spread": 0.28429438221839165,
+            "rmse_ensemble_mean": 0.493911023101499,
+            "spread_skill_ratio": 0.9925218687466905
+          },
+          "wind_u": {
+            "ensemble_spread": 0.2777791705823714,
+            "rmse_ensemble_mean": 0.6998163125207347,
+            "spread_skill_ratio": 0.8039669286455912
+          },
+          "wind_v": {
+            "ensemble_spread": 0.2018636748675377,
+            "rmse_ensemble_mean": 0.5223563534598197,
+            "spread_skill_ratio": 0.8200822097247572
+          }
+        },
+        "prediction_interval_coverage": {
+          "precipitation": {
+            "coverage_50": 0.06111445069132793,
+            "sharpness_50": 1.1014189311573583,
+            "coverage_80": 0.18422199010608659,
+            "sharpness_80": 3.9098743450257087,
+            "coverage_90": 0.18422199010608659,
+            "sharpness_90": 3.9098743450257087
+          },
+          "tmax": {
+            "coverage_50": 0.220517530556648,
+            "sharpness_50": 0.1008286127640355,
+            "coverage_80": 0.6363426961245076,
+            "sharpness_80": 0.3496022512835841,
+            "coverage_90": 0.6363426961245076,
+            "sharpness_90": 0.3496022512835841
+          },
+          "tmin": {
+            "coverage_50": 0.24355918385328784,
+            "sharpness_50": 0.09763656508538031,
+            "coverage_80": 0.6787091267685736,
+            "sharpness_80": 0.3388925444695257,
+            "coverage_90": 0.6787091267685736,
+            "sharpness_90": 0.3388925444695257
+          },
+          "rh": {
+            "coverage_50": 0.20089357502518163,
+            "sharpness_50": 0.15465511766172224,
+            "coverage_80": 0.5974792915005838,
+            "sharpness_80": 0.5355092056335942,
+            "coverage_90": 0.5974792915005838,
+            "sharpness_90": 0.5355092056335942
+          },
+          "wind_u": {
+            "coverage_50": 0.20943350080520876,
+            "sharpness_50": 0.15240924829436886,
+            "coverage_80": 0.597944984993627,
+            "sharpness_80": 0.5301738054521622,
+            "coverage_90": 0.597944984993627,
+            "sharpness_90": 0.5301738054521622
+          },
+          "wind_v": {
+            "coverage_50": 0.20026767626404762,
+            "sharpness_50": 0.109918893585282,
+            "coverage_80": 0.5820742677296361,
+            "sharpness_80": 0.3816862471642033,
+            "coverage_90": 0.5820742677296361,
+            "sharpness_90": 0.3816862471642033
+          }
+        },
+        "multivariate_energy_score": 0.2781616949266003,
         "cmvs": 0.48782487008038483,
         "precip_wet_mae": 6.719818180607211,
         "precip_csi15": 0.6385569053123202,
@@ -1233,7 +1609,7 @@
         "wind_vector_rmse": 0.8754635674338187,
         "brier_15": {
           "brier_score": 0.0355391688644886,
-          "brier_skill_score_train": 0.5171308578194483,
+          "brier_skill_score_train": 0.637913536558697,
           "brier_skill_score_sample": 0.7006220886180072,
           "reliability": 0.003098291264906415,
           "resolution": 0.08626918374272696,
@@ -1242,7 +1618,7 @@
         },
         "brier_30": {
           "brier_score": 0.019945912063121796,
-          "brier_skill_score_train": -0.017648574649071325,
+          "brier_skill_score_train": 0.635855805796783,
           "brier_skill_score_sample": 0.7143370308921825,
           "reliability": 0.0008824918292121835,
           "resolution": 0.050759815828745405,
@@ -1251,6 +1627,8 @@
         },
         "diversity": {
           "mean_pairwise_rmse": 1.9910686556049573,
+          "mean_pairwise_spatial_correlation": 0.9374795777945412,
+          "global_member_correlation": 0.9961991713893029,
           "mean_pairwise_correlation": 0.9961991713893029,
           "ensemble_variance": 2.3614411803503192
         },
@@ -1266,7 +1644,18 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        },
+        "execution_profile": {
+          "batching_mode": "sequential_member_loop",
+          "note": "Latency reflects sequential member evaluation looping over seeds, not batched multi-stream inference."
+        }
       }
     },
     "B32_K8_S4": {
@@ -1279,10 +1668,125 @@
       "nominal_budget": 32,
       "is_fair_crps": true,
       "num_cubes_evaluated": 122,
-      "latency_ms_per_cube": 855.5337892131138,
-      "throughput_cubes_sec": 1.1688609060312634,
+      "latency_ms_per_cube": 905.963110655738,
+      "throughput_cubes_sec": 1.1037977023989398,
       "metrics": {
         "crps": 0.604625915567721,
+        "crps_per_variable": {
+          "precipitation": {
+            "crps": 2.2249518618468316,
+            "unit": "mm/day",
+            "is_fair": true
+          },
+          "tmax": {
+            "crps": 0.26503400168111246,
+            "unit": "degC",
+            "is_fair": true
+          },
+          "tmin": {
+            "crps": 0.1545935034030868,
+            "unit": "degC",
+            "is_fair": true
+          },
+          "rh": {
+            "crps": 0.298418463237824,
+            "unit": "%",
+            "is_fair": true
+          },
+          "wind_u": {
+            "crps": 0.412922399178628,
+            "unit": "m/s",
+            "is_fair": true
+          },
+          "wind_v": {
+            "crps": 0.27183529301997156,
+            "unit": "m/s",
+            "is_fair": true
+          }
+        },
+        "spread_skill_per_variable": {
+          "precipitation": {
+            "ensemble_spread": 2.9736981545725176,
+            "rmse_ensemble_mean": 7.213000345614649,
+            "spread_skill_ratio": 0.4581529658992891
+          },
+          "tmax": {
+            "ensemble_spread": 0.1773974496510721,
+            "rmse_ensemble_mean": 0.393405778754142,
+            "spread_skill_ratio": 1.1360884237815436
+          },
+          "tmin": {
+            "ensemble_spread": 0.16985066908021126,
+            "rmse_ensemble_mean": 0.24449268416050943,
+            "spread_skill_ratio": 1.2543695131689547
+          },
+          "rh": {
+            "ensemble_spread": 0.2851670980453491,
+            "rmse_ensemble_mean": 0.4869546736440351,
+            "spread_skill_ratio": 1.0151486863993113
+          },
+          "wind_u": {
+            "ensemble_spread": 0.29488158129876657,
+            "rmse_ensemble_mean": 0.6882653563253341,
+            "spread_skill_ratio": 0.8951141050096018
+          },
+          "wind_v": {
+            "ensemble_spread": 0.21214167677587079,
+            "rmse_ensemble_mean": 0.5149924019652028,
+            "spread_skill_ratio": 0.8961173330737926
+          }
+        },
+        "prediction_interval_coverage": {
+          "precipitation": {
+            "coverage_50": 0.09256948344409466,
+            "sharpness_50": 1.5384553776633354,
+            "coverage_80": 0.15409436124947765,
+            "sharpness_80": 2.798902899988236,
+            "coverage_90": 0.22100032102917472,
+            "sharpness_90": 4.803197456944373
+          },
+          "tmax": {
+            "coverage_50": 0.34366809312374363,
+            "sharpness_50": 0.14754602697587782,
+            "coverage_80": 0.5644014573866322,
+            "sharpness_80": 0.2660935405761965,
+            "coverage_90": 0.773687710204432,
+            "sharpness_90": 0.4451599169162012
+          },
+          "tmin": {
+            "coverage_50": 0.38977228273307124,
+            "sharpness_50": 0.14431609549830038,
+            "coverage_80": 0.6231708944805207,
+            "sharpness_80": 0.2602653464963359,
+            "coverage_90": 0.8202998921755822,
+            "sharpness_90": 0.4357295267043575
+          },
+          "rh": {
+            "coverage_50": 0.3005891754742592,
+            "sharpness_50": 0.2382697068875836,
+            "coverage_80": 0.5088239783240903,
+            "sharpness_80": 0.4295626244237346,
+            "coverage_90": 0.7302532686341193,
+            "sharpness_90": 0.718521737283276
+          },
+          "wind_u": {
+            "coverage_50": 0.35766290440674753,
+            "sharpness_50": 0.2497787408290371,
+            "coverage_80": 0.5701825291879715,
+            "sharpness_80": 0.4516501445924082,
+            "coverage_90": 0.7560741262089822,
+            "sharpness_90": 0.7615410973948817
+          },
+          "wind_v": {
+            "coverage_50": 0.3356926808914831,
+            "sharpness_50": 0.17824892555513688,
+            "coverage_80": 0.5435998680130127,
+            "sharpness_80": 0.3218985815202036,
+            "coverage_90": 0.7379503783679777,
+            "sharpness_90": 0.5409700255240163
+          }
+        },
+        "multivariate_energy_score": 0.28154076155154933,
         "cmvs": 0.4728310315298502,
         "precip_wet_mae": 6.524568973049041,
         "precip_csi15": 0.6494584827107331,
@@ -1293,7 +1797,7 @@
         "wind_vector_rmse": 0.8617646876842745,
         "brier_15": {
           "brier_score": 0.033652931451797485,
-          "brier_skill_score_train": 0.5427590835353602,
+          "brier_skill_score_train": 0.6571312351091674,
           "brier_skill_score_sample": 0.7165115377814145,
           "reliability": 0.003186902662261704,
           "resolution": 0.08824403313931903,
@@ -1302,7 +1806,7 @@
         },
         "brier_30": {
           "brier_score": 0.018889695405960083,
-          "brier_skill_score_train": 0.03624003030815903,
+          "brier_skill_score_train": 0.655138712605406,
           "brier_skill_score_sample": 0.7294640396422012,
           "reliability": 0.0009515333514218982,
           "resolution": 0.051885073285278645,
@@ -1311,6 +1815,8 @@
         },
         "diversity": {
           "mean_pairwise_rmse": 1.7532574053390233,
+          "mean_pairwise_spatial_correlation": 0.9424141313466217,
+          "global_member_correlation": 0.9970443318104415,
           "mean_pairwise_correlation": 0.9970443318104415,
           "ensemble_variance": 1.8362320301032835
         },
@@ -1326,7 +1832,18 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        },
+        "execution_profile": {
+          "batching_mode": "sequential_member_loop",
+          "note": "Latency reflects sequential member evaluation looping over seeds, not batched multi-stream inference."
+        }
       }
     },
     "B32_K8_S4_ETA05": {
@@ -1339,10 +1856,125 @@
       "nominal_budget": 32,
       "is_fair_crps": true,
       "num_cubes_evaluated": 122,
-      "latency_ms_per_cube": 854.9538504754108,
-      "throughput_cubes_sec": 1.1696537765680965,
+      "latency_ms_per_cube": 908.9704025983611,
+      "throughput_cubes_sec": 1.100145832187081,
       "metrics": {
         "crps": 0.6029149072785531,
+        "crps_per_variable": {
+          "precipitation": {
+            "crps": 2.219044856006099,
+            "unit": "mm/day",
+            "is_fair": true
+          },
+          "tmax": {
+            "crps": 0.2655110700476554,
+            "unit": "degC",
+            "is_fair": true
+          },
+          "tmin": {
+            "crps": 0.15454427453298722,
+            "unit": "degC",
+            "is_fair": true
+          },
+          "rh": {
+            "crps": 0.29983296822155675,
+            "unit": "%",
+            "is_fair": true
+          },
+          "wind_u": {
+            "crps": 0.4092778472169753,
+            "unit": "m/s",
+            "is_fair": true
+          },
+          "wind_v": {
+            "crps": 0.2692784594912683,
+            "unit": "m/s",
+            "is_fair": true
+          }
+        },
+        "spread_skill_per_variable": {
+          "precipitation": {
+            "ensemble_spread": 2.8661637825350605,
+            "rmse_ensemble_mean": 7.175712375871597,
+            "spread_skill_ratio": 0.43792253173488993
+          },
+          "tmax": {
+            "ensemble_spread": 0.16458274952826962,
+            "rmse_ensemble_mean": 0.392536491636307,
+            "spread_skill_ratio": 1.0574353376970724
+          },
+          "tmin": {
+            "ensemble_spread": 0.1573098523001517,
+            "rmse_ensemble_mean": 0.24338098687510337,
+            "spread_skill_ratio": 1.1704549203233412
+          },
+          "rh": {
+            "ensemble_spread": 0.2648746880792802,
+            "rmse_ensemble_mean": 0.48486703105511203,
+            "spread_skill_ratio": 0.9459719032334395
+          },
+          "wind_u": {
+            "ensemble_spread": 0.25593911543969183,
+            "rmse_ensemble_mean": 0.676573121739972,
+            "spread_skill_ratio": 0.8106117436490702
+          },
+          "wind_v": {
+            "ensemble_spread": 0.18496749574138271,
+            "rmse_ensemble_mean": 0.5060333027955024,
+            "spread_skill_ratio": 0.8171750746006877
+          }
+        },
+        "prediction_interval_coverage": {
+          "precipitation": {
+            "coverage_50": 0.08480000575523704,
+            "sharpness_50": 1.4326896619412206,
+            "coverage_80": 0.14305407442753354,
+            "sharpness_80": 2.601739856504625,
+            "coverage_90": 0.20935177658834764,
+            "sharpness_90": 4.4579010990358166
+          },
+          "tmax": {
+            "coverage_50": 0.31939083734346974,
+            "sharpness_50": 0.13592449263218911,
+            "coverage_80": 0.5296963162479862,
+            "sharpness_80": 0.24514597942752223,
+            "coverage_90": 0.7413619636527954,
+            "sharpness_90": 0.4103029533740013
+          },
+          "tmin": {
+            "coverage_50": 0.36578610635572867,
+            "sharpness_50": 0.1331189904482134,
+            "coverage_80": 0.5918141512140151,
+            "sharpness_80": 0.24004219905022653,
+            "coverage_90": 0.7940088515320132,
+            "sharpness_90": 0.4014779819596198
+          },
+          "rh": {
+            "coverage_50": 0.2794682421991902,
+            "sharpness_50": 0.22082238091576484,
+            "coverage_80": 0.4772571606501456,
+            "sharpness_80": 0.39798229259829365,
+            "coverage_90": 0.6976031387044538,
+            "sharpness_90": 0.6650927451349073
+          },
+          "wind_u": {
+            "coverage_50": 0.3214942697555788,
+            "sharpness_50": 0.21300519858637162,
+            "coverage_80": 0.5233782693263023,
+            "sharpness_80": 0.3849654438034181,
+            "coverage_90": 0.7152777530493275,
+            "sharpness_90": 0.6475785374641418
+          },
+          "wind_v": {
+            "coverage_50": 0.30078124855795213,
+            "sharpness_50": 0.15214686143782832,
+            "coverage_80": 0.4956298633929222,
+            "sharpness_80": 0.27472752717233473,
+            "coverage_90": 0.6925260962978486,
+            "sharpness_90": 0.46129350989095624
+          }
+        },
+        "multivariate_energy_score": 0.28123386372481624,
         "cmvs": 0.4699737898443311,
         "precip_wet_mae": 6.509236024272058,
         "precip_csi15": 0.6516052862021947,
@@ -1353,7 +1985,7 @@
         "wind_vector_rmse": 0.8469118701834832,
         "brier_15": {
           "brier_score": 0.033549655228853226,
-          "brier_skill_score_train": 0.5441622930862333,
+          "brier_skill_score_train": 0.6581834522408073,
           "brier_skill_score_sample": 0.7173815249225985,
           "reliability": 0.003278547155468218,
           "resolution": 0.08843894396188842,
@@ -1362,7 +1994,7 @@
         },
         "brier_30": {
           "brier_score": 0.01884233020246029,
-          "brier_skill_score_train": 0.03865662232345457,
+          "brier_skill_score_train": 0.6560034393628047,
           "brier_skill_score_sample": 0.7301423984267646,
           "reliability": 0.0009828962951361957,
           "resolution": 0.051963803243928436,
@@ -1371,6 +2003,8 @@
         },
         "diversity": {
           "mean_pairwise_rmse": 1.686511772809215,
+          "mean_pairwise_spatial_correlation": 0.94867840466176,
+          "global_member_correlation": 0.9972379259799481,
           "mean_pairwise_correlation": 0.9972379259799481,
           "ensemble_variance": 1.7177055814573843
         },
@@ -1386,7 +2020,18 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        },
+        "execution_profile": {
+          "batching_mode": "sequential_member_loop",
+          "note": "Latency reflects sequential member evaluation looping over seeds, not batched multi-stream inference."
+        }
       }
     },
     "B64_K1_S64": {
@@ -1413,7 +2058,7 @@
         "wind_vector_rmse": 0.9490347793025355,
         "brier_15": {
           "brier_score": 0.05230880528688431,
-          "brier_skill_score_train": 0.2892825368629849,
+          "brier_skill_score_train": 0.4670581525024582,
           "brier_skill_score_sample": 0.5593565810898118,
           "reliability": 0.008046579311649107,
           "resolution": 0.07444783140522063,
@@ -1422,7 +2067,7 @@
         },
         "brier_30": {
           "brier_score": 0.02921692095696926,
-          "brier_skill_score_train": -0.4906592324984318,
+          "brier_skill_score_train": 0.4665988647044358,
           "brier_skill_score_sample": 0.581558749364607,
           "reliability": 0.0035115476940310347,
           "resolution": 0.044117861533001825,
@@ -1446,7 +2091,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B64_K2_S32": {
@@ -1473,7 +2125,7 @@
         "wind_vector_rmse": 0.8995728146645331,
         "brier_15": {
           "brier_score": 0.041269347071647644,
-          "brier_skill_score_train": 0.4392751756569614,
+          "brier_skill_score_train": 0.5795323186458651,
           "brier_skill_score_sample": 0.652351719942615,
           "reliability": 0.004194139526902007,
           "resolution": 0.08163485286331583,
@@ -1482,7 +2134,7 @@
         },
         "brier_30": {
           "brier_score": 0.023069608956575394,
-          "brier_skill_score_train": -0.1770208651313976,
+          "brier_skill_score_train": 0.5788277749600862,
           "brier_skill_score_sample": 0.669599817253973,
           "reliability": 0.0014655563136061164,
           "resolution": 0.04821918678169038,
@@ -1506,7 +2158,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B64_K4_S16": {
@@ -1533,7 +2192,7 @@
         "wind_vector_rmse": 0.8734199971921982,
         "brier_15": {
           "brier_score": 0.03577597811818123,
-          "brier_skill_score_train": 0.5139133407855812,
+          "brier_skill_score_train": 0.635500834519809,
           "brier_skill_score_sample": 0.6986272344322846,
           "reliability": 0.002980525332161069,
           "resolution": 0.0859146045560839,
@@ -1542,7 +2201,7 @@
         },
         "brier_30": {
           "brier_score": 0.020019177347421646,
-          "brier_skill_score_train": -0.021386599358247382,
+          "brier_skill_score_train": 0.6345182320708983,
           "brier_skill_score_sample": 0.7132877342453613,
           "reliability": 0.0008225489187640431,
           "resolution": 0.05062660982630697,
@@ -1566,7 +2225,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B64_K8_S8": {
@@ -1593,7 +2259,7 @@
         "wind_vector_rmse": 0.8579455316066742,
         "brier_15": {
           "brier_score": 0.03339796140789986,
-          "brier_skill_score_train": 0.5462233504361432,
+          "brier_skill_score_train": 0.6597289661318142,
           "brier_skill_score_sample": 0.7186593763957081,
           "reliability": 0.002823566588249327,
           "resolution": 0.08813566609400601,
@@ -1602,7 +2268,7 @@
         },
         "brier_30": {
           "brier_score": 0.018692655488848686,
-          "brier_skill_score_train": 0.04629308730363846,
+          "brier_skill_score_train": 0.6587359881581776,
           "brier_skill_score_sample": 0.7322860217895542,
           "reliability": 0.0007348349871622008,
           "resolution": 0.05186541780452518,
@@ -1626,7 +2292,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     },
     "B64_K16_S4": {
@@ -1653,7 +2326,7 @@
         "wind_vector_rmse": 0.8512545175129368,
         "brier_15": {
           "brier_score": 0.03275655210018158,
-          "brier_skill_score_train": 0.5549381508127502,
+          "brier_skill_score_train": 0.6662638862008681,
           "brier_skill_score_sample": 0.7240625353614638,
           "reliability": 0.0029649452451296103,
           "resolution": 0.08854049279249146,
@@ -1662,7 +2335,7 @@
         },
         "brier_30": {
           "brier_score": 0.01834181696176529,
-          "brier_skill_score_train": 0.0641930121548322,
+          "brier_skill_score_train": 0.6651411007614982,
           "brier_skill_score_sample": 0.7373106892505803,
           "reliability": 0.0008438742120227567,
           "resolution": 0.05206912513476172,
@@ -1686,7 +2359,14 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cuda"
+        "device": "cuda",
+        "climatology_reference": {
+          "source": "train_split_2015_2021 (854 samples, 38,259,200 grid points)",
+          "p15_base_rate": 0.110322,
+          "p30_base_rate": 0.058157,
+          "bs_clim_train_p15": 0.098151056316,
+          "bs_clim_train_p30": 0.054774763351
+        }
       }
     }
   }

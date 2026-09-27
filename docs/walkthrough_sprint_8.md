@@ -100,36 +100,47 @@ The remote Kaggle evaluation campaign executed across the frozen 15.69M Candidat
 
 ## 6. The Flagship 32-NFE Comparison: Deep vs Broad
 
-Under an identical compute budget of 32 NFE (approximately 830 to 855 ms of wall-clock inference time), we compare four factorizations:
+Under an identical compute budget of 32 NFE (approximately 830 to 909 ms of wall-clock inference time), we compare four distinct factorizations audited across both continuous distribution metrics and deterministic point verification:
 
-| Metric | Deep Deterministic ($K=1, S=32$) | Shallow Ensemble ($K=2, S=16$) | Balanced ($K=4, S=8$) | Broad Ensemble ($K=8, S=4, \eta=0.5$) | Relative Gain (Broad vs Deep) |
+| Metric | Deep Deterministic ($K=1, S=32$) | Shallow Ensemble ($K=2, S=16$) | Balanced ($K=4, S=8$) | Broad Ensemble ($K=8, S=4, \eta=0.5$) | Pareto Characterization |
 |---|---|---|---|---|---|
-| **CRPS Type** | $\text{CRPS}_{\text{det}}$ (= MAE) | $\text{CRPS}_{\text{fair}}$ | $\text{CRPS}_{\text{fair}}$ | $\text{CRPS}_{\text{fair}}$ | Fair Unbiased Evaluation |
-| **CRPS Score** | 0.8871 | 0.5927 | 0.5958 | **0.6029** | -32.0% error reduction |
-| **Wet-MAE (mm)** | 7.81 | 7.11 | 6.72 | **6.51** | -16.6% precipitation error |
-| **CSI@30 (Heavy Storm)** | 0.549 | 0.671 | 0.717 | **0.728** | +32.6% heavy storm recall |
-| **Brier@30** | 0.0290 | 0.0229 | 0.0199 | **0.0188** | -35.2% tail Brier error |
-| **BSS@30 (Train Clim)** | -0.479 (worse than clim) | -0.167 | -0.018 | **+0.039 (beats clim)** | Flips skill positive |
-| **Wall Latency** | 831.6 ms | 834.3 ms | 839.5 ms | **855.0 ms** | Matched within 2.8% |
+| **CRPS Type** | $\text{CRPS}_{\text{det}}$ (= MAE) | $\text{CRPS}_{\text{fair}}$ | $\text{CRPS}_{\text{fair}}$ | $\text{CRPS}_{\text{fair}}$ | Finite-sample unbiased |
+| **Composite CRPS** | 0.8871 | **0.5927** | 0.5958 | 0.6029 | Favors deeper steps ($K=2, S=16$) |
+| **Precip CRPS (mm/day)** | 3.328 | **2.172** | 2.187 | 2.219 | Favors deeper steps ($K=2, S=16$) |
+| **Wet-MAE (mm)** | 7.81 | 7.11 | 6.72 | **6.51** | Favors broader members ($K=8, S=4$) |
+| **CSI@30 (Heavy Storm)** | 0.549 | 0.671 | 0.717 | **0.728** | Favors broader members ($K=8, S=4$) |
+| **Brier@30** | 0.0290 | 0.0229 | 0.0199 | **0.0188** | Favors broader members ($K=8, S=4$) |
+| **BSS@30 (True Train Clim)** | +0.471 | +0.582 | +0.636 | **+0.656** | Monotonic improvement with $K$ |
+| **Precip Spread-Skill Ratio** | 0.000 | **0.519** | 0.509 | 0.438 | Underdispersive on precipitation |
+| **2D Spatial Correlation** | 1.000 | 0.9356 | 0.9375 | **0.9487** | True spatial grid correlation |
+| **Multivariate Energy Score** | 0.4120 | **0.2769** | 0.2782 | 0.2812 | Favors deeper steps ($K=2, S=16$) |
+| **Wall Latency** | 831.6 ms | 834.3 ms | 839.5 ms | **909.0 ms** | Matched within 9% |
 
 ---
 
-## 7. Verification of the 7 Scientific Hypotheses
+## 7. Scientific Findings from the Final Audit
 
-1. **Hypothesis H1 (Compute Reallocation Frontier) Confirmed**:
-   At equal NFE, broader ensemble sampling with fast DDIM-4 steps consistently outperforms deeper single-member sampling. In the 32-NFE budget, $K=8, S=4, \eta=0.5$ improves Wet-MAE from 7.81 mm to 6.51 mm and elevates CSI@30 from 0.549 to 0.728.
-2. **Hypothesis H2 (Deterministic Diminishing Returns) Confirmed**:
-   Deeper deterministic DDIM sampling ($S=4 \to S=64$) demonstrates negative returns in physical space (Wet-MAE degrades from 7.20 to 7.88 mm, CSI@30 degrades from 0.634 to 0.547), caused by oversmoothing of convective extremes.
-3. **Hypothesis H3 (Brier Skill Score Flip) Confirmed**:
-   Deterministic forecasts fail to outperform climatological baseline on extreme rain events (BSS@30 = -0.479). Ensemble scaling with $K=8$ and $K=16$ flips BSS@30 positive (+0.039 and +0.064), demonstrating true forecast skill.
-4. **Hypothesis H4 (Trajectory Noise Calibration) Confirmed**:
-   Intermediate stochastic noise injection ($\eta = 0.50$) produces the lowest overall Fair-CRPS (0.6026 at $K=4$, 0.6029 at $K=8$) and highest heavy rain recall (CSI@30 = 0.728).
-5. **Hypothesis H5 (Fair-CRPS Saturation Knee) Confirmed**:
-   Fair-CRPS drops steeply from $K=1$ (0.8573) to $K=2$ (0.6045), then plateaus near 0.6046 through $K=8$ and $K=16$. Beyond $K=8$, marginal CRPS improvement is less than 0.1%, establishing $K=8$ as the optimal Pareto knee.
-6. **Hypothesis H6 (Pairwise Member Diversity) Confirmed**:
-   Ensemble members exhibit mean pairwise RMSE of 1.69 to 1.75 mm/day with spatial correlation of 0.997, verifying non-degenerate dispersion across meteorological patterns.
-7. **Hypothesis H7 (Physical Constraint Inversion Diagnostic) Confirmed**:
-   Applying member-wise physical bounds prior to aggregation guarantees that 100% of realized states adhere to meteorological laws ($P \ge 0$, $0 \le \text{RH} \le 100\%$, $T_{\min} \le T_{\max}$), with an observed diurnal violation repair rate of less than $0.001\%$.
+1. **The Fundamental Tradeoff (Distribution Quality vs Point Recall)**:
+   There is no single "universally optimal" configuration. Rather, inference compute allocation reveals a crisp Pareto frontier:
+   - **Continuous Distribution Calibration**: Favors deeper trajectory denoising with small ensembles ($K=2, S=16, \eta=0$). This configuration achieves the lowest Composite CRPS (0.5927), the lowest Precipitation CRPS (2.172 mm/day), the best Multivariate Energy Score (0.2769), and the highest Spread-Skill Ratio (0.519).
+   - **Deterministic Point Forecasts and Severe Storm Recall**: Favors broader ensemble averaging with shallow trajectories ($K=8, S=4, \eta=0.5$). This configuration achieves the lowest Wet-MAE (6.51 mm), highest CSI@30 (0.728), lowest Brier score (0.0188), and highest Brier Skill Score (+0.656).
+
+2. **Resolution of Brier Skill Score Artifact**:
+   Prior preliminary reports showed negative BSS@30 values due to an uncalibrated 2% placeholder reference rate. Using the authentic 2015-2021 training split empirical base rate (5.82% for $P > 30\text{ mm}$ and 11.03% for $P > 15\text{ mm}$ across 38.26 million grid points), all models demonstrate robust positive skill over climatology:
+   - Deterministic 32-step DDIM: BSS@30 = +0.471.
+   - Broad stochastic ensemble ($K=8, S=4, \eta=0.5$): BSS@30 = +0.656.
+
+3. **Deterministic Diminishing Returns and Oversmoothing**:
+   Single-trajectory deterministic sampling displays negative physical returns beyond 4 steps (Wet-MAE degrades from 7.20 mm at $S=4$ to 7.88 mm at $S=64$; CSI@30 drops from 0.634 to 0.547). This confirms that repeated reverse-diffusion filtering progressively strips high-frequency convective variance.
+
+4. **Spread-Skill Dispersion Diagnostic**:
+   Ensemble spread is well-calibrated for thermal and wind variables (SSR = 1.057 for Tmax, 1.170 for Tmin, 0.946 for RH, 0.811 for wind), but remains underdispersive for precipitation (SSR = 0.438 to 0.519). 90% prediction intervals cover 20.9% of observed precipitation events, underscoring that precipitation extremes require post-processing quantile recalibration.
+
+5. **Spatial vs Global Correlation Distinctions**:
+   Global flattened member correlation is 0.997, whereas true 2D spatial pattern correlation per meteorological grid slice is 0.936 to 0.949. This demonstrates that individual ensemble members generate meaningful local structural diversity across rainbands while remaining anchored to synoptic boundaries.
+
+6. **Physical Conservation and Repair Burden**:
+   Member-wise physical bounds applied prior to ensemble reduction eliminate thermodynamic violations: 0.00% diurnal temperature inversions ($T_{\min} > T_{\max}$), with an average precipitation mass shift of 7.76% to enforce non-negativity.
 
 ---
 
@@ -138,20 +149,29 @@ Under an identical compute budget of 32 NFE (approximately 830 to 855 ms of wall
 Following the validation sweep, the chosen Flagship Champion (`CHAMPION_HOLDOUT_B32_K8_S4_ETA05`) was evaluated once on the quarantined 2023 holdout test set (122 samples):
 
 * **Configuration**: $K=8$ members, $S=4$ DDIM steps, $\eta=0.50$, chunk size $C_{\text{ens}}=4$
-* **Fair-CRPS**: **0.6819**
-* **CMVS**: **0.6961**
-* **Holdout Wet-MAE**: **8.15 mm** (Candidate 3 deterministic baseline was 8.93 mm, yielding an additional 8.7% error reduction)
+* **Composite Fair-CRPS**: **0.6819**
+* **Precipitation CRPS**: **2.0767 mm/day**
+* **Holdout Wet-MAE**: **8.15 mm** (Candidate 3 deterministic baseline was 8.93 mm, yielding an 8.7% error reduction)
 * **Holdout CSI@15**: **0.557**
-* **Holdout CSI@30**: **0.484**
-* **BSS@15 (Train Climatology)**: **+0.528**
-* **BSS@30 (Train Climatology)**: **+0.111**
+* **Holdout CSI@30**: **0.484** (Validation CSI@30 of 0.728 drops to 0.484 on the drier 2023 drought season)
+* **BSS@15 (Train Climatology)**: **+0.646** (Brier score 0.0347 vs climatology 0.0982)
+* **BSS@30 (Train Climatology)**: **+0.682** (Brier score 0.0174 vs climatology 0.0548)
 * **Mean Pairwise Member RMSE**: **1.523 mm/day**
-* **Inference Latency**: **827.3 ms** per 7-day forecast cube (1.21 cubes/sec throughput)
-* **Physical Repair Burden**: Diurnal temperature violation rate of $5.18 \times 10^{-6}$, 0.00% RH violations.
+* **2D Spatial Pattern Correlation**: **0.9463**
+* **Multivariate Energy Score**: **0.3588**
+* **Inference Latency**: **827.3 ms** per 7-day forecast cube (sequential member looping)
+* **Physical Repair Burden**: 0.00% diurnal temperature violations, 0.00% RH violations.
+
+### Key Generalization Insight
+Validation recall (CSI@30 = 0.728) did NOT fully transfer to the 2023 holdout season (CSI@30 = 0.484). The 2023 season experienced severe regional monsoon deficiency in Mandya (mean precipitation dropped from 7.75 mm in 2022 to 4.53 mm in 2023, with $P > 30\text{ mm}$ frequency falling from 7.55% to 3.77%). While point recall dropped, probabilistic tail discrimination remained high (BSS@30 = +0.682).
 
 ---
 
 ## 9. Edge Deployment Guidance for Panchayat Advisory Systems
 
-1. **Production Serving Default**: Deploy the Flagship Champion ($K=8, S=4, \eta=0.5$, chunk size 4) on server GPUs, delivering probabilistic quantiles (P10, P50, P90) in 827 ms.
-2. **Low-Power Edge Default**: For compute-constrained edge nodes, deploy Budget 8 ($K=2, S=4, \eta=0.0$), which delivers Fair-CRPS of 0.6045 and CSI@30 of 0.682 in just 218 ms (4.6 cubes/sec throughput).
+1. **Severe Weather Advisory Mode**:
+   Deploy Broad Ensemble ($K=8, S=4, \eta=0.5$) where priority is detecting localized cloudbursts, severe flash flood triggers, and maximizing CSI@30 (0.728 val, 0.484 test).
+2. **Probabilistic Risk & Crop Water Budgeting Mode**:
+   Deploy Shallow Ensemble ($K=2, S=16, \eta=0$) where priority is well-calibrated rainfall volume distributions, minimizing CRPS (2.17 mm/day), and optimal multivariate energy score (0.2769).
+3. **Low-Power Panchayat Edge Nodes**:
+   Deploy Budget 8 ($K=2, S=4, \eta=0$), which delivers Fair-CRPS of 0.6045 and CSI@30 of 0.682 in just 218 ms (4.6 cubes/sec throughput).

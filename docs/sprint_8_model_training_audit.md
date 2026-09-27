@@ -318,17 +318,32 @@ Every evaluation artifact produced in Sprint 8 must persist a complete provenanc
 - **Remote Environment**: Kaggle Dual Tesla T4 GPUs (16 GB per GPU).
 - **Sweep Kernel**: `rohitajitbharadwaj/sih26074-s8-ensemble-scaling` completed all 28 conditions in 47.4 minutes.
 - **Holdout Kernel**: `rohitajitbharadwaj/sih26074-s8-holdout-eval` completed confirmatory 2023 holdout in 2.8 minutes.
-- **GPU Quota Consumed**: 0.83 hours total (5.17 hours remaining out of 6.00 hour weekly budget).
+- **Targeted Audit Kernel**: `rohitajitbharadwaj/sih26074-s8-targeted-audit` completed the 4-condition and holdout audit pass in 10.0 minutes.
+- **GPU Quota Consumed**: 0.98 hours total (5.02 hours remaining out of 6.00 hour weekly budget).
 
 ### 11.2 Empirical Invariant Verification
 - **Frozen Capacity Invariant**: Trainable parameters exactly 15,685,478 across all runs. Zero backpropagation.
 - **Reproducibility Gate**: Condition `PHASE0_GATE_DDIM4` reproduced Candidate 3 reference metrics within 0.8% relative error margin.
 - **Physical Invariant**: Diurnal ordering repair frequency remained below $0.001\%$ across validation and holdout splits; RH bounds remained 100% compliant.
 
-### 11.3 Holdout Test Set Performance (2023 Season)
+### 11.3 Authentic Training Climatology and BSS Rectification
+- Empirical base rates evaluated across all 854 training samples (2015-2021, 38,259,200 grid points):
+  - $P > 15\text{ mm}$: **0.110322** (11.03%)
+  - $P > 30\text{ mm}$: **0.058157** (5.82%)
+- Corrected BSS values against authentic training climatology:
+  - Deterministic 32-step DDIM: BSS@15 = +0.473, BSS@30 = +0.471.
+  - Flagship Ensemble ($K=8, S=4, \eta=0.5$): BSS@15 = +0.658, BSS@30 = +0.656.
+  - Holdout Test ($K=8, S=4, \eta=0.5$): BSS@15 = +0.646, BSS@30 = +0.682.
+- The preliminary negative BSS values resulted strictly from an arbitrary 2% placeholder reference rate; all models possess positive skill against true training climatology.
+
+### 11.4 Holdout Test Set Performance (2023 Season)
 - **Champion Configuration**: $K=8$ members, $S=4$ DDIM steps, $\eta=0.50$, chunk size $C_{\text{ens}}=4$.
-- **Fair-CRPS**: **0.6819**
+- **Composite Fair-CRPS**: **0.6819**
+- **Precipitation Fair-CRPS**: **2.0767 mm/day**
 - **Holdout Wet-MAE**: **8.15 mm** (improves on Sprint 6 deterministic Candidate 3 baseline of 8.93 mm by -8.7%).
-- **Holdout CSI@15 / CSI@30**: **0.557 / 0.484**
-- **Brier Skill Score vs Train Climatology (BSS@30)**: **+0.111** (demonstrates genuine meteorological skill on extreme events).
-- **Latency**: **827.3 ms** per 7-day cube (1.21 cubes/sec).
+- **Holdout CSI@15 / CSI@30**: **0.557 / 0.484** (Validation CSI@30 = 0.728 drops to 0.484 in the dry 2023 drought season).
+- **Brier Skill Score vs Train Climatology (BSS@30)**: **+0.682** (demonstrates genuine meteorological skill on extreme events).
+- **Precipitation Spread-Skill Ratio**: **0.376** (underdispersive on convective precipitation).
+- **2D Spatial Pattern Correlation**: **0.9463** (global flattened correlation is 0.997).
+- **Multivariate Energy Score**: **0.3588**.
+- **Latency**: **827.3 ms** per 7-day cube (sequential member looping).

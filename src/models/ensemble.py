@@ -17,9 +17,27 @@ Provides:
 """
 
 import math
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import torch
 import torch.nn.functional as F
+
+# Empirical climatology base rates computed across 854 training samples (2015-2021)
+TRAINING_CLIMATOLOGY_RATES = {
+    "p2_5": 0.273324,
+    "p15": 0.110322,
+    "p30": 0.058157,
+    "p50": 0.032533,
+}
+
+CHANNEL_NAMES_6CH = ["precipitation", "tmax", "tmin", "rh", "wind_u", "wind_v"]
+CHANNEL_UNITS_6CH = {
+    "precipitation": "mm/day",
+    "tmax": "degC",
+    "tmin": "degC",
+    "rh": "%",
+    "wind_u": "m/s",
+    "wind_v": "m/s",
+}
 
 
 def generate_nested_seeds(
@@ -142,6 +160,44 @@ def compute_crps(
     return fair_crps, True
 
 
+def compute_per_variable_crps(
+    members_phys: torch.Tensor,
+    targets_phys: torch.Tensor,
+    channel_names: Optional[List[str]] = None,
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Computes per-variable Fair-CRPS (or deterministic MAE for K=1) in native physical units.
+
+    Args:
+        members_phys: Tensor of shape [K, B, T_f, C, H, W] in physical units.
+        targets_phys: Tensor of shape [B, T_f, C, H, W] in physical units.
+        channel_names: Optional list of channel names (defaults to CHANNEL_NAMES_6CH).
+
+    Returns:
+        Dict mapping variable name to dict with 'crps', 'unit', and 'is_fair'.
+    """
+    if channel_names is None:
+        channel_names = CHANNEL_NAMES_6CH
+
+    num_channels = members_phys.shape[3]
+    results: Dict[str, Dict[str, Any]] = {}
+    for c in range(min(num_channels, len(channel_names))):
+        name = channel_names[c]
+        unit = CHANNEL_UNITS_6CH.get(name, "unknown")
+        c_members = members_phys[:, :, :, c]
+        if targets_phys.ndim == members_phys.ndim:
+            c_targets = targets_phys[:, :, :, c]
+        else:
+            c_targets = targets_phys[:, :, c]
+        crps_val, is_fair = compute_crps(c_members, c_targets)
+        results[name] = {
+            "crps": crps_val,
+            "unit": unit,
+            "is_fair": is_fair,
+        }
+    return results
+
+
 def compute_brier_score(
     predicted_probs: torch.Tensor,
     observed_events: torch.Tensor,
@@ -224,32 +280,34 @@ def compute_pairwise_diversity(
     Computes inter-member diversity diagnostics across ensemble members.
 
     Args:
-        members: Tensor of shape [K, ...].
+        members: Tensor of shape [K, ...] or [K, B, T_f, C, H, W].
 
     Returns:
-        Dict containing mean_pairwise_rmse, mean_pairwise_correlation, and ensemble_variance.
+        Dict containing mean_pairwise_rmse, mean_pairwise_spatial_correlation,
+        global_member_correlation, ensemble_variance, and num_pairs.
     """
     k = members.shape[0]
     if k <= 1:
         return {
             "mean_pairwise_rmse": 0.0,
+            "mean_pairwise_spatial_correlation": 1.0,
+            "global_member_correlation": 1.0,
             "mean_pairwise_correlation": 1.0,
             "ensemble_variance": 0.0,
             "num_pairs": 0,
         }
 
-    # Flatten each member to 1D vector
-    flat_members = members.view(k, -1)
+    # Flatten each member to 1D vector for global correlation
+    flat_members = members.reshape(k, -1)
     d = flat_members.shape[1]
 
     # Ensemble Variance
-    mean_member = torch.mean(members, dim=0)
     ens_var = torch.mean(torch.var(members, dim=0, unbiased=True)).item()
 
-    # Pairwise RMSE and Pearson Correlation
+    # Pairwise RMSE and Global Pearson Correlation
     num_pairs = k * (k - 1) // 2
     rmse_sum = 0.0
-    corr_sum = 0.0
+    global_corr_sum = 0.0
 
     for i in range(k):
         for j in range(i + 1, k):
@@ -257,23 +315,105 @@ def compute_pairwise_diversity(
             rmse = torch.sqrt(torch.mean(diff ** 2)).item()
             rmse_sum += rmse
 
-            # Correlation
             fi = flat_members[i] - flat_members[i].mean()
             fj = flat_members[j] - flat_members[j].mean()
             norm_i = torch.norm(fi)
             norm_j = torch.norm(fj)
             if norm_i > 1e-6 and norm_j > 1e-6:
                 corr = torch.dot(fi, fj) / (norm_i * norm_j)
-                corr_sum += corr.item()
+                global_corr_sum += corr.item()
             else:
-                corr_sum += 1.0
+                global_corr_sum += 1.0
+
+    # 2D Spatial Correlation if 6D tensor [K, B, T_f, C, H, W]
+    if members.ndim == 6:
+        K_dim, B_dim, T_dim, C_dim, H_dim, W_dim = members.shape
+        spatial_grids = members.reshape(K_dim, B_dim * T_dim * C_dim, H_dim * W_dim)
+        spatial_corr_sum = 0.0
+        spatial_corr_count = 0
+        for i in range(k):
+            for j in range(i + 1, k):
+                gi = spatial_grids[i]
+                gj = spatial_grids[j]
+                mi = gi - gi.mean(dim=-1, keepdim=True)
+                mj = gj - gj.mean(dim=-1, keepdim=True)
+                ni = torch.norm(mi, dim=-1)
+                nj = torch.norm(mj, dim=-1)
+                valid = (ni > 1e-6) & (nj > 1e-6)
+                if valid.any():
+                    dot = (mi[valid] * mj[valid]).sum(dim=-1)
+                    r = dot / (ni[valid] * nj[valid])
+                    spatial_corr_sum += r.sum().item()
+                    spatial_corr_count += valid.sum().item()
+                non_valid_count = (~valid).sum().item()
+                if non_valid_count > 0:
+                    spatial_corr_sum += float(non_valid_count)
+                    spatial_corr_count += non_valid_count
+        mean_spatial_corr = spatial_corr_sum / max(1, spatial_corr_count)
+    else:
+        mean_spatial_corr = global_corr_sum / num_pairs
+
+    mean_global_corr = global_corr_sum / num_pairs
 
     return {
         "mean_pairwise_rmse": rmse_sum / num_pairs,
-        "mean_pairwise_correlation": corr_sum / num_pairs,
+        "mean_pairwise_spatial_correlation": mean_spatial_corr,
+        "global_member_correlation": mean_global_corr,
+        "mean_pairwise_correlation": mean_global_corr,
         "ensemble_variance": ens_var,
         "num_pairs": num_pairs,
     }
+
+
+def compute_per_variable_spread_skill(
+    members_phys: torch.Tensor,
+    targets_phys: torch.Tensor,
+    channel_names: Optional[List[str]] = None,
+) -> Dict[str, Dict[str, float]]:
+    """
+    Computes Spread-Skill Ratio per meteorological channel in native physical units.
+    """
+    if channel_names is None:
+        channel_names = CHANNEL_NAMES_6CH
+
+    num_channels = members_phys.shape[3]
+    results: Dict[str, Dict[str, float]] = {}
+    for c in range(min(num_channels, len(channel_names))):
+        name = channel_names[c]
+        c_members = members_phys[:, :, :, c]
+        if targets_phys.ndim == members_phys.ndim:
+            c_targets = targets_phys[:, :, :, c]
+        else:
+            c_targets = targets_phys[:, :, c]
+        ssr_dict = compute_spread_skill_ratio(c_members, c_targets)
+        results[name] = ssr_dict
+    return results
+
+
+def compute_per_variable_prediction_interval(
+    members_phys: torch.Tensor,
+    targets_phys: torch.Tensor,
+    nominal_levels: Tuple[float, ...] = (0.50, 0.80, 0.90),
+    channel_names: Optional[List[str]] = None,
+) -> Dict[str, Dict[str, float]]:
+    """
+    Computes empirical coverage and interval sharpness per meteorological channel.
+    """
+    if channel_names is None:
+        channel_names = CHANNEL_NAMES_6CH
+
+    num_channels = members_phys.shape[3]
+    results: Dict[str, Dict[str, float]] = {}
+    for c in range(min(num_channels, len(channel_names))):
+        name = channel_names[c]
+        c_members = members_phys[:, :, :, c]
+        if targets_phys.ndim == members_phys.ndim:
+            c_targets = targets_phys[:, :, :, c]
+        else:
+            c_targets = targets_phys[:, :, c]
+        cov_dict = compute_prediction_interval_coverage(c_members, c_targets, nominal_levels)
+        results[name] = cov_dict
+    return results
 
 
 def compute_spread_skill_ratio(
