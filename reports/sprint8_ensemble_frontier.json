@@ -1,0 +1,133 @@
+{
+  "program": "SIH Problem Statement 26074 (Weather Downscaling from Block to Panchayat Level)",
+  "sprint": 8,
+  "topic": "Ensemble and Test-Time Scaling Under Matched Compute Budgets",
+  "frozen_invariants": {
+    "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+    "model_parameters": 15685478,
+    "architecture": "Candidate 3 Multi-Task Group-Tail v-Prediction Champion",
+    "noise_schedule": "linear_beta_1e-4_to_0.035_T100"
+  },
+  "conditions": {
+    "PHASE0_GATE_DDIM4": {
+      "condition_id": "PHASE0_GATE_DDIM4",
+      "description": "Phase 0 Gate: DDIM-4 Regression on 2022 Validation",
+      "ensemble_size_k": 1,
+      "denoising_steps_s": 4,
+      "eta": 0.0,
+      "total_nfe": 4,
+      "nominal_budget": 4,
+      "is_fair_crps": false,
+      "num_cubes_evaluated": 1,
+      "latency_ms_per_cube": 4541.2042998941615,
+      "throughput_cubes_sec": 0.22020590441687599,
+      "metrics": {
+        "crps": 0.630954921245575,
+        "cmvs": 0.31405877773694274,
+        "precip_wet_mae": 4.9427900314331055,
+        "precip_csi15": 0.7707662588538313,
+        "precip_csi30": 0.7393218846323205,
+        "tmax_mae": 0.17919602990150452,
+        "tmin_mae": 0.15429027378559113,
+        "rh_mae": 0.33311009407043457,
+        "wind_vector_rmse": 0.47955286502838135,
+        "brier_15": {
+          "brier_score": 0.047678571194410324,
+          "brier_skill_score_train": 0.3521933261629032,
+          "brier_skill_score_sample": 0.6739987895315713,
+          "reliability": 0.005137169919163824,
+          "resolution": 0.10371132942431892,
+          "uncertainty": 0.14625274282233902,
+          "sample_event_rate": 0.17790178954601288
+        },
+        "brier_30": {
+          "brier_score": 0.026428570970892906,
+          "brier_skill_score_train": -0.348396478106781,
+          "brier_skill_score_sample": 0.6630784347832823,
+          "reliability": 0.002810633368114898,
+          "resolution": 0.05482338393471532,
+          "uncertainty": 0.07844131601933313,
+          "sample_event_rate": 0.0858035683631897
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 0.0,
+          "mean_pairwise_correlation": 1.0,
+          "ensemble_variance": 0.0
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.22261160612106323,
+          "precip_mass_shift_pct": 1.3048214741962307,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cpu"
+      }
+    },
+    "B8_K2_S4": {
+      "condition_id": "B8_K2_S4",
+      "description": "Phase 3 Budget 8: K=2, S=4 (8 NFE)",
+      "ensemble_size_k": 2,
+      "denoising_steps_s": 4,
+      "eta": 0.0,
+      "total_nfe": 8,
+      "nominal_budget": 8,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 1,
+      "latency_ms_per_cube": 8552.136000012979,
+      "throughput_cubes_sec": 0.11692985237822251,
+      "metrics": {
+        "crps": 0.3539504408836365,
+        "cmvs": 0.2746995386665689,
+        "precip_wet_mae": 4.473517894744873,
+        "precip_csi15": 0.7917207090358841,
+        "precip_csi30": 0.7581582476531068,
+        "tmax_mae": 0.14601679146289825,
+        "tmin_mae": 0.12606197595596313,
+        "rh_mae": 0.27391907572746277,
+        "wind_vector_rmse": 0.4003545939922333,
+        "brier_15": {
+          "brier_score": 0.03693080320954323,
+          "brier_skill_score_train": 0.4982227824790322,
+          "brier_skill_score_sample": 0.7474864231817858,
+          "reliability": 0.002391476390108939,
+          "resolution": 0.11171341365251058,
+          "uncertainty": 0.14625274282233902,
+          "sample_event_rate": 0.17790178954601288
+        },
+        "brier_30": {
+          "brier_score": 0.021166294813156128,
+          "brier_skill_score_train": -0.07991300067123097,
+          "brier_skill_score_sample": 0.730163950743262,
+          "reliability": 0.001423241022692264,
+          "resolution": 0.05869826182119877,
+          "uncertainty": 0.07844131601933313,
+          "sample_event_rate": 0.0858035683631897
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.8279386758804321,
+          "mean_pairwise_correlation": 0.9973198175430298,
+          "ensemble_variance": 1.6706799268722534
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.21437500417232513,
+          "precip_mass_shift_pct": 1.2833760086606119,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cpu"
+      }
+    }
+  }
+}
