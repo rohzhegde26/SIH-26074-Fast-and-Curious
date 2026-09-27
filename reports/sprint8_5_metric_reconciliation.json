@@ -1,0 +1,72 @@
+{
+  "audit_metadata": {
+    "date": "2026-09-27",
+    "project": "SIH Problem Statement 26074 (Weather Downscaling from Block to Panchayat Level)",
+    "branch": "feat/spatiotemporal-diffusion-downscaler",
+    "purpose": "Reconciliation of Condition History CRPS vs Bootstrap Case-Level CRPS Point Estimates",
+    "status": "RECONCILED_EXACT",
+    "canonical_aggregation_definition": "Case-Preserving Weighted Sample Mean: M = (1 / N_total) * sum_{i=1}^{N_total} M_i"
+  },
+  "root_cause_analysis": {
+    "dataset_total_cubes": 122,
+    "batch_size": 4,
+    "total_batches": 31,
+    "full_batches_count": 30,
+    "full_batch_cubes": 4,
+    "final_batch_cubes": 2,
+    "mathematical_mechanism": "evaluate_sprint8_ensemble.py accumulated batch-averaged CRPS into all_crps_list (length 31) and computed np.mean(all_crps_list). This assigned the final batch of 2 cubes an unweighted 1/31 (3.2258%) weight instead of its legitimate 2/122 (1.6393%) sample weight. Because the 31st batch contained late-monsoon heavy-rain events with high error (CRPS ~ 3.8070 vs ~0.4961 across batches 1-30), giving it double weight pushed the unweighted batch mean upward by ~0.0525 points across all conditions. The bootstrap pipeline correctly computed the metric per case, assigning each cube uniform weight 1/122 (0.8197%).",
+    "ranking_impact": "ZERO. The relative ranking across all configurations is 100% preserved and strictly monotonic between both aggregations. K=2, S=16 remains the top continuous distribution performer, while K=8, S=4, eta=0.5 remains the top point-forecast and storm-recall performer."
+  },
+  "reconciled_conditions": {
+    "B32_K2_S16": {
+      "case_weighted_mean_crps": 0.540099498983778,
+      "unweighted_batch_mean_crps": 0.5927375651174976,
+      "history_json_crps": 0.5927375651174976,
+      "bootstrap_point_estimate": 0.540099498983778,
+      "delta_batch_artifact": 0.05263806613371958,
+      "relative_rank_case": 1,
+      "relative_rank_batch": 1
+    },
+    "B32_K4_S8": {
+      "case_weighted_mean_crps": 0.5433402221466674,
+      "unweighted_batch_mean_crps": 0.595791206126046,
+      "history_json_crps": 0.595791206126046,
+      "bootstrap_point_estimate": 0.5433402221466674,
+      "delta_batch_artifact": 0.05245098397937861,
+      "relative_rank_case": 2,
+      "relative_rank_batch": 2
+    },
+    "B32_K8_S4": {
+      "case_weighted_mean_crps": 0.5523511633643361,
+      "unweighted_batch_mean_crps": 0.6046259160350727,
+      "history_json_crps": 0.6046259160350727,
+      "bootstrap_point_estimate": 0.5523511633643361,
+      "delta_batch_artifact": 0.05227475267073657,
+      "relative_rank_case": 4,
+      "relative_rank_batch": 4
+    },
+    "B32_K8_S4_ETA05": {
+      "case_weighted_mean_crps": 0.5503885400344114,
+      "unweighted_batch_mean_crps": 0.6029149072785531,
+      "history_json_crps": 0.6029149072785531,
+      "bootstrap_point_estimate": 0.5503885400344114,
+      "delta_batch_artifact": 0.05252636724414169,
+      "relative_rank_case": 3,
+      "relative_rank_batch": 3
+    },
+    "CHAMPION_HOLDOUT_B32_K8_S4_ETA05": {
+      "case_weighted_mean_crps": 0.6371166095992581,
+      "unweighted_batch_mean_crps": 0.681900437801115,
+      "history_json_crps": 0.681900437801115,
+      "bootstrap_point_estimate": 0.6371166095992581,
+      "delta_batch_artifact": 0.0447838282018569,
+      "relative_rank_case": "N/A (holdout)",
+      "relative_rank_batch": "N/A (holdout)"
+    }
+  },
+  "invariants_adopted_for_sprint_8_5": {
+    "canonical_crps_aggregation": "np.average(case_crps, weights=None) where case_crps has length N_cases",
+    "batch_loop_rule": "Accumulators must track (sum_of_case_metrics, total_cases_seen) rather than unweighted list of batch means",
+    "bootstrap_equivalence": "Point estimate of bootstrap distribution is identically equal to the full dataset canonical sample mean"
+  }
+}
