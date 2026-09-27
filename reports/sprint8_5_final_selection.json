@@ -1,0 +1,83 @@
+{
+  "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+  "parameter_count": 15685478,
+  "model_architecture": "SpatiotemporalResidualDiffusion (base_channels=96, v_prediction, group_tail)",
+  "calibration_pipeline": "Multiplicative Spread Rescaling + Isotonic Probability Calibration + Conformal Prediction Intervals",
+  "sampler_configuration": {
+    "condition_id": "REF_C_K8_S4_ETA05",
+    "members": 8,
+    "steps": 4,
+    "eta": 0.5,
+    "schedule": "standard",
+    "sampler": "ddim",
+    "nfe_budget": 32
+  },
+  "alpha_selection": {
+    "grid_evaluated": [
+      1.0,
+      1.25,
+      1.5,
+      2.0,
+      3.0
+    ],
+    "fit_block_cubes": 61,
+    "eval_block_cubes": 61,
+    "selected_alpha": 3.0,
+    "selection_criterion": "Spread-skill ratio closest to 1.0 on 2022 fit block (cubes 0..60)",
+    "fit_metrics": {
+      "precip_crps": 2.1945048609717945,
+      "ensemble_spread": 5.226170643431241,
+      "rmse_ensemble_mean": 8.775305368861215,
+      "spread_skill_ratio": 0.5955542768888793,
+      "coverage_50": 0.24488253805620608,
+      "coverage_80": 0.3274440134660421,
+      "coverage_90": 0.3430455942622951,
+      "sharpness_90": 12.880694881814424,
+      "alpha": 3.0
+    },
+    "eval_metrics_out_of_sample": {
+      "precip_crps": 1.571149189819078,
+      "ensemble_spread": 3.362145133682939,
+      "rmse_ensemble_mean": 5.7700859034647705,
+      "spread_skill_ratio": 0.5826854556297104,
+      "coverage_50": 0.19360545960187353,
+      "coverage_80": 0.2665727459016393,
+      "coverage_90": 0.2815427400468384,
+      "sharpness_90": 8.234691027735101,
+      "alpha": 3.0
+    }
+  },
+  "probability_calibrators": {
+    "method": "isotonic",
+    "eval_bss_isotonic_p15": 0.7360244971111926,
+    "eval_bss_isotonic_p30": 0.72759098369825
+  },
+  "conformal_parameters": {
+    "target_coverage": [
+      0.5,
+      0.8,
+      0.9
+    ],
+    "q_hat_50": 0.8368010985207113,
+    "q_hat_80": 1.7522315572459557,
+    "q_hat_90": 2.8037869568244975,
+    "non_negative_enforced": true
+  },
+  "validation_performance_summary": {
+    "precip_crps_baseline": 1.799465384028974,
+    "precip_crps_calibrated": 1.571149189819078,
+    "ssr_baseline": 0.2139568497878345,
+    "ssr_calibrated": 0.5826854556297104,
+    "cov90_baseline": 0.17073002049180327,
+    "cov90_calibrated": 0.2815427400468384,
+    "bss15_baseline": 0.7129049633073452,
+    "bss15_calibrated": 0.7360244971111926,
+    "bss30_baseline": 0.7129419858452438,
+    "bss30_calibrated": 0.72759098369825
+  },
+  "holdout_protocol": {
+    "test_split": "test",
+    "year": 2023,
+    "rule": "Frozen configuration evaluated strictly once on 2023 holdout test set with zero post-hoc tuning"
+  }
+}

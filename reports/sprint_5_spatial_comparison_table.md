@@ -32,9 +32,9 @@
 
 ## Hypothesis Falsification Summary
 
-- **H1_upstream_moisture_capture**: `FALSIFIED` — Wet-MAE decreases by >= 5.0% from N=16 to N=24
-- **H2_nonlocal_dynamic_steering**: `CONFIRMED` — Delta_Wind > 1.5 * Delta_Tmax from N=16 to N=32
-- **H3_convective_extreme_recall**: `FALSIFIED` — CSI@30 increases monotonically from N=16 to N=24
-- **H4_context_saturation_boundary**: `FALSIFIED` — Delta_L(24->32) < 0.25 * Delta_L(16->24)
-- **H5_accuracy_compute_pareto**: `CONFIRMED` — N/M = 1.50 (N=24) achieves the optimal loss-per-compute Pareto inflection point
-- **H6_lead_time_sensitivity**: `CONFIRMED` — Late leads (D+6) benefit relatively more from spatial context than early leads (D+0)
+- **H1_upstream_moisture_capture**: `FALSIFIED` - Wet-MAE decreases by >= 5.0% from N=16 to N=24
+- **H2_nonlocal_dynamic_steering**: `CONFIRMED` - Delta_Wind > 1.5 * Delta_Tmax from N=16 to N=32
+- **H3_convective_extreme_recall**: `FALSIFIED` - CSI@30 increases monotonically from N=16 to N=24
+- **H4_context_saturation_boundary**: `FALSIFIED` - Delta_L(24->32) < 0.25 * Delta_L(16->24)
+- **H5_accuracy_compute_pareto**: `CONFIRMED` - N/M = 1.50 (N=24) achieves the optimal loss-per-compute Pareto inflection point
+- **H6_lead_time_sensitivity**: `CONFIRMED` - Late leads (D+6) benefit relatively more from spatial context than early leads (D+0)

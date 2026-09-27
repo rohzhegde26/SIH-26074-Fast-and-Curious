@@ -289,6 +289,18 @@ def monitor_kernel(
         except Exception as e:
             print(f"[-] Log fallback extraction error: {e}")
 
+    # Run report generators
+    print("[*] Compiling all Sprint 8.5 diagnostic and calibration markdown reports...")
+    try:
+        from scripts.analyze_sprint8_5_uncertainty import generate_sprint8_5_reports
+        from scripts.bootstrap_sprint8_5 import run_bootstrap_sprint8_5
+        sum_p = ROOT / "reports" / "sprint8_5_validation_summary.json"
+        generate_sprint8_5_reports(sum_p)
+        run_bootstrap_sprint8_5(sum_p)
+        print("[+] All markdown reports and bootstrap intervals compiled successfully.")
+    except Exception as e:
+        print(f"[-] Report generation error: {e}")
+
     # Check post-run quota
     time.sleep(5)
     post_quota = query_kaggle_gpu_quota()
@@ -306,6 +318,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run Sprint 8.5 Calibration Campaign on Kaggle")
     parser.add_argument("--slug", type=str, default="sih26074-s85-calibration")
     parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--run-holdout", action="store_true", default=True, help="Run 2023 holdout test set")
     parser.add_argument("--monitor", action="store_true", help="Monitor live execution until completion")
     parser.add_argument("--monitor-only", action="store_true", help="Monitor existing kernel without pushing new bundle")
     args = parser.parse_args()
@@ -317,6 +330,8 @@ def main():
         "--batch-size", str(args.batch_size),
         "--calib-split", "61",
     ]
+    if args.run_holdout:
+        eval_args.append("--run-holdout")
 
     if args.monitor_only:
         monitor_kernel(slug)

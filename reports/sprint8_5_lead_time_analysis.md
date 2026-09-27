@@ -20,7 +20,13 @@
 
 ---
 
-## 2. Qualitative Interpretation
+## 2. Qualitative Interpretation of Lead-Time Dynamics
 
-Atmospheric chaos dictates that forecast uncertainty should expand monotonically with lead time (U_{D+6} > U_{D+0}).
-The empirical lead-time tracking demonstrates that ensemble spread grows in tandem with root mean square error, maintaining stable spread-skill ratios throughout the 7-day forecast window.
+In an ideal ensemble prediction system, forecast uncertainty expands monotonically with lead time as error growth compounds across the 7-day window.
+
+However, empirical evaluation of Candidate 3 reveals an important diagnostic reality:
+1. **Spread Contraction:** Ensemble spread actually contracts from 1.333 mm at D+0 to 1.116 mm at D+6.
+2. **RMSE Growth:** Root mean square error increases over the forecast window from 6.55 mm to ~6.4 - 6.6 mm.
+3. **Worsening Under-Dispersion:** As a direct consequence, the spread-skill ratio deteriorates from 0.203 at D+0 down to 0.175 at D+6, and empirical 90% interval coverage declines from 33.4% to 30.1%.
+
+This diagnostic proves that Candidate 3 becomes increasingly under-dispersed at longer lead horizons. Post-hoc static spread rescaling helps lift overall spread, but cannot fully resolve horizon-dependent spread decay without lead-dependent calibration or dynamical model scaling.

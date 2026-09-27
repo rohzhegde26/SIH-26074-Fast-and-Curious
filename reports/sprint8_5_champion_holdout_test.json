@@ -1,0 +1,126 @@
+{
+  "metadata": {
+    "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+    "parameter_count": 15685478,
+    "dataset_split": "test",
+    "year": 2023,
+    "num_cases": 122,
+    "total_slices": 854,
+    "inference_time_sec": 117.32741808891296,
+    "frozen_alpha": 3.0,
+    "timestamp": "2026-09-27 17:09:14 UTC"
+  },
+  "metrics": {
+    "crps_overall_6ch": 0.637102484703064,
+    "per_variable_crps": {
+      "precipitation": {
+        "crps": 2.080983877182007,
+        "unit": "mm/day",
+        "is_fair": true
+      },
+      "tmax": {
+        "crps": 0.2663111984729767,
+        "unit": "degC",
+        "is_fair": true
+      },
+      "tmin": {
+        "crps": 0.2286815196275711,
+        "unit": "degC",
+        "is_fair": true
+      },
+      "rh": {
+        "crps": 0.31643521785736084,
+        "unit": "%",
+        "is_fair": true
+      },
+      "wind_u": {
+        "crps": 0.701445460319519,
+        "unit": "m/s",
+        "is_fair": true
+      },
+      "wind_v": {
+        "crps": 0.2287573665380478,
+        "unit": "m/s",
+        "is_fair": true
+      }
+    },
+    "uncalibrated_precip": {
+      "precip_crps": 2.0809840558738006,
+      "ensemble_spread": 1.2605497509729666,
+      "rmse_ensemble_mean": 7.486692139359771,
+      "spread_skill_ratio": 0.16837205637799382,
+      "coverage_50": 0.05393332845433255,
+      "coverage_80": 0.0919672131147541,
+      "coverage_90": 0.10610271516393442,
+      "sharpness_90": 3.1222257101144946
+    },
+    "calibrated_precip": {
+      "precip_crps": 1.7805850697589702,
+      "ensemble_spread": 3.402618515686911,
+      "rmse_ensemble_mean": 7.6489867792754875,
+      "spread_skill_ratio": 0.4448456526171702,
+      "coverage_50": 0.12347226288056207,
+      "coverage_80": 0.17240412763466043,
+      "coverage_90": 0.1829012368266979,
+      "sharpness_90": 8.231647819769186
+    },
+    "probability_calibration": {
+      "p15": {
+        "raw_brier": 0.034708775111607144,
+        "raw_bss": 0.4905943199321372,
+        "isotonic_brier": 0.029988298263027808,
+        "isotonic_bss": 0.5598747169373028
+      },
+      "p30": {
+        "raw_brier": 0.017411063058035713,
+        "raw_bss": 0.5255601909557062,
+        "isotonic_brier": 0.016163950936594076,
+        "isotonic_bss": 0.5595431611385933
+      }
+    },
+    "conformal_intervals": {
+      "target_50": {
+        "target_coverage": 0.5,
+        "empirical_coverage": 0.07636215603044497,
+        "conformal_q_hat": 0.8368010985207113,
+        "mean_interval_width": 2.070046993499192,
+        "min_lower_bound": 0.0
+      },
+      "target_80": {
+        "target_coverage": 0.8,
+        "empirical_coverage": 0.13162854947306793,
+        "conformal_q_hat": 1.7522315572459557,
+        "mean_interval_width": 4.082886988672489,
+        "min_lower_bound": 0.0
+      },
+      "target_90": {
+        "target_coverage": 0.9,
+        "empirical_coverage": 0.16595597921545668,
+        "conformal_q_hat": 2.8037869568244975,
+        "mean_interval_width": 6.171083557897482,
+        "min_lower_bound": 0.0
+      }
+    },
+    "point_metrics": {
+      "wet_mae": 7.610714435577393,
+      "csi30": 0.5812126489836038
+    },
+    "spatial_sharpness": {
+      "laplacian_energy_ground_truth": 597.8871350671564,
+      "laplacian_energy_single_member": 109.86549348176503,
+      "laplacian_energy_ensemble_mean": 36.63835511382765,
+      "laplacian_ratio_single_to_gt": 0.18375624267182908,
+      "laplacian_ratio_mean_to_gt": 0.061279718135618236,
+      "high_freq_power_ground_truth": 45.00892384804294,
+      "high_freq_power_single_member": 10.822839443496179,
+      "high_freq_power_ensemble_mean": 5.276505139196882,
+      "high_freq_retention_single_to_gt": 0.24045985813914927,
+      "high_freq_retention_mean_to_gt": 0.11723242166400548
+    },
+    "physical_repair_burden": {
+      "precip_negative_fraction_raw": 0.36641267655884074,
+      "precip_mass_shift_pct": 3.308508247376165,
+      "tmin_gt_tmax_rate": 0.0
+    }
+  }
+}
