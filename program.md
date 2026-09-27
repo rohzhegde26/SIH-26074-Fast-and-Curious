@@ -1,14 +1,14 @@
 ## Active Compute Budget & Live Kaggle GPU Quota
-> **LIVE STATUS (Updated 2026-09-25 23:00:25):**
+> **LIVE STATUS (Updated 2026-09-27 09:49:47):**
 > - **Total GPU Allowance:** 6.0 hours (21600 s)
-> - **GPU Time Consumed:** 0.47 hours (1685 s)
-> - **GPU TIME REMAINING:** **5.53 hours (331.9 minutes)**
-> - **Quota Refreshes At:** 2026-09-26T00:00:00.000Z
+> - **GPU Time Consumed:** 0.21 hours (773 s)
+> - **GPU TIME REMAINING:** **5.79 hours (347.1 minutes)**
+> - **Quota Refreshes At:** 2026-10-03T00:00:00.000Z
 >
 > ⚠️ **HARD CONSTRAINT FOR AGENTS:**
-> You have AT MOST **5.53 hours** of GPU time remaining for this cycle.
+> You have AT MOST **5.79 hours** of GPU time remaining for this cycle.
 > Every training run depletes this quota. Budget your experiments carefully. If you run 5-minute runs,
-> you have at most ~66 candidate iterations left before quota exhaustion!
+> you have at most ~69 candidate iterations left before quota exhaustion!
 ## Active Compute Budget & Live Kaggle Accelerator Quota
 > **LIVE STATUS (Verified 2026-09-22):**
 > - **Kaggle GPU Quota:** 6.0 hours (21,600 s) allowed | 0.0 s consumed | **6.0 hours remaining (100%)**
