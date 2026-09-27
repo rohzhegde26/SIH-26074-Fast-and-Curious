@@ -165,6 +165,19 @@ $$\text{SSR} = \frac{\text{Ensemble Spread}}{\text{RMSE}}$$
 To assess inter-variable correlation structures (e.g., wind vector $(U, V)$ consistency, precipitation-humidity coupling):
 $$\text{ES}(F_K, \mathbf{y}) = \frac{1}{K}\sum_{k=1}^K \|\mathbf{y}^{(k)} - \mathbf{y}\|_2 - \frac{1}{2 K (K - 1)}\sum_{k=1}^K \sum_{j=1}^K \|\mathbf{y}^{(k)} - \mathbf{y}^{(j)}\|_2$$
 
+### 5.6 Metric Aggregation Hierarchy
+To eliminate ambiguity across evaluation scripts, all metrics are aggregated across a four-tier spatial-temporal hierarchy:
+$$\text{Pixel} \to \text{Lead} \to \text{Cube (Sample)} \to \text{Validation Aggregate}$$
+
+1. **Pixel-Level**: Compute point metric $m(i, d, h, w)$ at each fine-grid cell $(h, w) \in [80 \times 80]$ for lead $d \in \{0, \dots, 6\}$ and case $i \in \{1, \dots, N\}$.
+2. **Spatial Average per Lead**:
+   $$M(i, d) = \frac{1}{80 \times 80} \sum_{h=1}^{80} \sum_{w=1}^{80} m(i, d, h, w)$$
+3. **Temporal Average per Cube**:
+   $$M(i) = \frac{1}{7} \sum_{d=0}^6 M(i, d)$$
+4. **Validation Set Aggregate**:
+   $$\bar{M} = \frac{1}{N} \sum_{i=1}^N M(i)$$
+Per-lead analysis reports $\bar{M}(d) = \frac{1}{N}\sum_{i=1}^N M(i, d)$. Brier reliability curves pool instances across all dates and grid cells into 10 uniform probability bins.
+
 ---
 
 ## 6. Test-Time Physical Safeguards, Invariants, and Diagnostics
@@ -231,6 +244,14 @@ To eliminate CUDA out-of-memory risks on 16 GB Tesla T4 GPUs:
 | **Phase 3: Matched Budget 64** | 5 | (64,1), (32,2), (16,4), (8,8), (4,16) | {1, 2, 4, 8, 16} | GPUs 0, 1 | 16 min | 80 min | 335 min |
 | **Phase 4: Holdout Champion Run** | 1 | Champion $(K^*, S^*, \eta^*)$ | $K^*$ | GPUs 0, 1 | 15 min | 15 min | 350 min |
 | **Reserve Buffer** | - | Bootstrap, plotting, disk I/O | - | Host CPU | 10 min | 10 min | **360 min (6.0 h)** |
+
+### 7.3 Dual-GPU Process Isolation Architecture (Strategy A)
+To eliminate multi-GPU synchronization complexity, deadlocks, and distributed communication overhead, Sprint 8 implements **Strategy A: Process-Level Isolation**:
+- Each Tesla T4 GPU runs as an independent evaluation process bound to a single CUDA context (`CUDA_VISIBLE_DEVICES=0` or `1`).
+- Evaluation sweeps are partitioned across devices:
+  - GPU 0: Phase 1 deterministic references and small-budget frontier sweeps (Budgets 8 and 16).
+  - GPU 1: Phase 2 ensemble count/stochasticity sweeps and large-budget sweeps (Budgets 32 and 64).
+- Outputs are saved to independent JSON artifact files and merged post-evaluation, halving total wall-clock campaign time without altering inference logic.
 
 ---
 

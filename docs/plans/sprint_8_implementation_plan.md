@@ -112,7 +112,7 @@ Following Gneiting and Raftery (JASA 2007) and Wilks (2019), probabilistic evalu
 
 ## 4. Formal Research Hypotheses and System Invariants
 
-Sprint 8 establishes 1 foundational system invariant and evaluates 7 formal research hypotheses (H0 through H6) with explicit falsification criteria:
+Sprint 8 establishes 1 foundational system invariant and evaluates 8 formal research hypotheses (H0 through H7) with explicit falsification criteria:
 
 ### Foundational System Invariant: Physical Consistency Invariant (PCI)
 Every reported ensemble member must strictly satisfy all physical constraints:
@@ -257,6 +257,31 @@ For nominal coverage level $(1 - \alpha) \in \{0.50, 0.80, 0.90\}$ with quantile
 ### 5.7 Multivariate Energy Score
 To assess inter-variable spatial coherence across all 6 variables jointly:
 $$\text{ES}\left(\{\mathbf{y}^{(k)}\}_{k=1}^K, \mathbf{y}_{\text{true}}\right) = \frac{1}{K}\sum_{k=1}^K \|\mathbf{y}^{(k)} - \mathbf{y}_{\text{true}}\|_2 - \frac{1}{2K(K-1)}\sum_{k=1}^K \sum_{j=1}^K \|\mathbf{y}^{(k)} - \mathbf{y}^{(j)}\|_2$$
+
+### 5.8 Metric Aggregation Hierarchy
+To ensure unambiguous reproducibility across implementations, all probabilistic and deterministic metrics follow a strict, four-tier spatial-temporal aggregation hierarchy:
+$$\text{Pixel} \to \text{Lead} \to \text{Cube (Sample)} \to \text{Validation Aggregate}$$
+
+1. **Pixel-Level Evaluation**:
+   Compute the point metric (e.g. Fair-CRPS, absolute error, squared error, binary event indicator) at each fine-grid cell $(h, w)$ for spatial dimensions $H_{\text{fine}} \times W_{\text{fine}} = 80 \times 80$, for each forecast lead $d \in \{0, \dots, 6\}$ and validation cube $i \in \{1, \dots, N\}$:
+   $$m(i, d, h, w) = \text{Metric}\left(\{y^{(k)}(i, d, h, w)\}_{k=1}^K, y_{\text{true}}(i, d, h, w)\right)$$
+
+2. **Spatial Pooling per Lead**:
+   Average over all spatial cells within the forecast cube to yield the lead-specific cube metric:
+   $$M(i, d) = \frac{1}{H_{\text{fine}} W_{\text{fine}}} \sum_{h=1}^{H_{\text{fine}}} \sum_{w=1}^{W_{\text{fine}}} m(i, d, h, w)$$
+
+3. **Temporal Pooling per Cube**:
+   Average across all 7 forecast leads ($D+0$ to $D+6$) to produce the scalar cube metric:
+   $$M(i) = \frac{1}{7} \sum_{d=0}^6 M(i, d)$$
+
+4. **Validation Set Aggregate**:
+   Average over all $N$ validation cases to determine the final summary score:
+   $$\bar{M} = \frac{1}{N} \sum_{i=1}^N M(i)$$
+
+For lead-specific analysis (Section 8), the per-lead summary score is:
+$$\bar{M}(d) = \frac{1}{N}\sum_{i=1}^N M(i, d)$$
+
+For Brier reliability diagrams and Murphy decomposition, predictions and observations are pooled across all validation dates and spatial cells into $M = 10$ uniform probability bins $[0, 0.1), [0.1, 0.2), \dots, [0.9, 1.0]$.
 
 ---
 
@@ -422,6 +447,14 @@ Sprint 8 has an allocated compute budget of **6.0 hours (360 minutes) on 2x Tesl
 | **Phase 3** | Matched compute frontier (Budgets 8, 16, 32, 64) | 12 | 140 min | 293 min |
 | **Phase 4** | Quarantined 2023 holdout evaluation on champion | 1 | 20 min | 313 min |
 | **Buffer** | Statistical bootstrap, plotting, serialization overhead | - | 47 min | **360 min (6.0 h)** |
+
+### 10.1 Dual-GPU Execution Architecture: Process-Level Isolation (Strategy A)
+To fully exploit the dual Tesla T4 accelerators without introducing distributed communication overhead or multi-GPU synchronization complexity into the inference loop, Sprint 8 adopts **Strategy A: Process-Level Isolation**:
+- Each GPU operates as an independent execution worker via single-GPU CUDA context (`CUDA_VISIBLE_DEVICES=0` and `CUDA_VISIBLE_DEVICES=1`).
+- Independent benchmark sweeps run concurrently across the two devices:
+  - GPU 0 handles deterministic baseline anchors (Phase 1) and small-budget frontier sweeps (Budget 8 and 16).
+  - GPU 1 concurrently executes ensemble scaling sweeps (Phase 2 Stage A and B) and large-budget sweeps (Budget 32 and 64).
+- The evaluation results are persisted into standardized JSON records and aggregated post-hoc, completely avoiding multi-process data distributed locks while cutting total campaign wall-clock time in half.
 
 ---
 
