@@ -1,0 +1,60 @@
+{
+  "condition_id": "B16_K2_S8",
+  "description": "Phase 3 Budget 16: K=2, S=8 (16 NFE)",
+  "ensemble_size_k": 2,
+  "denoising_steps_s": 8,
+  "eta": 0.0,
+  "total_nfe": 16,
+  "nominal_budget": 16,
+  "is_fair_crps": true,
+  "num_cubes_evaluated": 122,
+  "latency_ms_per_cube": 423.9623349508199,
+  "throughput_cubes_sec": 2.3587000956488295,
+  "metrics": {
+    "crps": 0.5959209917533782,
+    "cmvs": 0.5215384687400617,
+    "precip_wet_mae": 6.994147066147097,
+    "precip_csi15": 0.6294098241570254,
+    "precip_csi30": 0.6749229956413791,
+    "tmax_mae": 0.33188721633726553,
+    "tmin_mae": 0.21711337662512256,
+    "rh_mae": 0.39585688902485755,
+    "wind_vector_rmse": 0.9082191711471926,
+    "brier_15": {
+      "brier_score": 0.039969492703676224,
+      "brier_skill_score_train": 0.4569362404391817,
+      "brier_skill_score_sample": 0.6633015451134812,
+      "reliability": 0.004058849912305187,
+      "resolution": 0.08279941706549654,
+      "uncertainty": 0.11871005679888724,
+      "sample_event_rate": 0.1376604586839676
+    },
+    "brier_30": {
+      "brier_score": 0.02253892458975315,
+      "brier_skill_score_train": -0.14994513213026295,
+      "brier_skill_score_sample": 0.6772002153408487,
+      "reliability": 0.0014246483549058197,
+      "resolution": 0.048708960674302096,
+      "uncertainty": 0.0698232330407293,
+      "sample_event_rate": 0.07552766054868698
+    },
+    "diversity": {
+      "mean_pairwise_rmse": 1.9888601245418671,
+      "mean_pairwise_correlation": 0.9962066162017084,
+      "ensemble_variance": 2.356158761487853
+    },
+    "repair_diagnostics": {
+      "precip_clipped_fraction": 0.2966966946278849,
+      "precip_mass_shift_pct": 7.553629187076391,
+      "tmin_gt_tmax_violation_rate": 0.0
+    }
+  },
+  "provenance": {
+    "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+    "model_parameters": 15685478,
+    "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+    "chunk_size": 4,
+    "base_seed": 20260927,
+    "device": "cuda"
+  }
+}

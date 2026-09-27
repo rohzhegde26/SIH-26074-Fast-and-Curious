@@ -18,36 +18,36 @@
       "total_nfe": 4,
       "nominal_budget": 4,
       "is_fair_crps": false,
-      "num_cubes_evaluated": 1,
-      "latency_ms_per_cube": 4541.2042998941615,
-      "throughput_cubes_sec": 0.22020590441687599,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 129.41561345901607,
+      "throughput_cubes_sec": 7.727042922194892,
       "metrics": {
-        "crps": 0.630954921245575,
-        "cmvs": 0.31405877773694274,
-        "precip_wet_mae": 4.9427900314331055,
-        "precip_csi15": 0.7707662588538313,
-        "precip_csi30": 0.7393218846323205,
-        "tmax_mae": 0.17919602990150452,
-        "tmin_mae": 0.15429027378559113,
-        "rh_mae": 0.33311009407043457,
-        "wind_vector_rmse": 0.47955286502838135,
+        "crps": 0.8572831721075119,
+        "cmvs": 0.558424749821222,
+        "precip_wet_mae": 7.204159321323518,
+        "precip_csi15": 0.6218223419368293,
+        "precip_csi30": 0.6343374287357233,
+        "tmax_mae": 0.3533558105268786,
+        "tmin_mae": 0.2398045514860461,
+        "rh_mae": 0.44290747757880916,
+        "wind_vector_rmse": 0.9814229722945921,
         "brier_15": {
-          "brier_score": 0.047678571194410324,
-          "brier_skill_score_train": 0.3521933261629032,
-          "brier_skill_score_sample": 0.6739987895315713,
-          "reliability": 0.005137169919163824,
-          "resolution": 0.10371132942431892,
-          "uncertainty": 0.14625274282233902,
-          "sample_event_rate": 0.17790178954601288
+          "brier_score": 0.0464942567050457,
+          "brier_skill_score_train": 0.368284555637966,
+          "brier_skill_score_sample": 0.6083376761935682,
+          "reliability": 0.006444359488027325,
+          "resolution": 0.07866016696578129,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
         },
         "brier_30": {
-          "brier_score": 0.026428570970892906,
-          "brier_skill_score_train": -0.348396478106781,
-          "brier_skill_score_sample": 0.6630784347832823,
-          "reliability": 0.002810633368114898,
-          "resolution": 0.05482338393471532,
-          "uncertainty": 0.07844131601933313,
-          "sample_event_rate": 0.0858035683631897
+          "brier_score": 0.02655426599085331,
+          "brier_skill_score_train": -0.3548094893292506,
+          "brier_skill_score_sample": 0.6196929756122339,
+          "reliability": 0.0028276713409506413,
+          "resolution": 0.04609663930789858,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
         },
         "diversity": {
           "mean_pairwise_rmse": 0.0,
@@ -55,8 +55,8 @@
           "ensemble_variance": 0.0
         },
         "repair_diagnostics": {
-          "precip_clipped_fraction": 0.22261160612106323,
-          "precip_mass_shift_pct": 1.3048214741962307,
+          "precip_clipped_fraction": 0.3100563398291988,
+          "precip_mass_shift_pct": 8.423301073645277,
           "tmin_gt_tmax_violation_rate": 0.0
         }
       },
@@ -66,7 +66,787 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cpu"
+        "device": "cuda"
+      }
+    },
+    "DET_S04": {
+      "condition_id": "DET_S04",
+      "description": "Phase 1: Deterministic DDIM-4 Reference",
+      "ensemble_size_k": 1,
+      "denoising_steps_s": 4,
+      "eta": 0.0,
+      "total_nfe": 4,
+      "nominal_budget": 4,
+      "is_fair_crps": false,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 104.69911368852489,
+      "throughput_cubes_sec": 9.551179229415013,
+      "metrics": {
+        "crps": 0.8572831721075119,
+        "cmvs": 0.558424749821222,
+        "precip_wet_mae": 7.204159321323518,
+        "precip_csi15": 0.6218223419368293,
+        "precip_csi30": 0.6343374287357233,
+        "tmax_mae": 0.3533558105268786,
+        "tmin_mae": 0.2398045514860461,
+        "rh_mae": 0.44290747757880916,
+        "wind_vector_rmse": 0.9814229722945921,
+        "brier_15": {
+          "brier_score": 0.0464942567050457,
+          "brier_skill_score_train": 0.368284555637966,
+          "brier_skill_score_sample": 0.6083376761935682,
+          "reliability": 0.006444359488027325,
+          "resolution": 0.07866016696578129,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.02655426599085331,
+          "brier_skill_score_train": -0.3548094893292506,
+          "brier_skill_score_sample": 0.6196929756122339,
+          "reliability": 0.0028276713409506413,
+          "resolution": 0.04609663930789858,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 0.0,
+          "mean_pairwise_correlation": 1.0,
+          "ensemble_variance": 0.0
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.3100563398291988,
+          "precip_mass_shift_pct": 8.423301073645277,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "DET_S08": {
+      "condition_id": "DET_S08",
+      "description": "Phase 1: Deterministic DDIM-8 Reference",
+      "ensemble_size_k": 1,
+      "denoising_steps_s": 8,
+      "eta": 0.0,
+      "total_nfe": 8,
+      "nominal_budget": 8,
+      "is_fair_crps": false,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 202.11341083606598,
+      "throughput_cubes_sec": 4.94771720423391,
+      "metrics": {
+        "crps": 0.8717170944136958,
+        "cmvs": 0.5964582639488081,
+        "precip_wet_mae": 7.484756069798624,
+        "precip_csi15": 0.609745589312268,
+        "precip_csi30": 0.5590472812840955,
+        "tmax_mae": 0.36046317556212026,
+        "tmin_mae": 0.24577220313010678,
+        "rh_mae": 0.4384141199050411,
+        "wind_vector_rmse": 0.967333742687779,
+        "brier_15": {
+          "brier_score": 0.048758234828710556,
+          "brier_skill_score_train": 0.3375239833055631,
+          "brier_skill_score_sample": 0.5892661822973064,
+          "reliability": 0.007050331396818884,
+          "resolution": 0.0770021574583049,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.02773968130350113,
+          "brier_skill_score_train": -0.41528986242352706,
+          "brier_skill_score_sample": 0.6027155991570883,
+          "reliability": 0.0031119472409292426,
+          "resolution": 0.04519549889081854,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 0.0,
+          "mean_pairwise_correlation": 1.0,
+          "ensemble_variance": 0.0
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.29473826193040414,
+          "precip_mass_shift_pct": 7.255659494755564,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "DET_S16": {
+      "condition_id": "DET_S16",
+      "description": "Phase 1: Deterministic DDIM-16 Reference",
+      "ensemble_size_k": 1,
+      "denoising_steps_s": 16,
+      "eta": 0.0,
+      "total_nfe": 16,
+      "nominal_budget": 16,
+      "is_fair_crps": false,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 408.4415113688519,
+      "throughput_cubes_sec": 2.448330965793848,
+      "metrics": {
+        "crps": 0.8820760600989864,
+        "cmvs": 0.605751256361734,
+        "precip_wet_mae": 7.6853387971078195,
+        "precip_csi15": 0.6008799272676898,
+        "precip_csi30": 0.5527444472173351,
+        "tmax_mae": 0.362732611356243,
+        "tmin_mae": 0.24932874546897027,
+        "rh_mae": 0.43875581410623365,
+        "wind_vector_rmse": 0.9569100852935545,
+        "brier_15": {
+          "brier_score": 0.050541751086711884,
+          "brier_skill_score_train": 0.31329142545228417,
+          "brier_skill_score_sample": 0.5742420444433176,
+          "reliability": 0.007541905589254747,
+          "resolution": 0.0757102115363668,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.02854563109576702,
+          "brier_skill_score_train": -0.4564097497840318,
+          "brier_skill_score_sample": 0.5911728825401743,
+          "reliability": 0.003322648733657724,
+          "resolution": 0.04460025472738596,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 0.0,
+          "mean_pairwise_correlation": 1.0,
+          "ensemble_variance": 0.0
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.27851975973575344,
+          "precip_mass_shift_pct": 6.136993242472906,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "DET_S32": {
+      "condition_id": "DET_S32",
+      "description": "Phase 1: Deterministic DDIM-32 Baseline",
+      "ensemble_size_k": 1,
+      "denoising_steps_s": 32,
+      "eta": 0.0,
+      "total_nfe": 32,
+      "nominal_budget": 32,
+      "is_fair_crps": false,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 831.0724839098358,
+      "throughput_cubes_sec": 1.2032644797664742,
+      "metrics": {
+        "crps": 0.887137426003333,
+        "cmvs": 0.611801112205372,
+        "precip_wet_mae": 7.812007827143515,
+        "precip_csi15": 0.595227584663442,
+        "precip_csi30": 0.5490142189900928,
+        "tmax_mae": 0.36432565316077203,
+        "tmin_mae": 0.2515328026586963,
+        "rh_mae": 0.4426755972446934,
+        "wind_vector_rmse": 0.9500230877630172,
+        "brier_15": {
+          "brier_score": 0.05171380937099457,
+          "brier_skill_score_train": 0.2973667205027912,
+          "brier_skill_score_sample": 0.564368758928272,
+          "reliability": 0.00787317952622682,
+          "resolution": 0.07486943265888836,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.028986571356654167,
+          "brier_skill_score_train": -0.47890670187011053,
+          "brier_skill_score_sample": 0.5848577888144235,
+          "reliability": 0.003444984716907901,
+          "resolution": 0.04428165153368885,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 0.0,
+          "mean_pairwise_correlation": 1.0,
+          "ensemble_variance": 0.0
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.2806638782062838,
+          "precip_mass_shift_pct": 5.727461924146267,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "DET_S64": {
+      "condition_id": "DET_S64",
+      "description": "Phase 1: Deterministic DDIM-64 Saturation Reference",
+      "ensemble_size_k": 1,
+      "denoising_steps_s": 64,
+      "eta": 0.0,
+      "total_nfe": 64,
+      "nominal_budget": 64,
+      "is_fair_crps": false,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 1653.910857860656,
+      "throughput_cubes_sec": 0.6046275077324943,
+      "metrics": {
+        "crps": 0.8906802035147144,
+        "cmvs": 0.6152208547222253,
+        "precip_wet_mae": 7.876401009098176,
+        "precip_csi15": 0.5923407654874246,
+        "precip_csi30": 0.547234690673761,
+        "tmax_mae": 0.3654988105258634,
+        "tmin_mae": 0.25291057123291877,
+        "rh_mae": 0.44251713829655803,
+        "wind_vector_rmse": 0.9490347793025355,
+        "brier_15": {
+          "brier_score": 0.05230880528688431,
+          "brier_skill_score_train": 0.2892825368629849,
+          "brier_skill_score_sample": 0.5593565810898118,
+          "reliability": 0.008046579311649107,
+          "resolution": 0.07444783140522063,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.02921692095696926,
+          "brier_skill_score_train": -0.4906592324984318,
+          "brier_skill_score_sample": 0.581558749364607,
+          "reliability": 0.0035115476940310347,
+          "resolution": 0.044117861533001825,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 0.0,
+          "mean_pairwise_correlation": 1.0,
+          "ensemble_variance": 0.0
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.27840887514814255,
+          "precip_mass_shift_pct": 5.503792305835026,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "ENS_K02_S04_ETA0": {
+      "condition_id": "ENS_K02_S04_ETA0",
+      "description": "Phase 2A: Ensemble K=2, S=4, eta=0.0",
+      "ensemble_size_k": 2,
+      "denoising_steps_s": 4,
+      "eta": 0.0,
+      "total_nfe": 8,
+      "nominal_budget": 8,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 218.51966085245905,
+      "throughput_cubes_sec": 4.5762472635136655,
+      "metrics": {
+        "crps": 0.6044873994204306,
+        "cmvs": 0.5130618665286446,
+        "precip_wet_mae": 6.833895179533189,
+        "precip_csi15": 0.636809250662531,
+        "precip_csi30": 0.6816378742026726,
+        "tmax_mae": 0.3280910642877702,
+        "tmin_mae": 0.2141761400045887,
+        "rh_mae": 0.40326909240215053,
+        "wind_vector_rmse": 0.9171850623623017,
+        "brier_15": {
+          "brier_score": 0.039113957434892654,
+          "brier_skill_score_train": 0.4685603609389585,
+          "brier_skill_score_sample": 0.6705084767909968,
+          "reliability": 0.004007466425890487,
+          "resolution": 0.08360356691392408,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.022157402709126472,
+          "brier_skill_score_train": -0.13047973005747315,
+          "brier_skill_score_sample": 0.6826643261247783,
+          "reliability": 0.0014333259051181272,
+          "resolution": 0.04909916010073523,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.7521789285444445,
+          "mean_pairwise_correlation": 0.997046459105707,
+          "ensemble_variance": 1.8348083654719014
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.31158373865389055,
+          "precip_mass_shift_pct": 8.70258781333795,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "ENS_K04_S04_ETA0": {
+      "condition_id": "ENS_K04_S04_ETA0",
+      "description": "Phase 2A: Ensemble K=4, S=4, eta=0.0",
+      "ensemble_size_k": 4,
+      "denoising_steps_s": 4,
+      "eta": 0.0,
+      "total_nfe": 16,
+      "nominal_budget": 16,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 428.09684713934433,
+      "throughput_cubes_sec": 2.335920029970468,
+      "metrics": {
+        "crps": 0.6043447897799553,
+        "cmvs": 0.4831862629352408,
+        "precip_wet_mae": 6.6294148199019896,
+        "precip_csi15": 0.6446534717189291,
+        "precip_csi30": 0.7212372947019392,
+        "tmax_mae": 0.3134915030771686,
+        "tmin_mae": 0.19897578512468644,
+        "rh_mae": 0.38205021523660226,
+        "wind_vector_rmse": 0.8810947210557999,
+        "brier_15": {
+          "brier_score": 0.03543394058942795,
+          "brier_skill_score_train": 0.518560589817555,
+          "brier_skill_score_sample": 0.7015085196239237,
+          "reliability": 0.0033048083597025033,
+          "resolution": 0.08658092667199103,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.01994440145790577,
+          "brier_skill_score_train": -0.017571502954375928,
+          "brier_skill_score_sample": 0.7143586655995748,
+          "reliability": 0.0010158858070302547,
+          "resolution": 0.05089471630351645,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.7544490318464978,
+          "mean_pairwise_correlation": 0.997039693978525,
+          "ensemble_variance": 1.839606802309713
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.3118022718737202,
+          "precip_mass_shift_pct": 8.691980173506451,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "ENS_K08_S04_ETA0": {
+      "condition_id": "ENS_K08_S04_ETA0",
+      "description": "Phase 2A: Ensemble K=8, S=4, eta=0.0",
+      "ensemble_size_k": 8,
+      "denoising_steps_s": 4,
+      "eta": 0.0,
+      "total_nfe": 32,
+      "nominal_budget": 32,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 855.4075988934428,
+      "throughput_cubes_sec": 1.1690333371992514,
+      "metrics": {
+        "crps": 0.604625915567721,
+        "cmvs": 0.4728310315298502,
+        "precip_wet_mae": 6.524568973049041,
+        "precip_csi15": 0.6494584827107331,
+        "precip_csi30": 0.7253688655046019,
+        "tmax_mae": 0.305262852099634,
+        "tmin_mae": 0.18996330639047007,
+        "rh_mae": 0.37067569888407187,
+        "wind_vector_rmse": 0.8617646876842745,
+        "brier_15": {
+          "brier_score": 0.033652931451797485,
+          "brier_skill_score_train": 0.5427590835353602,
+          "brier_skill_score_sample": 0.7165115377814145,
+          "reliability": 0.003186902662261704,
+          "resolution": 0.08824403313931903,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.018889695405960083,
+          "brier_skill_score_train": 0.03624003030815903,
+          "brier_skill_score_sample": 0.7294640396422012,
+          "reliability": 0.0009515333514218982,
+          "resolution": 0.051885073285278645,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.7532574053390233,
+          "mean_pairwise_correlation": 0.9970443318104415,
+          "ensemble_variance": 1.8362320301032835
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.31174669198451505,
+          "precip_mass_shift_pct": 8.69223929416304,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "ENS_K16_S04_ETA0": {
+      "condition_id": "ENS_K16_S04_ETA0",
+      "description": "Phase 2A: Ensemble K=16, S=4, eta=0.0",
+      "ensemble_size_k": 16,
+      "denoising_steps_s": 4,
+      "eta": 0.0,
+      "total_nfe": 64,
+      "nominal_budget": 64,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 1710.6883437786882,
+      "throughput_cubes_sec": 0.5845600127204527,
+      "metrics": {
+        "crps": 0.6046086537741846,
+        "cmvs": 0.46605652117919816,
+        "precip_wet_mae": 6.469629560747454,
+        "precip_csi15": 0.6502055009008381,
+        "precip_csi30": 0.7295903748832631,
+        "tmax_mae": 0.30058296169004134,
+        "tmin_mae": 0.18492382067826488,
+        "rh_mae": 0.36463454846412907,
+        "wind_vector_rmse": 0.8512545175129368,
+        "brier_15": {
+          "brier_score": 0.03275655210018158,
+          "brier_skill_score_train": 0.5549381508127502,
+          "brier_skill_score_sample": 0.7240625353614638,
+          "reliability": 0.0029649452451296103,
+          "resolution": 0.08854049279249146,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.01834181696176529,
+          "brier_skill_score_train": 0.0641930121548322,
+          "brier_skill_score_sample": 0.7373106892505803,
+          "reliability": 0.0008438742120227567,
+          "resolution": 0.05206912513476172,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.754306679026734,
+          "mean_pairwise_correlation": 0.9970400443961545,
+          "ensemble_variance": 1.838773951655434
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.31213860093585905,
+          "precip_mass_shift_pct": 8.68985717752976,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "ENS_K04_S04_ETA025": {
+      "condition_id": "ENS_K04_S04_ETA025",
+      "description": "Phase 2B: Ensemble K=4, S=4, eta=0.25",
+      "ensemble_size_k": 4,
+      "denoising_steps_s": 4,
+      "eta": 0.25,
+      "total_nfe": 16,
+      "nominal_budget": 16,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 429.73868500000026,
+      "throughput_cubes_sec": 2.3269955321802116,
+      "metrics": {
+        "crps": 0.6037674707270437,
+        "cmvs": 0.48151446765623435,
+        "precip_wet_mae": 6.6224162770855814,
+        "precip_csi15": 0.6451582210279906,
+        "precip_csi30": 0.7229576251929954,
+        "tmax_mae": 0.3130676090236633,
+        "tmin_mae": 0.1983860430698241,
+        "rh_mae": 0.3811939498109202,
+        "wind_vector_rmse": 0.8759890669776548,
+        "brier_15": {
+          "brier_score": 0.03539586067199707,
+          "brier_skill_score_train": 0.5190779800000398,
+          "brier_skill_score_sample": 0.7018293005118934,
+          "reliability": 0.0033231282230500757,
+          "resolution": 0.08663732747727572,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.019922584295272827,
+          "brier_skill_score_train": -0.016458382411878913,
+          "brier_skill_score_sample": 0.7146711283957363,
+          "reliability": 0.0010173680323182918,
+          "resolution": 0.050918020258335105,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.737864367423519,
+          "mean_pairwise_correlation": 0.9970880266158811,
+          "ensemble_variance": 1.8100578727260712
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.3117814775436155,
+          "precip_mass_shift_pct": 8.407334463464466,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "ENS_K04_S04_ETA050": {
+      "condition_id": "ENS_K04_S04_ETA050",
+      "description": "Phase 2B: Ensemble K=4, S=4, eta=0.50",
+      "ensemble_size_k": 4,
+      "denoising_steps_s": 4,
+      "eta": 0.5,
+      "total_nfe": 16,
+      "nominal_budget": 16,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 428.64949388524565,
+      "throughput_cubes_sec": 2.332908388473944,
+      "metrics": {
+        "crps": 0.6025767292707197,
+        "cmvs": 0.4788586623719435,
+        "precip_wet_mae": 6.6034421536230274,
+        "precip_csi15": 0.6470773516457794,
+        "precip_csi30": 0.7243211091701977,
+        "tmax_mae": 0.31200658866474706,
+        "tmin_mae": 0.19704112458613612,
+        "rh_mae": 0.37970983837881395,
+        "wind_vector_rmse": 0.8622363248179036,
+        "brier_15": {
+          "brier_score": 0.03521045297384262,
+          "brier_skill_score_train": 0.52159710633366,
+          "brier_skill_score_sample": 0.703391153847273,
+          "reliability": 0.0033271362747926744,
+          "resolution": 0.08682674405030827,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.019848918542265892,
+          "brier_skill_score_train": -0.012699925625810904,
+          "brier_skill_score_sample": 0.7157261605075259,
+          "reliability": 0.0010339860961330431,
+          "resolution": 0.05100830537053724,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.6880909289403627,
+          "mean_pairwise_correlation": 0.9972325085952719,
+          "ensemble_variance": 1.7215407178286584
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.31223907345725643,
+          "precip_mass_shift_pct": 7.699672953734343,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "ENS_K04_S04_ETA100": {
+      "condition_id": "ENS_K04_S04_ETA100",
+      "description": "Phase 2B: Ensemble K=4, S=4, eta=1.00",
+      "ensemble_size_k": 4,
+      "denoising_steps_s": 4,
+      "eta": 1.0,
+      "total_nfe": 16,
+      "nominal_budget": 16,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 429.0975679672124,
+      "throughput_cubes_sec": 2.3304723089840738,
+      "metrics": {
+        "crps": 0.6026550668381876,
+        "cmvs": 0.4718378772850683,
+        "precip_wet_mae": 6.534228682518005,
+        "precip_csi15": 0.6556204010306719,
+        "precip_csi30": 0.7292528716463693,
+        "tmax_mae": 0.3118636560055517,
+        "tmin_mae": 0.19557031099834749,
+        "rh_mae": 0.3841429804601977,
+        "wind_vector_rmse": 0.8237809596523162,
+        "brier_15": {
+          "brier_score": 0.03470071777701378,
+          "brier_skill_score_train": 0.5285228562905737,
+          "brier_skill_score_sample": 0.7076851050976917,
+          "reliability": 0.003404720219829022,
+          "resolution": 0.08741406134295734,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.01970466412603855,
+          "brier_skill_score_train": -0.0053400064305384465,
+          "brier_skill_score_sample": 0.7177921550188828,
+          "reliability": 0.0011362690395099787,
+          "resolution": 0.05125484331416441,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.46221013110812,
+          "mean_pairwise_correlation": 0.9978834240026371,
+          "ensemble_variance": 1.3192415743345214
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.31657077588381305,
+          "precip_mass_shift_pct": 6.556407723592826,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B8_K1_S8": {
+      "condition_id": "B8_K1_S8",
+      "description": "Phase 3 Budget 8: K=1, S=8 (8 NFE)",
+      "ensemble_size_k": 1,
+      "denoising_steps_s": 8,
+      "eta": 0.0,
+      "total_nfe": 8,
+      "nominal_budget": 8,
+      "is_fair_crps": false,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 215.40765679508166,
+      "throughput_cubes_sec": 4.642360512520243,
+      "metrics": {
+        "crps": 0.8717170944136958,
+        "cmvs": 0.5964582639488081,
+        "precip_wet_mae": 7.484756069798624,
+        "precip_csi15": 0.609745589312268,
+        "precip_csi30": 0.5590472812840955,
+        "tmax_mae": 0.36046317556212026,
+        "tmin_mae": 0.24577220313010678,
+        "rh_mae": 0.4384141199050411,
+        "wind_vector_rmse": 0.967333742687779,
+        "brier_15": {
+          "brier_score": 0.048758234828710556,
+          "brier_skill_score_train": 0.3375239833055631,
+          "brier_skill_score_sample": 0.5892661822973064,
+          "reliability": 0.007050331396818884,
+          "resolution": 0.0770021574583049,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.02773968130350113,
+          "brier_skill_score_train": -0.41528986242352706,
+          "brier_skill_score_sample": 0.6027155991570883,
+          "reliability": 0.0031119472409292426,
+          "resolution": 0.04519549889081854,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 0.0,
+          "mean_pairwise_correlation": 1.0,
+          "ensemble_variance": 0.0
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.29473826193040414,
+          "precip_mass_shift_pct": 7.255659494755564,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
       }
     },
     "B8_K2_S4": {
@@ -78,45 +858,45 @@
       "total_nfe": 8,
       "nominal_budget": 8,
       "is_fair_crps": true,
-      "num_cubes_evaluated": 1,
-      "latency_ms_per_cube": 8552.136000012979,
-      "throughput_cubes_sec": 0.11692985237822251,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 218.28945457377066,
+      "throughput_cubes_sec": 4.581073336559422,
       "metrics": {
-        "crps": 0.3539504408836365,
-        "cmvs": 0.2746995386665689,
-        "precip_wet_mae": 4.473517894744873,
-        "precip_csi15": 0.7917207090358841,
-        "precip_csi30": 0.7581582476531068,
-        "tmax_mae": 0.14601679146289825,
-        "tmin_mae": 0.12606197595596313,
-        "rh_mae": 0.27391907572746277,
-        "wind_vector_rmse": 0.4003545939922333,
+        "crps": 0.6044873994204306,
+        "cmvs": 0.5130618665286446,
+        "precip_wet_mae": 6.833895179533189,
+        "precip_csi15": 0.636809250662531,
+        "precip_csi30": 0.6816378742026726,
+        "tmax_mae": 0.3280910642877702,
+        "tmin_mae": 0.2141761400045887,
+        "rh_mae": 0.40326909240215053,
+        "wind_vector_rmse": 0.9171850623623017,
         "brier_15": {
-          "brier_score": 0.03693080320954323,
-          "brier_skill_score_train": 0.4982227824790322,
-          "brier_skill_score_sample": 0.7474864231817858,
-          "reliability": 0.002391476390108939,
-          "resolution": 0.11171341365251058,
-          "uncertainty": 0.14625274282233902,
-          "sample_event_rate": 0.17790178954601288
+          "brier_score": 0.039113957434892654,
+          "brier_skill_score_train": 0.4685603609389585,
+          "brier_skill_score_sample": 0.6705084767909968,
+          "reliability": 0.004007466425890487,
+          "resolution": 0.08360356691392408,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
         },
         "brier_30": {
-          "brier_score": 0.021166294813156128,
-          "brier_skill_score_train": -0.07991300067123097,
-          "brier_skill_score_sample": 0.730163950743262,
-          "reliability": 0.001423241022692264,
-          "resolution": 0.05869826182119877,
-          "uncertainty": 0.07844131601933313,
-          "sample_event_rate": 0.0858035683631897
+          "brier_score": 0.022157402709126472,
+          "brier_skill_score_train": -0.13047973005747315,
+          "brier_skill_score_sample": 0.6826643261247783,
+          "reliability": 0.0014333259051181272,
+          "resolution": 0.04909916010073523,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
         },
         "diversity": {
-          "mean_pairwise_rmse": 1.8279386758804321,
-          "mean_pairwise_correlation": 0.9973198175430298,
-          "ensemble_variance": 1.6706799268722534
+          "mean_pairwise_rmse": 1.7521789285444445,
+          "mean_pairwise_correlation": 0.997046459105707,
+          "ensemble_variance": 1.8348083654719014
         },
         "repair_diagnostics": {
-          "precip_clipped_fraction": 0.21437500417232513,
-          "precip_mass_shift_pct": 1.2833760086606119,
+          "precip_clipped_fraction": 0.31158373865389055,
+          "precip_mass_shift_pct": 8.70258781333795,
           "tmin_gt_tmax_violation_rate": 0.0
         }
       },
@@ -126,7 +906,787 @@
         "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
         "chunk_size": 4,
         "base_seed": 20260927,
-        "device": "cpu"
+        "device": "cuda"
+      }
+    },
+    "B16_K1_S16": {
+      "condition_id": "B16_K1_S16",
+      "description": "Phase 3 Budget 16: K=1, S=16 (16 NFE)",
+      "ensemble_size_k": 1,
+      "denoising_steps_s": 16,
+      "eta": 0.0,
+      "total_nfe": 16,
+      "nominal_budget": 16,
+      "is_fair_crps": false,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 420.2881007786886,
+      "throughput_cubes_sec": 2.379320276132611,
+      "metrics": {
+        "crps": 0.8820760600989864,
+        "cmvs": 0.605751256361734,
+        "precip_wet_mae": 7.6853387971078195,
+        "precip_csi15": 0.6008799272676898,
+        "precip_csi30": 0.5527444472173351,
+        "tmax_mae": 0.362732611356243,
+        "tmin_mae": 0.24932874546897027,
+        "rh_mae": 0.43875581410623365,
+        "wind_vector_rmse": 0.9569100852935545,
+        "brier_15": {
+          "brier_score": 0.050541751086711884,
+          "brier_skill_score_train": 0.31329142545228417,
+          "brier_skill_score_sample": 0.5742420444433176,
+          "reliability": 0.007541905589254747,
+          "resolution": 0.0757102115363668,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.02854563109576702,
+          "brier_skill_score_train": -0.4564097497840318,
+          "brier_skill_score_sample": 0.5911728825401743,
+          "reliability": 0.003322648733657724,
+          "resolution": 0.04460025472738596,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 0.0,
+          "mean_pairwise_correlation": 1.0,
+          "ensemble_variance": 0.0
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.27851975973575344,
+          "precip_mass_shift_pct": 6.136993242472906,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B16_K2_S8": {
+      "condition_id": "B16_K2_S8",
+      "description": "Phase 3 Budget 16: K=2, S=8 (16 NFE)",
+      "ensemble_size_k": 2,
+      "denoising_steps_s": 8,
+      "eta": 0.0,
+      "total_nfe": 16,
+      "nominal_budget": 16,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 423.9623349508199,
+      "throughput_cubes_sec": 2.3587000956488295,
+      "metrics": {
+        "crps": 0.5959209917533782,
+        "cmvs": 0.5215384687400617,
+        "precip_wet_mae": 6.994147066147097,
+        "precip_csi15": 0.6294098241570254,
+        "precip_csi30": 0.6749229956413791,
+        "tmax_mae": 0.33188721633726553,
+        "tmin_mae": 0.21711337662512256,
+        "rh_mae": 0.39585688902485755,
+        "wind_vector_rmse": 0.9082191711471926,
+        "brier_15": {
+          "brier_score": 0.039969492703676224,
+          "brier_skill_score_train": 0.4569362404391817,
+          "brier_skill_score_sample": 0.6633015451134812,
+          "reliability": 0.004058849912305187,
+          "resolution": 0.08279941706549654,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.02253892458975315,
+          "brier_skill_score_train": -0.14994513213026295,
+          "brier_skill_score_sample": 0.6772002153408487,
+          "reliability": 0.0014246483549058197,
+          "resolution": 0.048708960674302096,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.9888601245418671,
+          "mean_pairwise_correlation": 0.9962066162017084,
+          "ensemble_variance": 2.356158761487853
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.2966966946278849,
+          "precip_mass_shift_pct": 7.553629187076391,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B16_K4_S4": {
+      "condition_id": "B16_K4_S4",
+      "description": "Phase 3 Budget 16: K=4, S=4 (16 NFE)",
+      "ensemble_size_k": 4,
+      "denoising_steps_s": 4,
+      "eta": 0.0,
+      "total_nfe": 16,
+      "nominal_budget": 16,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 428.8979127131153,
+      "throughput_cubes_sec": 2.3315571616430035,
+      "metrics": {
+        "crps": 0.6043447897799553,
+        "cmvs": 0.4831862629352408,
+        "precip_wet_mae": 6.6294148199019896,
+        "precip_csi15": 0.6446534717189291,
+        "precip_csi30": 0.7212372947019392,
+        "tmax_mae": 0.3134915030771686,
+        "tmin_mae": 0.19897578512468644,
+        "rh_mae": 0.38205021523660226,
+        "wind_vector_rmse": 0.8810947210557999,
+        "brier_15": {
+          "brier_score": 0.03543394058942795,
+          "brier_skill_score_train": 0.518560589817555,
+          "brier_skill_score_sample": 0.7015085196239237,
+          "reliability": 0.0033048083597025033,
+          "resolution": 0.08658092667199103,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.01994440145790577,
+          "brier_skill_score_train": -0.017571502954375928,
+          "brier_skill_score_sample": 0.7143586655995748,
+          "reliability": 0.0010158858070302547,
+          "resolution": 0.05089471630351645,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.7544490318464978,
+          "mean_pairwise_correlation": 0.997039693978525,
+          "ensemble_variance": 1.839606802309713
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.3118022718737202,
+          "precip_mass_shift_pct": 8.691980173506451,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B32_K1_S32": {
+      "condition_id": "B32_K1_S32",
+      "description": "Phase 3 Budget 32: K=1, S=32 (32 NFE, Deep Deterministic)",
+      "ensemble_size_k": 1,
+      "denoising_steps_s": 32,
+      "eta": 0.0,
+      "total_nfe": 32,
+      "nominal_budget": 32,
+      "is_fair_crps": false,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 831.5823169918035,
+      "throughput_cubes_sec": 1.2025267728364364,
+      "metrics": {
+        "crps": 0.887137426003333,
+        "cmvs": 0.611801112205372,
+        "precip_wet_mae": 7.812007827143515,
+        "precip_csi15": 0.595227584663442,
+        "precip_csi30": 0.5490142189900928,
+        "tmax_mae": 0.36432565316077203,
+        "tmin_mae": 0.2515328026586963,
+        "rh_mae": 0.4426755972446934,
+        "wind_vector_rmse": 0.9500230877630172,
+        "brier_15": {
+          "brier_score": 0.05171380937099457,
+          "brier_skill_score_train": 0.2973667205027912,
+          "brier_skill_score_sample": 0.564368758928272,
+          "reliability": 0.00787317952622682,
+          "resolution": 0.07486943265888836,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.028986571356654167,
+          "brier_skill_score_train": -0.47890670187011053,
+          "brier_skill_score_sample": 0.5848577888144235,
+          "reliability": 0.003444984716907901,
+          "resolution": 0.04428165153368885,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 0.0,
+          "mean_pairwise_correlation": 1.0,
+          "ensemble_variance": 0.0
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.2806638782062838,
+          "precip_mass_shift_pct": 5.727461924146267,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B32_K2_S16": {
+      "condition_id": "B32_K2_S16",
+      "description": "Phase 3 Budget 32: K=2, S=16 (32 NFE)",
+      "ensemble_size_k": 2,
+      "denoising_steps_s": 16,
+      "eta": 0.0,
+      "total_nfe": 32,
+      "nominal_budget": 32,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 834.2641949754103,
+      "throughput_cubes_sec": 1.19866105488259,
+      "metrics": {
+        "crps": 0.5927375651174976,
+        "cmvs": 0.5266560414449283,
+        "precip_wet_mae": 7.109696734336115,
+        "precip_csi15": 0.623597324139555,
+        "precip_csi30": 0.6708723998738166,
+        "tmax_mae": 0.33253641234290215,
+        "tmin_mae": 0.21894829431849142,
+        "rh_mae": 0.3948634242819202,
+        "wind_vector_rmse": 0.9029098768388072,
+        "brier_15": {
+          "brier_score": 0.04073386266827583,
+          "brier_skill_score_train": 0.4465507789636436,
+          "brier_skill_score_sample": 0.6568625795766811,
+          "reliability": 0.0041316828189571645,
+          "resolution": 0.08210787264568967,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.022878779098391533,
+          "brier_skill_score_train": -0.16728464787711905,
+          "brier_skill_score_sample": 0.6723328596794439,
+          "reliability": 0.0014470001552160951,
+          "resolution": 0.048391457575748635,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 2.127102860519963,
+          "mean_pairwise_correlation": 0.9956773000378762,
+          "ensemble_variance": 2.68426960370233
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.2809031153878858,
+          "precip_mass_shift_pct": 6.440139863888493,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B32_K4_S8": {
+      "condition_id": "B32_K4_S8",
+      "description": "Phase 3 Budget 32: K=4, S=8 (32 NFE)",
+      "ensemble_size_k": 4,
+      "denoising_steps_s": 8,
+      "eta": 0.0,
+      "total_nfe": 32,
+      "nominal_budget": 32,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 839.4500202704921,
+      "throughput_cubes_sec": 1.191256150875754,
+      "metrics": {
+        "crps": 0.5957912144161039,
+        "cmvs": 0.48782487008038483,
+        "precip_wet_mae": 6.719818180607211,
+        "precip_csi15": 0.6385569053123202,
+        "precip_csi30": 0.7173414426030759,
+        "tmax_mae": 0.31521363964965265,
+        "tmin_mae": 0.19992280366920656,
+        "rh_mae": 0.37258431507695106,
+        "wind_vector_rmse": 0.8754635674338187,
+        "brier_15": {
+          "brier_score": 0.0355391688644886,
+          "brier_skill_score_train": 0.5171308578194483,
+          "brier_skill_score_sample": 0.7006220886180072,
+          "reliability": 0.003098291264906415,
+          "resolution": 0.08626918374272696,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.019945912063121796,
+          "brier_skill_score_train": -0.017648574649071325,
+          "brier_skill_score_sample": 0.7143370308921825,
+          "reliability": 0.0008824918292121835,
+          "resolution": 0.050759815828745405,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.9910686556049573,
+          "mean_pairwise_correlation": 0.9961991713893029,
+          "ensemble_variance": 2.3614411803503192
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.29705640505398473,
+          "precip_mass_shift_pct": 7.542359458077874,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B32_K8_S4": {
+      "condition_id": "B32_K8_S4",
+      "description": "Phase 3 Budget 32: K=8, S=4, eta=0 (32 NFE, Broad Ensemble)",
+      "ensemble_size_k": 8,
+      "denoising_steps_s": 4,
+      "eta": 0.0,
+      "total_nfe": 32,
+      "nominal_budget": 32,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 855.5337892131138,
+      "throughput_cubes_sec": 1.1688609060312634,
+      "metrics": {
+        "crps": 0.604625915567721,
+        "cmvs": 0.4728310315298502,
+        "precip_wet_mae": 6.524568973049041,
+        "precip_csi15": 0.6494584827107331,
+        "precip_csi30": 0.7253688655046019,
+        "tmax_mae": 0.305262852099634,
+        "tmin_mae": 0.18996330639047007,
+        "rh_mae": 0.37067569888407187,
+        "wind_vector_rmse": 0.8617646876842745,
+        "brier_15": {
+          "brier_score": 0.033652931451797485,
+          "brier_skill_score_train": 0.5427590835353602,
+          "brier_skill_score_sample": 0.7165115377814145,
+          "reliability": 0.003186902662261704,
+          "resolution": 0.08824403313931903,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.018889695405960083,
+          "brier_skill_score_train": 0.03624003030815903,
+          "brier_skill_score_sample": 0.7294640396422012,
+          "reliability": 0.0009515333514218982,
+          "resolution": 0.051885073285278645,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.7532574053390233,
+          "mean_pairwise_correlation": 0.9970443318104415,
+          "ensemble_variance": 1.8362320301032835
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.31174669198451505,
+          "precip_mass_shift_pct": 8.69223929416304,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B32_K8_S4_ETA05": {
+      "condition_id": "B32_K8_S4_ETA05",
+      "description": "Phase 3 Budget 32: K=8, S=4, eta=0.5 (32 NFE, Stochastic)",
+      "ensemble_size_k": 8,
+      "denoising_steps_s": 4,
+      "eta": 0.5,
+      "total_nfe": 32,
+      "nominal_budget": 32,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 854.9538504754108,
+      "throughput_cubes_sec": 1.1696537765680965,
+      "metrics": {
+        "crps": 0.6029149072785531,
+        "cmvs": 0.4699737898443311,
+        "precip_wet_mae": 6.509236024272058,
+        "precip_csi15": 0.6516052862021947,
+        "precip_csi30": 0.7279160396747577,
+        "tmax_mae": 0.30481419135485927,
+        "tmin_mae": 0.1892284758148655,
+        "rh_mae": 0.3702858162503089,
+        "wind_vector_rmse": 0.8469118701834832,
+        "brier_15": {
+          "brier_score": 0.033549655228853226,
+          "brier_skill_score_train": 0.5441622930862333,
+          "brier_skill_score_sample": 0.7173815249225985,
+          "reliability": 0.003278547155468218,
+          "resolution": 0.08843894396188842,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.01884233020246029,
+          "brier_skill_score_train": 0.03865662232345457,
+          "brier_skill_score_sample": 0.7301423984267646,
+          "reliability": 0.0009828962951361957,
+          "resolution": 0.051963803243928436,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.686511772809215,
+          "mean_pairwise_correlation": 0.9972379259799481,
+          "ensemble_variance": 1.7177055814573843
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.31260077895656707,
+          "precip_mass_shift_pct": 7.762554721685142,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B64_K1_S64": {
+      "condition_id": "B64_K1_S64",
+      "description": "Phase 3 Budget 64: K=1, S=64 (64 NFE)",
+      "ensemble_size_k": 1,
+      "denoising_steps_s": 64,
+      "eta": 0.0,
+      "total_nfe": 64,
+      "nominal_budget": 64,
+      "is_fair_crps": false,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 1650.3017094016368,
+      "throughput_cubes_sec": 0.6059498056040783,
+      "metrics": {
+        "crps": 0.8906802035147144,
+        "cmvs": 0.6152208547222253,
+        "precip_wet_mae": 7.876401009098176,
+        "precip_csi15": 0.5923407654874246,
+        "precip_csi30": 0.547234690673761,
+        "tmax_mae": 0.3654988105258634,
+        "tmin_mae": 0.25291057123291877,
+        "rh_mae": 0.44251713829655803,
+        "wind_vector_rmse": 0.9490347793025355,
+        "brier_15": {
+          "brier_score": 0.05230880528688431,
+          "brier_skill_score_train": 0.2892825368629849,
+          "brier_skill_score_sample": 0.5593565810898118,
+          "reliability": 0.008046579311649107,
+          "resolution": 0.07444783140522063,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.02921692095696926,
+          "brier_skill_score_train": -0.4906592324984318,
+          "brier_skill_score_sample": 0.581558749364607,
+          "reliability": 0.0035115476940310347,
+          "resolution": 0.044117861533001825,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 0.0,
+          "mean_pairwise_correlation": 1.0,
+          "ensemble_variance": 0.0
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.27840887514814255,
+          "precip_mass_shift_pct": 5.503792305835026,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B64_K2_S32": {
+      "condition_id": "B64_K2_S32",
+      "description": "Phase 3 Budget 64: K=2, S=32 (64 NFE)",
+      "ensemble_size_k": 2,
+      "denoising_steps_s": 32,
+      "eta": 0.0,
+      "total_nfe": 64,
+      "nominal_budget": 64,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 1653.35216359836,
+      "throughput_cubes_sec": 0.604831821082568,
+      "metrics": {
+        "crps": 0.5915462268937018,
+        "cmvs": 0.5301420812245298,
+        "precip_wet_mae": 7.184690756182516,
+        "precip_csi15": 0.6196126493885611,
+        "precip_csi30": 0.6685346216265838,
+        "tmax_mae": 0.33329786408332085,
+        "tmin_mae": 0.22020463501253434,
+        "rh_mae": 0.3990452876014094,
+        "wind_vector_rmse": 0.8995728146645331,
+        "brier_15": {
+          "brier_score": 0.041269347071647644,
+          "brier_skill_score_train": 0.4392751756569614,
+          "brier_skill_score_sample": 0.652351719942615,
+          "reliability": 0.004194139526902007,
+          "resolution": 0.08163485286331583,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.023069608956575394,
+          "brier_skill_score_train": -0.1770208651313976,
+          "brier_skill_score_sample": 0.669599817253973,
+          "reliability": 0.0014655563136061164,
+          "resolution": 0.04821918678169038,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 2.1970399022102356,
+          "mean_pairwise_correlation": 0.9954016285557901,
+          "ensemble_variance": 2.8548128556820656
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.2833253484099142,
+          "precip_mass_shift_pct": 6.051916192274212,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B64_K4_S16": {
+      "condition_id": "B64_K4_S16",
+      "description": "Phase 3 Budget 64: K=4, S=16 (64 NFE)",
+      "ensemble_size_k": 4,
+      "denoising_steps_s": 16,
+      "eta": 0.0,
+      "total_nfe": 64,
+      "nominal_budget": 64,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 1660.1817995081988,
+      "throughput_cubes_sec": 0.6023436712149437,
+      "metrics": {
+        "crps": 0.5926186706750624,
+        "cmvs": 0.4906801039220703,
+        "precip_wet_mae": 6.784084473886797,
+        "precip_csi15": 0.6343448241558962,
+        "precip_csi30": 0.7144627993281369,
+        "tmax_mae": 0.31480751619223624,
+        "tmin_mae": 0.20064853348078265,
+        "rh_mae": 0.37073371823756923,
+        "wind_vector_rmse": 0.8734199971921982,
+        "brier_15": {
+          "brier_score": 0.03577597811818123,
+          "brier_skill_score_train": 0.5139133407855812,
+          "brier_skill_score_sample": 0.6986272344322846,
+          "reliability": 0.002980525332161069,
+          "resolution": 0.0859146045560839,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.020019177347421646,
+          "brier_skill_score_train": -0.021386599358247382,
+          "brier_skill_score_sample": 0.7132877342453613,
+          "reliability": 0.0008225489187640431,
+          "resolution": 0.05062660982630697,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 2.129203670768328,
+          "mean_pairwise_correlation": 0.9956699350187858,
+          "ensemble_variance": 2.689564229499909
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.2814819401791019,
+          "precip_mass_shift_pct": 6.431010782198108,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B64_K8_S8": {
+      "condition_id": "B64_K8_S8",
+      "description": "Phase 3 Budget 64: K=8, S=8 (64 NFE)",
+      "ensemble_size_k": 8,
+      "denoising_steps_s": 8,
+      "eta": 0.0,
+      "total_nfe": 64,
+      "nominal_budget": 64,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 1675.53994741803,
+      "throughput_cubes_sec": 0.5968225356494651,
+      "metrics": {
+        "crps": 0.5960646365438739,
+        "cmvs": 0.475144538747363,
+        "precip_wet_mae": 6.5760600528409405,
+        "precip_csi15": 0.6455457492131673,
+        "precip_csi30": 0.723311633656873,
+        "tmax_mae": 0.30583305993387777,
+        "tmin_mae": 0.189725260821081,
+        "rh_mae": 0.35995902265271834,
+        "wind_vector_rmse": 0.8579455316066742,
+        "brier_15": {
+          "brier_score": 0.03339796140789986,
+          "brier_skill_score_train": 0.5462233504361432,
+          "brier_skill_score_sample": 0.7186593763957081,
+          "reliability": 0.002823566588249327,
+          "resolution": 0.08813566609400601,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.018692655488848686,
+          "brier_skill_score_train": 0.04629308730363846,
+          "brier_skill_score_sample": 0.7322860217895542,
+          "reliability": 0.0007348349871622008,
+          "resolution": 0.05186541780452518,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.9897121341066424,
+          "mean_pairwise_correlation": 0.9962046261069962,
+          "ensemble_variance": 2.357465836549959
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.29694625999658336,
+          "precip_mass_shift_pct": 7.5383466010810265,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
+      }
+    },
+    "B64_K16_S4": {
+      "condition_id": "B64_K16_S4",
+      "description": "Phase 3 Budget 64: K=16, S=4 (64 NFE)",
+      "ensemble_size_k": 16,
+      "denoising_steps_s": 4,
+      "eta": 0.0,
+      "total_nfe": 64,
+      "nominal_budget": 64,
+      "is_fair_crps": true,
+      "num_cubes_evaluated": 122,
+      "latency_ms_per_cube": 1713.7086973770515,
+      "throughput_cubes_sec": 0.5835297454757442,
+      "metrics": {
+        "crps": 0.6046086537741846,
+        "cmvs": 0.46605652117919816,
+        "precip_wet_mae": 6.469629560747454,
+        "precip_csi15": 0.6502055009008381,
+        "precip_csi30": 0.7295903748832631,
+        "tmax_mae": 0.30058296169004134,
+        "tmin_mae": 0.18492382067826488,
+        "rh_mae": 0.36463454846412907,
+        "wind_vector_rmse": 0.8512545175129368,
+        "brier_15": {
+          "brier_score": 0.03275655210018158,
+          "brier_skill_score_train": 0.5549381508127502,
+          "brier_skill_score_sample": 0.7240625353614638,
+          "reliability": 0.0029649452451296103,
+          "resolution": 0.08854049279249146,
+          "uncertainty": 0.11871005679888724,
+          "sample_event_rate": 0.1376604586839676
+        },
+        "brier_30": {
+          "brier_score": 0.01834181696176529,
+          "brier_skill_score_train": 0.0641930121548322,
+          "brier_skill_score_sample": 0.7373106892505803,
+          "reliability": 0.0008438742120227567,
+          "resolution": 0.05206912513476172,
+          "uncertainty": 0.0698232330407293,
+          "sample_event_rate": 0.07552766054868698
+        },
+        "diversity": {
+          "mean_pairwise_rmse": 1.754306679026734,
+          "mean_pairwise_correlation": 0.9970400443961545,
+          "ensemble_variance": 1.838773951655434
+        },
+        "repair_diagnostics": {
+          "precip_clipped_fraction": 0.31213860093585905,
+          "precip_mass_shift_pct": 8.68985717752976,
+          "tmin_gt_tmax_violation_rate": 0.0
+        }
+      },
+      "provenance": {
+        "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+        "model_parameters": 15685478,
+        "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+        "chunk_size": 4,
+        "base_seed": 20260927,
+        "device": "cuda"
       }
     }
   }

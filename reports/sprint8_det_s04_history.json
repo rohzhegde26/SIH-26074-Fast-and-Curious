@@ -1,6 +1,6 @@
 {
-  "condition_id": "PHASE0_GATE_DDIM4",
-  "description": "Phase 0 Gate: DDIM-4 Regression on 2022 Validation",
+  "condition_id": "DET_S04",
+  "description": "Phase 1: Deterministic DDIM-4 Reference",
   "ensemble_size_k": 1,
   "denoising_steps_s": 4,
   "eta": 0.0,
@@ -8,8 +8,8 @@
   "nominal_budget": 4,
   "is_fair_crps": false,
   "num_cubes_evaluated": 122,
-  "latency_ms_per_cube": 129.41561345901607,
-  "throughput_cubes_sec": 7.727042922194892,
+  "latency_ms_per_cube": 104.69911368852489,
+  "throughput_cubes_sec": 9.551179229415013,
   "metrics": {
     "crps": 0.8572831721075119,
     "cmvs": 0.558424749821222,

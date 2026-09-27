@@ -1,0 +1,60 @@
+{
+  "condition_id": "CHAMPION_HOLDOUT_B32_K8_S4_ETA05",
+  "description": "Phase 4 Confirmatory: 2023 Holdout Test on Flagship Champion (K=8, S=4, eta=0.5)",
+  "ensemble_size_k": 8,
+  "denoising_steps_s": 4,
+  "eta": 0.5,
+  "total_nfe": 32,
+  "nominal_budget": 32,
+  "is_fair_crps": true,
+  "num_cubes_evaluated": 122,
+  "latency_ms_per_cube": 827.3404589098359,
+  "throughput_cubes_sec": 1.2086922490381684,
+  "metrics": {
+    "crps": 0.681900437801115,
+    "cmvs": 0.696089410320435,
+    "precip_wet_mae": 8.149181858185798,
+    "precip_csi15": 0.5567580008155427,
+    "precip_csi30": 0.48352728606884027,
+    "tmax_mae": 0.3839596567615386,
+    "tmin_mae": 0.3154650099815861,
+    "rh_mae": 0.42254986541886486,
+    "wind_vector_rmse": 1.3581931542965673,
+    "brier_15": {
+      "brier_score": 0.034714944660663605,
+      "brier_skill_score_train": 0.5283295562409835,
+      "brier_skill_score_sample": 0.47916580480711735,
+      "reliability": 0.005785066770775266,
+      "resolution": 0.03772270665774153,
+      "uncertainty": 0.0666525834537563,
+      "sample_event_rate": 0.07180913537740707
+    },
+    "brier_30": {
+      "brier_score": 0.017417017370462418,
+      "brier_skill_score_train": 0.11137666477232555,
+      "brier_skill_score_sample": 0.5199239269918603,
+      "reliability": 0.0018204325620534555,
+      "resolution": 0.02068311840885883,
+      "uncertainty": 0.03627970305066029,
+      "sample_event_rate": 0.0377010740339756
+    },
+    "diversity": {
+      "mean_pairwise_rmse": 1.5230691736469617,
+      "mean_pairwise_correlation": 0.9977776397895154,
+      "ensemble_variance": 1.3726820018022292
+    },
+    "repair_diagnostics": {
+      "precip_clipped_fraction": 0.36960431116242565,
+      "precip_mass_shift_pct": 7.870442807720458,
+      "tmin_gt_tmax_violation_rate": 5.175331382140998e-06
+    }
+  },
+  "provenance": {
+    "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+    "model_parameters": 15685478,
+    "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+    "chunk_size": 4,
+    "base_seed": 20260927,
+    "device": "cuda"
+  }
+}

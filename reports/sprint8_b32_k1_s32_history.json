@@ -1,0 +1,60 @@
+{
+  "condition_id": "B32_K1_S32",
+  "description": "Phase 3 Budget 32: K=1, S=32 (32 NFE, Deep Deterministic)",
+  "ensemble_size_k": 1,
+  "denoising_steps_s": 32,
+  "eta": 0.0,
+  "total_nfe": 32,
+  "nominal_budget": 32,
+  "is_fair_crps": false,
+  "num_cubes_evaluated": 122,
+  "latency_ms_per_cube": 831.5823169918035,
+  "throughput_cubes_sec": 1.2025267728364364,
+  "metrics": {
+    "crps": 0.887137426003333,
+    "cmvs": 0.611801112205372,
+    "precip_wet_mae": 7.812007827143515,
+    "precip_csi15": 0.595227584663442,
+    "precip_csi30": 0.5490142189900928,
+    "tmax_mae": 0.36432565316077203,
+    "tmin_mae": 0.2515328026586963,
+    "rh_mae": 0.4426755972446934,
+    "wind_vector_rmse": 0.9500230877630172,
+    "brier_15": {
+      "brier_score": 0.05171380937099457,
+      "brier_skill_score_train": 0.2973667205027912,
+      "brier_skill_score_sample": 0.564368758928272,
+      "reliability": 0.00787317952622682,
+      "resolution": 0.07486943265888836,
+      "uncertainty": 0.11871005679888724,
+      "sample_event_rate": 0.1376604586839676
+    },
+    "brier_30": {
+      "brier_score": 0.028986571356654167,
+      "brier_skill_score_train": -0.47890670187011053,
+      "brier_skill_score_sample": 0.5848577888144235,
+      "reliability": 0.003444984716907901,
+      "resolution": 0.04428165153368885,
+      "uncertainty": 0.0698232330407293,
+      "sample_event_rate": 0.07552766054868698
+    },
+    "diversity": {
+      "mean_pairwise_rmse": 0.0,
+      "mean_pairwise_correlation": 1.0,
+      "ensemble_variance": 0.0
+    },
+    "repair_diagnostics": {
+      "precip_clipped_fraction": 0.2806638782062838,
+      "precip_mass_shift_pct": 5.727461924146267,
+      "tmin_gt_tmax_violation_rate": 0.0
+    }
+  },
+  "provenance": {
+    "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
+    "model_parameters": 15685478,
+    "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
+    "chunk_size": 4,
+    "base_seed": 20260927,
+    "device": "cuda"
+  }
+}

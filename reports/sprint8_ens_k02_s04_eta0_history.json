@@ -1,6 +1,6 @@
 {
-  "condition_id": "B8_K2_S4",
-  "description": "Phase 3 Budget 8: K=2, S=4 (8 NFE)",
+  "condition_id": "ENS_K02_S04_ETA0",
+  "description": "Phase 2A: Ensemble K=2, S=4, eta=0.0",
   "ensemble_size_k": 2,
   "denoising_steps_s": 4,
   "eta": 0.0,
@@ -8,8 +8,8 @@
   "nominal_budget": 8,
   "is_fair_crps": true,
   "num_cubes_evaluated": 122,
-  "latency_ms_per_cube": 218.28945457377066,
-  "throughput_cubes_sec": 4.581073336559422,
+  "latency_ms_per_cube": 218.51966085245905,
+  "throughput_cubes_sec": 4.5762472635136655,
   "metrics": {
     "crps": 0.6044873994204306,
     "cmvs": 0.5130618665286446,

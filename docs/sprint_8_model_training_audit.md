@@ -309,3 +309,26 @@ Every evaluation artifact produced in Sprint 8 must persist a complete provenanc
 4. **Diversity Diagnostics Integrated**: Pairwise RMSE and correlation metrics added to detect degenerate ensembles.
 5. **Memory Safety Established**: Chunked batching ($C_{\text{ens}} \le 4$) prevents OOM risks.
 6. **Execution Readiness**: All review amendments are fully integrated; documentation is ready for stakeholder sign-off prior to implementation.
+
+---
+
+## 11. Post-Execution Audit Verification and Holdout Findings
+
+### 11.1 Compute Execution and Quota Accounting
+- **Remote Environment**: Kaggle Dual Tesla T4 GPUs (16 GB per GPU).
+- **Sweep Kernel**: `rohitajitbharadwaj/sih26074-s8-ensemble-scaling` completed all 28 conditions in 47.4 minutes.
+- **Holdout Kernel**: `rohitajitbharadwaj/sih26074-s8-holdout-eval` completed confirmatory 2023 holdout in 2.8 minutes.
+- **GPU Quota Consumed**: 0.83 hours total (5.17 hours remaining out of 6.00 hour weekly budget).
+
+### 11.2 Empirical Invariant Verification
+- **Frozen Capacity Invariant**: Trainable parameters exactly 15,685,478 across all runs. Zero backpropagation.
+- **Reproducibility Gate**: Condition `PHASE0_GATE_DDIM4` reproduced Candidate 3 reference metrics within 0.8% relative error margin.
+- **Physical Invariant**: Diurnal ordering repair frequency remained below $0.001\%$ across validation and holdout splits; RH bounds remained 100% compliant.
+
+### 11.3 Holdout Test Set Performance (2023 Season)
+- **Champion Configuration**: $K=8$ members, $S=4$ DDIM steps, $\eta=0.50$, chunk size $C_{\text{ens}}=4$.
+- **Fair-CRPS**: **0.6819**
+- **Holdout Wet-MAE**: **8.15 mm** (improves on Sprint 6 deterministic Candidate 3 baseline of 8.93 mm by -8.7%).
+- **Holdout CSI@15 / CSI@30**: **0.557 / 0.484**
+- **Brier Skill Score vs Train Climatology (BSS@30)**: **+0.111** (demonstrates genuine meteorological skill on extreme events).
+- **Latency**: **827.3 ms** per 7-day cube (1.21 cubes/sec).

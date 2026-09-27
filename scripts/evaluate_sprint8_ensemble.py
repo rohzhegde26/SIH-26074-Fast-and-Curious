@@ -328,6 +328,16 @@ CONDITIONS = [
         "split": "val",
         "desc": "Phase 3 Budget 64: K=16, S=4 (64 NFE)",
     },
+    # Phase 4 Confirmatory Quarantined Holdout (2023 Season)
+    {
+        "id": "CHAMPION_HOLDOUT_B32_K8_S4_ETA05",
+        "members": 8,
+        "steps": 4,
+        "eta": 0.5,
+        "budget": 32,
+        "split": "test",
+        "desc": "Phase 4 Confirmatory: 2023 Holdout Test on Flagship Champion (K=8, S=4, eta=0.5)",
+    },
 ]
 
 
@@ -793,12 +803,40 @@ def main():
             print(f"  - {c['id']}")
         sys.exit(1)
 
+    test_ds = None
+    test_loader = None
+
     for cond in to_run:
+        split_name = cond.get("split", "val")
+        if split_name == "test":
+            if test_ds is None:
+                test_ds = SpatiotemporalDownscalingDataset(
+                    zarr_path=zarr_path,
+                    index_path=index_path,
+                    stats_path=stats_path,
+                    split="test",
+                    history_len=14,
+                    context_size=24,
+                )
+                test_loader = DataLoader(
+                    test_ds,
+                    batch_size=args.batch_size,
+                    shuffle=False,
+                    num_workers=2 if device.type == "cuda" else 0,
+                    pin_memory=(device.type == "cuda"),
+                )
+                print(f"[+] Loaded quarantined holdout test split: {len(test_ds)} samples ({len(test_loader)} batches).")
+            active_loader = test_loader
+            active_stats = test_ds.stats
+        else:
+            active_loader = val_loader
+            active_stats = val_ds.stats
+
         res = evaluate_condition(
             condition=cond,
             model=model,
-            loader=val_loader,
-            stats=val_ds.stats,
+            loader=active_loader,
+            stats=active_stats,
             device=device,
             chunk_size=args.chunk_size,
             max_batches=args.max_batches,
@@ -808,6 +846,12 @@ def main():
         with open(out_file, "w", encoding="utf-8") as f:
             json.dump(res, f, indent=2)
         print(f"[+] Saved condition history to {out_file}")
+
+        if cond["id"] == "CHAMPION_HOLDOUT_B32_K8_S4_ETA05":
+            holdout_file = reports_dir / "sprint8_champion_holdout_test.json"
+            with open(holdout_file, "w", encoding="utf-8") as f:
+                json.dump(res, f, indent=2)
+            print(f"[+] Saved dedicated champion holdout artifact to {holdout_file}")
 
     print("\n[+] Sprint 8 evaluation run completed successfully.")
 
