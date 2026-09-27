@@ -98,8 +98,12 @@ REFERENCE_CONDITIONS = [
 
 
 def resolve_paths():
-    out_root = Path(os.environ.get("SIH_OUTPUT_DIR", ROOT / "output" / "sprint8_5_eval"))
-    reports_dir = ROOT / "reports"
+    if Path("/kaggle/working").exists():
+        out_root = Path("/kaggle/working/output/sprint8_5_eval")
+        reports_dir = Path("/kaggle/working/reports")
+    else:
+        out_root = Path(os.environ.get("SIH_OUTPUT_DIR", ROOT / "output" / "sprint8_5_eval"))
+        reports_dir = ROOT / "reports"
     out_root.mkdir(parents=True, exist_ok=True)
     reports_dir.mkdir(parents=True, exist_ok=True)
 
@@ -661,6 +665,12 @@ def main():
     with open(shutil_dest, "w", encoding="utf-8") as f:
         json.dump(campaign_results, f, indent=2)
     print(f"[+] Synced summary to: {shutil_dest}")
+
+    print("\n" + "=" * 50)
+    print("BEGIN_JSON_SUMMARY_EXPORT")
+    print(json.dumps(campaign_results))
+    print("END_JSON_SUMMARY_EXPORT")
+    print("=" * 50 + "\n")
 
 
 if __name__ == "__main__":
