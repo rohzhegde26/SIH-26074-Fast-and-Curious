@@ -12,7 +12,7 @@
 
 ### 1.1 Context and Motivation
 Sprint 8 demonstrated that diffusion inference compute can be strategically distributed across denoising depth ($S$) and ensemble breadth ($K$). Under a compute budget matched at approximately 32 NFEs, an objective-dependent Pareto frontier emerged:
-- **Deeper low-member sampling** ($K=2, S=16, \eta=0.0$) achieves the best continuous distribution scores: Fair-CRPS = 0.5401, Multivariate Energy Score = 2.083.
+- **Deeper low-member sampling** ($K=2, S=16, \eta=0.0$) achieves the best continuous distribution scores: Fair-CRPS = 0.5401, Multivariate Energy Score ≈ 0.2769.
 - **Broader shallow sampling** ($K=8, S=4, \eta=0.5$) achieves the best point-forecast accuracy and extreme storm recall: Wet-MAE = 6.51 mm, CSI@30 = 0.728.
 
 However, Sprint 8 also uncovered two critical diagnostic vulnerabilities:
@@ -93,7 +93,7 @@ In **Split Conformal Prediction**:
 2. Set the conformal threshold $\hat{q}$ as the $\lceil (N_{\text{cal}} + 1)(1 - \gamma) \rceil / N_{\text{cal}}$ empirical quantile of $R_i$.
 3. On unseen cases, construct the prediction interval:
    $$C(x) = [\max(0, \hat{\mu}(x) - \hat{q} \hat{\sigma}(x)), \; \hat{\mu}(x) + \hat{q} \hat{\sigma}(x)]$$
-This guarantees valid empirical coverage while enforcing the physical reality of non-negative precipitation.
+Under the relevant exchangeability assumptions, split conformal provides finite-sample marginal coverage; Sprint 8.5 will empirically test coverage under the chronological weather split while enforcing the physical reality of non-negative precipitation.
 
 ### 3.4 Spatial Sharpness and Texture Metrics
 Ensemble averaging acts as a low-pass spatial filter, reducing random high-frequency variance. While this improves pixel-wise MSE/MAE, it can create unphysically smooth precipitation fields lacking realistic convective storm cores (Ebert, 2008).
@@ -128,6 +128,7 @@ To verify that ensemble benefits do not stem from artificial blurring, we introd
   - Interval Coverage (50%, 80%, 90% nominal)
   - Prediction Interval Sharpness (average interval width)
   - Pairwise Ensemble Diversity (inter-member variance and correlation)
+  - For precipitation's zero-inflated/discrete support, use rank histograms; use randomized PIT only when ties/zero mass are handled explicitly.
 - **Key Questions Answered:**
   - Is under-dispersion isolated to precipitation or present across all thermodynamic variables?
   - Does uncertainty expand monotonically with lead time from Day 0 to Day 6?
@@ -161,7 +162,7 @@ To verify that ensemble benefits do not stem from artificial blurring, we introd
 - **Physical Criterion:** Spread must grow monotonically ($U_{D+6} > U_{D+0}$) matching the growth of forecast error, avoiding both under-dispersion at long leads and unphysical variance explosion.
 
 ### Phase 4: Precipitation Repair-Burden Attribution
-- **Objective:** Determine whether non-negativity clipping ($P = \max(0, P)$) masks systematic negative bias or tail distortion.
+- **Objective:** Test whether non-negativity clipping ($P = \max(0, P)$) is a material contributor to the observed precipitation under-dispersion or tail distortion. Treat clipping as a candidate mechanism to be tested, not as a proven causal explanation.
 - **Conditions Compared:**
   - Raw unclipped output (diagnostic only)
   - Standard physical repair ($P = \max(0, P)$)
