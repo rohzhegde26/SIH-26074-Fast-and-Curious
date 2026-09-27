@@ -65,11 +65,11 @@ Inspection of the fine-grained per-variable metrics from the Sprint 8 champion (
 $$\text{SSR} = \frac{\mathbb{E}[\text{spread}]}{\mathbb{E}[\text{RMSE}]}$$
 
 - **Precipitation:** Ensemble Spread = 2.866 mm, RMSE = 7.176 mm, **SSR = 0.4379** (Severe Under-Dispersion)
-- **Tmax:** Ensemble Spread = 0.165 degC, RMSE = 0.393 degC, **SSR = 1.0574** (Well-Calibrated)
-- **Tmin:** Ensemble Spread = 0.157 degC, RMSE = 0.243 degC, **SSR = 1.1705** (Well-Calibrated)
-- **Relative Humidity:** Ensemble Spread = 0.265%, RMSE = 0.485%, **SSR = 0.9460** (Well-Calibrated)
-- **Wind U:** Ensemble Spread = 0.256 m/s, RMSE = 0.677 m/s, **SSR = 0.8106** (Well-Calibrated)
-- **Wind V:** Ensemble Spread = 0.185 m/s, RMSE = 0.506 m/s, **SSR = 0.8172** (Well-Calibrated)
+- **Tmax:** Ensemble Spread = 0.165 degC, RMSE = 0.393 degC, **SSR = 1.0574** (substantially better calibrated than precipitation)
+- **Tmin:** Ensemble Spread = 0.157 degC, RMSE = 0.243 degC, **SSR = 1.1705** (substantially better calibrated than precipitation)
+- **Relative Humidity:** Ensemble Spread = 0.265%, RMSE = 0.485%, **SSR = 0.9460** (substantially better calibrated than precipitation)
+- **Wind U:** Ensemble Spread = 0.256 m/s, RMSE = 0.677 m/s, **SSR = 0.8106** (substantially better calibrated than precipitation)
+- **Wind V:** Ensemble Spread = 0.185 m/s, RMSE = 0.506 m/s, **SSR = 0.8172** (substantially better calibrated than precipitation)
 
 ### 3.2 Prediction Interval Coverage Collapse
 | Variable | Nominal 50% Coverage | Nominal 80% Coverage | Nominal 90% Coverage | 90% Sharpness |
@@ -86,7 +86,7 @@ The data show substantially better uncertainty behavior for smooth thermodynamic
 
 Two physical-numerical factors drive this precipitation-specific collapse:
 1. **Zero-Bound Truncation:** 31.26% of raw precipitation predictions are clipped at $P=0$. When multiple members predict negative values, their values collapse to identical zero entries, forcing intra-ensemble variance to zero.
-2. **High Tail Skewness:** Precipitation follows a heavy-tailed compound Poisson-gamma distribution. Standard Gaussian diffusion noise added during reverse sampling ($\eta = 0.5$) generates symmetric perturbations in unnormalized space, which under-represents positive convective tail variance while driving sub-zero values into the clipping boundary.
+2. **High Tail Skewness (hypothesis):** Precipitation is strongly heavy-tailed. The current Gaussian-like stochastic perturbation in the reverse process may not generate enough positive convective-tail variability while also producing negative values near the zero boundary. This is a hypothesis for Sprint 8.5 to test, not an established causal mechanism.
 
 ---
 
@@ -104,7 +104,7 @@ where $\bar{x} = \frac{1}{K}\sum_{k=1}^K x_k$ and $\alpha \in \{1.0, 1.25, 1.5, 
 - $\sum_{k=1}^K x'_k = K \bar{x}$: The ensemble mean is invariant before clipping.
 - Deterministic MAE and RMSE of the unclipped ensemble mean are unchanged.
 - Post-scaling non-negativity clipping ($x''_k = \max(0, x'_k)$) enforces physical realism.
-- As $\alpha$ increases from 1.0 to 2.0, ensemble spread scales by $\alpha$, driving SSR from 0.438 toward $0.438 \times 2.0 \approx 0.876$, moving directly into the well-calibrated regime.
+- As $\alpha$ increases from 1.0 to 2.0, the un-clipped ensemble spread scales linearly with $\alpha$, so the nominal SSR would move from 0.438 toward approximately 0.876 before any clipping-induced changes. Actual post-repair calibration must be measured empirically.
 
 ### 4.2 Pillar B: Lead-Dependent Uncertainty Calibration
 Forecast uncertainty in dynamical systems grows with lead time due to atmospheric chaos (Leutbecher & Palmer, 2008). In a 7-day forecast ($D+0$ to $D+6$):
@@ -127,7 +127,7 @@ We evaluate two calibration mappers $\hat{p} \mapsto \tilde{p}$:
 **Verification:** Evaluated via Brier Score (BS), Brier Skill Score (BSS) relative to 2015-2021 training climatology ($BSS = 1 - BS / BS_{\text{clim}}$), reliability error, and resolution.
 
 ### 4.4 Pillar D: Conformal Prediction with Physical Non-Negativity Bounds
-Conformal prediction (Romano et al., 2019; Angelopoulos & Bates, 2021) constructs distribution-free prediction intervals with exact finite-sample coverage guarantees.
+Conformal prediction (Romano et al., 2019; Angelopoulos & Bates, 2021) can provide finite-sample marginal coverage under the relevant exchangeability assumptions. Those assumptions are not automatic for this chronological weather split, so Sprint 8.5 treats coverage as an empirical quantity to be tested.
 
 Using the internal calibration split:
 1. Compute studentized non-conformity scores:
@@ -136,7 +136,7 @@ Using the internal calibration split:
 3. Form the calibrated prediction interval:
    $$C(x) = [\max(0, \hat{\mu}(x) - \hat{q}\hat{\sigma}(x)), \; \hat{\mu}(x) + \hat{q}\hat{\sigma}(x)]$$
 
-This guarantees that empirical coverage approaches the nominal $1 - \gamma$ (e.g. 90%) while strictly preventing unphysical negative precipitation bounds.
+Under the relevant exchangeability assumptions, this construction targets finite-sample marginal coverage while strictly preventing unphysical negative precipitation bounds. The chronological 2022 evaluation must verify empirical coverage rather than assuming a formal guarantee.
 
 ### 4.5 Pillar E: Sampler vs Calibration Attribution Framework
 To determine where the uncertainty bottleneck originates, we evaluate an orthogonal factorial matrix:
