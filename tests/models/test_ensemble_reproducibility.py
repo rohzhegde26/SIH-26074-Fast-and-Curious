@@ -30,6 +30,7 @@ from src.models.ensemble import (
     compute_per_variable_prediction_interval,
     compute_multivariate_energy_score,
     apply_member_wise_physical_bounds,
+    compute_paired_bootstrap,
     EnsembleGenerator,
     TRAINING_CLIMATOLOGY_RATES,
     CHANNEL_NAMES_6CH,
@@ -252,3 +253,47 @@ def test_training_climatology_exact_bss():
     probs_clim = torch.full_like(obs_dist, fill_value=p_rate)
     res_clim = compute_brier_score(probs_clim, obs_dist, clim_train_rate=p_rate)
     assert math.isclose(res_clim["brier_skill_score_train"], 0.0, abs_tol=1e-4)
+
+
+def test_paired_bootstrap_confidence_intervals():
+    """Verify paired case-level bootstrap confidence intervals and hypothesis testing."""
+    np.random.seed(42)
+    n_samples = 100
+
+    # Scenario 1: Model A is consistently better than Model B (lower error)
+    # A has error around 6.5, B has error around 7.5
+    mae_a = np.random.normal(loc=6.5, scale=0.5, size=n_samples)
+    mae_b = mae_a + np.random.normal(loc=1.0, scale=0.3, size=n_samples) # B has ~1.0 higher MAE
+
+    res = compute_paired_bootstrap(
+        metrics_a={"wet_mae": mae_a},
+        metrics_b={"wet_mae": mae_b},
+        n_resamples=500,
+        confidence_level=0.95,
+        seed=123,
+    )
+
+    assert "metrics_a" in res and "wet_mae" in res["metrics_a"]
+    assert "metrics_b" in res and "wet_mae" in res["metrics_b"]
+    assert "paired_differences" in res and "wet_mae" in res["paired_differences"]
+
+    diff_info = res["paired_differences"]["wet_mae"]
+    # Delta = A - B should be negative (~ -1.0)
+    assert diff_info["delta_point_estimate"] < -0.7
+    assert diff_info["ci_upper"] < 0.0 # Strict statistical significance
+    assert diff_info["statistically_significant"] is True
+    assert diff_info["p_value"] < 0.01
+
+    # Scenario 2: Identical distributions (delta ~ 0, CI crosses 0)
+    res_null = compute_paired_bootstrap(
+        metrics_a={"wet_mae": mae_a},
+        metrics_b={"wet_mae": mae_a},
+        n_resamples=500,
+        confidence_level=0.95,
+        seed=123,
+    )
+    diff_null = res_null["paired_differences"]["wet_mae"]
+    assert math.isclose(diff_null["delta_point_estimate"], 0.0, abs_tol=1e-6)
+    assert diff_null["ci_lower"] <= 0.0 <= diff_null["ci_upper"]
+    assert diff_null["statistically_significant"] is False
+

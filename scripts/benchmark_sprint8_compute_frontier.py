@@ -14,8 +14,6 @@ Synthesizes:
 Outputs:
   - reports/sprint8_compute_matched_table.md
   - reports/sprint8_probabilistic_metrics.md
-  - reports/sprint8_per_lead_uncertainty.md
-  - reports/sprint8_precipitation_calibration.md
   - reports/sprint8_ensemble_frontier.json
 """
 

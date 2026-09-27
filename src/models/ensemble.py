@@ -600,3 +600,221 @@ class EnsembleGenerator:
         diversity_diag = compute_pairwise_diversity(members_tensor)
 
         return members_tensor, diversity_diag
+
+
+def compute_paired_bootstrap(
+    metrics_a: Dict[str, Any],
+    metrics_b: Optional[Dict[str, Any]] = None,
+    n_resamples: int = 1000,
+    confidence_level: float = 0.95,
+    seed: int = 20260927,
+) -> Dict[str, Any]:
+    """
+    Computes case-level paired bootstrap confidence intervals with replacement.
+
+    Parameters:
+        metrics_a: Dictionary mapping metric name to list or 1D array of case-level values.
+        metrics_b: Optional second condition dictionary for paired difference analysis (delta = A - B).
+        n_resamples: Number of bootstrap resamples (default: 1000).
+        confidence_level: Desired coverage level (default: 0.95).
+        seed: Random seed for bootstrap index generation.
+
+    Returns:
+        Dictionary containing per-metric point estimates, bootstrap distributions,
+        95% confidence intervals, and paired differences when metrics_b is provided.
+    """
+    import numpy as np
+
+    if not metrics_a:
+        raise ValueError("metrics_a cannot be empty")
+
+    # Validate lengths
+    n_cases = None
+    processed_a: Dict[str, np.ndarray] = {}
+    for k, v in metrics_a.items():
+        arr = np.asarray(v, dtype=np.float64)
+        if n_cases is None:
+            n_cases = len(arr)
+        elif len(arr) != n_cases:
+            raise ValueError(f"Length mismatch in metrics_a for '{k}': {len(arr)} != {n_cases}")
+        processed_a[k] = arr
+
+    if n_cases is None or n_cases < 2:
+        raise ValueError(f"Need at least 2 cases for bootstrap, got {n_cases}")
+
+    processed_b: Optional[Dict[str, np.ndarray]] = None
+    if metrics_b is not None:
+        processed_b = {}
+        for k, v in metrics_b.items():
+            arr = np.asarray(v, dtype=np.float64)
+            if len(arr) != n_cases:
+                raise ValueError(f"Length mismatch in metrics_b for '{k}': {len(arr)} != {n_cases}")
+            processed_b[k] = arr
+
+    rng = np.random.default_rng(seed)
+    # Generate B x N indices
+    boot_indices = rng.integers(0, n_cases, size=(n_resamples, n_cases))
+
+    alpha = (1.0 - confidence_level) / 2.0
+    results: Dict[str, Any] = {
+        "n_cases": n_cases,
+        "n_resamples": n_resamples,
+        "confidence_level": confidence_level,
+        "metrics_a": {},
+        "paired_differences": {},
+    }
+
+    # Evaluate metrics_a
+    for k, arr in processed_a.items():
+        if k.endswith("_hits") or k.endswith("_fps") or k.endswith("_fns"):
+            continue
+        resampled = arr[boot_indices] # [B, N]
+        boot_means = np.mean(resampled, axis=1) # [B]
+        point_est = float(np.mean(arr))
+        ci_low = float(np.percentile(boot_means, 100.0 * alpha))
+        ci_high = float(np.percentile(boot_means, 100.0 * (1.0 - alpha)))
+        std_err = float(np.std(boot_means, ddof=1))
+
+        results["metrics_a"][k] = {
+            "point_estimate": point_est,
+            "bootstrap_mean": float(np.mean(boot_means)),
+            "std_error": std_err,
+            "ci_lower": ci_low,
+            "ci_upper": ci_high,
+        }
+
+    # Check for contingency table metrics in metrics_a (e.g. p30_hits, p30_fps, p30_fns)
+    for prefix in ["p15", "p30", "p50"]:
+        h_k = f"{prefix}_hits"
+        f_k = f"{prefix}_fps"
+        m_k = f"{prefix}_fns"
+        if h_k in processed_a and f_k in processed_a and m_k in processed_a:
+            h_arr = processed_a[h_k]
+            f_arr = processed_a[f_k]
+            m_arr = processed_a[m_k]
+            tot_h = float(np.sum(h_arr))
+            tot_f = float(np.sum(f_arr))
+            tot_m = float(np.sum(m_arr))
+            point_csi = float(tot_h / (tot_h + tot_f + tot_m)) if (tot_h + tot_f + tot_m) > 0 else 1.0
+
+            boot_h = np.sum(h_arr[boot_indices], axis=1)
+            boot_f = np.sum(f_arr[boot_indices], axis=1)
+            boot_m = np.sum(m_arr[boot_indices], axis=1)
+            den = boot_h + boot_f + boot_m
+            boot_csi = np.where(den > 0, boot_h / np.maximum(1e-8, den), 1.0)
+
+            ci_low = float(np.percentile(boot_csi, 100.0 * alpha))
+            ci_high = float(np.percentile(boot_csi, 100.0 * (1.0 - alpha)))
+            results["metrics_a"][f"csi_{prefix}"] = {
+                "point_estimate": point_csi,
+                "bootstrap_mean": float(np.mean(boot_csi)),
+                "std_error": float(np.std(boot_csi, ddof=1)),
+                "ci_lower": ci_low,
+                "ci_upper": ci_high,
+            }
+
+    # Evaluate paired differences if metrics_b is provided
+    if processed_b is not None:
+        results["metrics_b"] = {}
+        for k, arr_b in processed_b.items():
+            if k.endswith("_hits") or k.endswith("_fps") or k.endswith("_fns"):
+                continue
+            resampled_b = arr_b[boot_indices]
+            boot_means_b = np.mean(resampled_b, axis=1)
+            point_b = float(np.mean(arr_b))
+            ci_low_b = float(np.percentile(boot_means_b, 100.0 * alpha))
+            ci_high_b = float(np.percentile(boot_means_b, 100.0 * (1.0 - alpha)))
+            std_err_b = float(np.std(boot_means_b, ddof=1))
+
+            results["metrics_b"][k] = {
+                "point_estimate": point_b,
+                "bootstrap_mean": float(np.mean(boot_means_b)),
+                "std_error": std_err_b,
+                "ci_lower": ci_low_b,
+                "ci_upper": ci_high_b,
+            }
+
+            if k in processed_a:
+                arr_a = processed_a[k]
+                resampled_a = arr_a[boot_indices]
+                boot_means_a = np.mean(resampled_a, axis=1)
+
+                # Paired delta = A - B
+                deltas = boot_means_a - boot_means_b
+                delta_pt = float(np.mean(arr_a) - np.mean(arr_b))
+                d_ci_low = float(np.percentile(deltas, 100.0 * alpha))
+                d_ci_high = float(np.percentile(deltas, 100.0 * (1.0 - alpha)))
+                d_std_err = float(np.std(deltas, ddof=1))
+
+                # Empirical two-sided p-value
+                p_val = 2.0 * min(float(np.mean(deltas <= 0.0)), float(np.mean(deltas >= 0.0)))
+                p_val = min(1.0, max(0.0, p_val))
+                is_significant = bool(d_ci_low * d_ci_high > 0.0)
+
+                results["paired_differences"][k] = {
+                    "delta_point_estimate": delta_pt,
+                    "delta_bootstrap_mean": float(np.mean(deltas)),
+                    "delta_std_error": d_std_err,
+                    "ci_lower": d_ci_low,
+                    "ci_upper": d_ci_high,
+                    "p_value": p_val,
+                    "statistically_significant": is_significant,
+                }
+
+        # Contingency table paired CSI
+        for prefix in ["p15", "p30", "p50"]:
+            h_k = f"{prefix}_hits"
+            f_k = f"{prefix}_fps"
+            m_k = f"{prefix}_fns"
+            if (h_k in processed_a and f_k in processed_a and m_k in processed_a and
+                h_k in processed_b and f_k in processed_b and m_k in processed_b):
+                ha, fa, ma = processed_a[h_k], processed_a[f_k], processed_a[m_k]
+                hb, fb, mb = processed_b[h_k], processed_b[f_k], processed_b[m_k]
+
+                boot_ha = np.sum(ha[boot_indices], axis=1)
+                boot_fa = np.sum(fa[boot_indices], axis=1)
+                boot_ma = np.sum(ma[boot_indices], axis=1)
+                den_a = boot_ha + boot_fa + boot_ma
+                csi_a = np.where(den_a > 0, boot_ha / np.maximum(1e-8, den_a), 1.0)
+
+                boot_hb = np.sum(hb[boot_indices], axis=1)
+                boot_fb = np.sum(fb[boot_indices], axis=1)
+                boot_mb = np.sum(mb[boot_indices], axis=1)
+                den_b = boot_hb + boot_fb + boot_mb
+                csi_b = np.where(den_b > 0, boot_hb / np.maximum(1e-8, den_b), 1.0)
+
+                tot_ha, tot_fa, tot_ma = float(np.sum(ha)), float(np.sum(fa)), float(np.sum(ma))
+                tot_hb, tot_fb, tot_mb = float(np.sum(hb)), float(np.sum(fb)), float(np.sum(mb))
+                pt_a = float(tot_ha / (tot_ha + tot_fa + tot_ma)) if (tot_ha + tot_fa + tot_ma) > 0 else 1.0
+                pt_b = float(tot_hb / (tot_hb + tot_fb + tot_mb)) if (tot_hb + tot_fb + tot_mb) > 0 else 1.0
+
+                ci_low_b = float(np.percentile(csi_b, 100.0 * alpha))
+                ci_high_b = float(np.percentile(csi_b, 100.0 * (1.0 - alpha)))
+                results["metrics_b"][f"csi_{prefix}"] = {
+                    "point_estimate": pt_b,
+                    "bootstrap_mean": float(np.mean(csi_b)),
+                    "std_error": float(np.std(csi_b, ddof=1)),
+                    "ci_lower": ci_low_b,
+                    "ci_upper": ci_high_b,
+                }
+
+                deltas_csi = csi_a - csi_b
+                d_ci_low = float(np.percentile(deltas_csi, 100.0 * alpha))
+                d_ci_high = float(np.percentile(deltas_csi, 100.0 * (1.0 - alpha)))
+                d_std_err = float(np.std(deltas_csi, ddof=1))
+                p_val = 2.0 * min(float(np.mean(deltas_csi <= 0.0)), float(np.mean(deltas_csi >= 0.0)))
+                p_val = min(1.0, max(0.0, p_val))
+                is_sig = bool(d_ci_low * d_ci_high > 0.0)
+
+                results["paired_differences"][f"csi_{prefix}"] = {
+                    "delta_point_estimate": pt_a - pt_b,
+                    "delta_bootstrap_mean": float(np.mean(deltas_csi)),
+                    "delta_std_error": d_std_err,
+                    "ci_lower": d_ci_low,
+                    "ci_upper": d_ci_high,
+                    "p_value": p_val,
+                    "statistically_significant": is_sig,
+                }
+
+    return results
+

@@ -268,12 +268,13 @@ def monitor_kernel(
         env=env,
     )
 
-    # Copy report JSON files to reports/
-    for rpt in output_dir.rglob("*.json"):
-        dst = ROOT / "reports" / rpt.name
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(rpt, dst)
-        print(f"[+] Retrieved report: {dst.relative_to(ROOT)}")
+    # Copy report JSON and MD files to reports/
+    for rpt in list(output_dir.rglob("*.json")) + list(output_dir.rglob("*.md")):
+        if "reports" in rpt.parts:
+            dst = ROOT / "reports" / rpt.name
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(rpt, dst)
+            print(f"[+] Retrieved report: {dst.relative_to(ROOT)}")
 
     # Check post-run quota
     time.sleep(5)

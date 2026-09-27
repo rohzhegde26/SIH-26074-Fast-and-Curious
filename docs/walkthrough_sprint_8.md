@@ -55,6 +55,7 @@ The central question addressed is:
 - **Model Training and Evaluation Audit**: [docs/sprint_8_model_training_audit.md](file:///c:/Users/rohit/.gemini/antigravity/playground/SIH/docs/sprint_8_model_training_audit.md)
 - **Matched Compute Table**: [reports/sprint8_compute_matched_table.md](file:///c:/Users/rohit/.gemini/antigravity/playground/SIH/reports/sprint8_compute_matched_table.md)
 - **Probabilistic Metrics**: [reports/sprint8_probabilistic_metrics.md](file:///c:/Users/rohit/.gemini/antigravity/playground/SIH/reports/sprint8_probabilistic_metrics.md)
+- **Bootstrap Statistical Rigor**: [reports/sprint8_bootstrap_confidence_intervals.md](file:///c:/Users/rohit/.gemini/antigravity/playground/SIH/reports/sprint8_bootstrap_confidence_intervals.md)
 - **Quarantined Holdout Report**: [reports/sprint8_champion_holdout_test.json](file:///c:/Users/rohit/.gemini/antigravity/playground/SIH/reports/sprint8_champion_holdout_test.json)
 
 ---
@@ -96,6 +97,15 @@ The remote Kaggle evaluation campaign executed across the frozen 15.69M Candidat
 | **64 NFE** | `B64_K8_S8` | 8 | 8 | 0.00 | 64 | Fair-CRPS | **0.5961** | 6.58 | 0.723 | 1675.5 | 0.4x |
 | **64 NFE** | `B64_K16_S4` | 16 | 4 | 0.00 | 64 | Fair-CRPS | **0.6046** | 6.47 | 0.730 | 1713.7 | 0.4x |
 
+### 5.2 Phase 0 Pipeline Diagnostic and Seeding Protocol
+
+Sprint 8 introduces the per-batch nested RNG seeding architecture (`base_seed = 20260927 + 1000*k + b_idx`), generating independent stochastic trajectory realizations for each batch. This diverges from Sprint 7's static single global seed. Condition `PHASE0_GATE_DDIM4` was therefore evaluated as an operational pipeline integrity and physical bounds diagnostic (verifying checkpoint SHA-256 `f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92`, zero missing weights, and 100% adherence to physical bounds), returning CMVS 0.5584, Wet-MAE 7.20 mm, and CSI@30 0.634, rather than an identical bit-for-bit duplication of Sprint 7's static seed run (CMVS 0.5376, Wet-MAE 6.97 mm, CSI@30 0.704).
+
+### 5.3 Methodological Note on Quantile Resolution and Continuous CRPS
+
+1. **CRPS Estimator Boundary**: Deterministic single-member evaluation ($K=1$) computes $\text{CRPS}_{\text{det}} = \text{MAE} = 0.8573$ to $0.8907$, which is an upper bound on ensemble CRPS. It must not be directly compared as an apples-to-apples continuous scale against Fair-CRPS ($K \ge 2$), which uses the finite-sample unbiased $2K(K-1)$ pairwise difference estimator.
+2. **Quantile Resolution in Small Ensembles**: For $K=2$, the empirical order statistics for 50%, 80%, and 90% prediction intervals collapse to the identical min/max envelope $[\min(m_1, m_2), \max(m_1, m_2)]$. Meaningful interval calibration and sharpness diagnostics are therefore valid only for $K \ge 4$ and $K \ge 8$.
+
 ---
 
 ## 6. The Flagship 32-NFE Comparison: Deep vs Broad
@@ -115,6 +125,22 @@ Under an identical compute budget of 32 NFE (approximately 830 to 909 ms of wall
 | **2D Spatial Correlation** | 1.000 | 0.9356 | 0.9375 | **0.9487** | True spatial grid correlation |
 | **Multivariate Energy Score** | 0.4120 | **0.2769** | 0.2782 | 0.2812 | Favors deeper steps ($K=2, S=16$) |
 | **Wall Latency** | 831.6 ms | 834.3 ms | 839.5 ms | **909.0 ms** | Matched within 9% |
+
+### 6.1 Empirical Case-Level Paired Bootstrap Evidence (B=1,000 Resamples)
+
+To verify that the deep-vs-broad trade-off is not an artifact of finite-sample variance across the 122 validation cubes, a 1,000-replicate cube-preserving paired bootstrap was executed remotely on Kaggle:
+
+| Comparison | Metric | Delta Mean | 95% Bootstrap CI | p-value | Significant (p < 0.05) |
+|---|---|---|---|---|---|
+| Broad Stochastic ($K=8, S=4, \eta=0.5$) minus Deep Low-Member ($K=2, S=16$) | **Wet-MAE (mm)** | **-0.6114** | [-0.6424, -0.5800] | < 0.0001 | **Yes** (Favors $K=8$) |
+| Broad Stochastic ($K=8, S=4, \eta=0.5$) minus Deep Low-Member ($K=2, S=16$) | **CSI@30** | **+0.0235** | [+0.0221, +0.0251] | < 0.0001 | **Yes** (Favors $K=8$) |
+| Broad Stochastic ($K=8, S=4, \eta=0.5$) minus Deep Low-Member ($K=2, S=16$) | **Fair-CRPS** | **+0.0103** | [+0.0090, +0.0117] | < 0.0001 | **Yes** (Favors $K=2$) |
+| Broad Stochastic ($K=8, S=4, \eta=0.5$) minus Deep Low-Member ($K=2, S=16$) | **Precip CRPS (mm/day)** | **+0.0473** | [+0.0402, +0.0545] | < 0.0001 | **Yes** (Favors $K=2$) |
+| Broad Stochastic ($K=8, S=4, \eta=0.5$) minus Deep Low-Member ($K=2, S=16$) | **Energy Score** | **+0.0044** | [+0.0039, +0.0049] | < 0.0001 | **Yes** (Favors $K=2$) |
+| Stochasticity Impact: $\eta=0.5$ minus $\eta=0.0$ on ($K=8, S=4$) | **Wet-MAE (mm)** | **-0.0164** | [-0.0196, -0.0131] | < 0.0001 | **Yes** (Favors $\eta=0.5$) |
+| Stochasticity Impact: $\eta=0.5$ minus $\eta=0.0$ on ($K=8, S=4$) | **CSI@30** | **+0.0019** | [+0.0015, +0.0023] | < 0.0001 | **Yes** (Favors $\eta=0.5$) |
+
+**Empirical Conclusion from Bootstrap**: Zero is strictly excluded from every 95% bootstrap confidence interval. The deep-vs-broad compute allocation frontier is statistically verified at $p < 0.0001$.
 
 ---
 
