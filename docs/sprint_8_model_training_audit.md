@@ -5,7 +5,7 @@
 **Branch**: `feat/spatiotemporal-diffusion-downscaler`  
 **Sprint**: 8 of 10 (Research Roadmap)  
 **Author**: Antigravity Research Agent  
-**Date**: September 27, 2026  
+**Date**: September 27, 2026 (Revised with Review Amendments)  
 
 ---
 
@@ -13,13 +13,15 @@
 
 Sprint 8 addresses **Ensemble and Test-Time Scaling** under matched computational budgets. Unlike Sprints 1 through 6, which investigated model architectures, parameterizations, and loss formulations, Sprint 8 is strictly an **inference-only research sprint**.
 
-This audit serves as the primary governance document for Sprint 8, providing rigorous verification across six core dimensions:
+This audit serves as the primary governance document for Sprint 8, providing rigorous verification across eight core dimensions:
 1. **Model Checkpoint Provenance and Weight Invariant**: Hard verification of the Sprint 6 Candidate 3 champion weights (`sprint6_candidate3_multitask_champion.pt`), confirming Git LFS hashes, parameter counts, and zero-modification enforcement.
-2. **Phase 0 Reproducibility Gate**: Prescribing the strict tolerance bounds under which the deterministic DDIM-4 baseline must reproduce the Sprint 7 reference on the 2022 validation split before ensemble scaling begins.
-3. **Mathematical Derivations of Probabilistic Estimators**: Rigorous formulation of finite-ensemble Fair-CRPS, Brier Skill Score, Spread-Skill Ratio, and Multivariate Energy Score, including proofs of finite-sample bias correction.
-4. **Physical Transformation and Invariant Ordering**: Formal proof via Jensen's Inequality showing why member-wise non-linear physical clipping must strictly precede ensemble reduction.
-5. **Kaggle Compute Budget Allocation**: Operational scheduling and memory profiling across **6.0 hours of 2x Tesla T4 GPU accelerators** to complete all matched-compute sweeps ($B \in \{8, 16, 32, 64\}$) within allocation.
-6. **Data Leakage and Seed Determinism Audit**: Complete isolation of the 2023 quarantined holdout test set and specification of deterministic, nested pseudo-random number generator (PRNG) seed manifests.
+2. **Noise Schedule Documentation Rectification**: Correction of the documented variance schedule to strictly match the codebase: linear beta schedule (`beta_start=1e-4`, `beta_end=0.035`, $T=100$).
+3. **Phase 0 Reproducibility Gate**: Prescribing the strict tolerance bounds under which the deterministic DDIM-4 baseline must reproduce the Sprint 7 reference on the 2022 validation split before ensemble scaling begins.
+4. **Mathematical Derivations and Domains of Probabilistic Estimators**: Rigorous formulation of finite-ensemble Fair-CRPS for $K \ge 2$, deterministic CRPS fallback ($\text{CRPS}_{\text{det}} = \text{MAE}$) for $K=1$, Brier Skill Score against training climatology, and Spread-Skill Ratio.
+5. **Physical Transformation and Invariant Ordering**: Formal proof via Jensen's Inequality showing why member-wise non-linear physical clipping must strictly precede ensemble reduction, alongside diagnostic tracking of clipping rates, mass shifts, and temperature ordering repairs.
+6. **Pairwise Ensemble Diversity Diagnostics**: Direct mathematical metrics to quantify inter-member spread and prevent degenerate or false ensembles.
+7. **Memory-Safe Chunked Ensemble Execution**: Defining chunked batching (`ensemble_member_chunk_size` in $\{1, 2, 4\}$) to prevent VRAM exhaustion on Tesla T4 GPUs.
+8. **Kaggle Compute Budget Allocation**: Operational scheduling and memory profiling across **6.0 hours of 2x Tesla T4 GPU accelerators** to complete all matched-compute sweeps ($B \in \{8, 16, 32, 64\}$) within allocation.
 
 ---
 
@@ -66,9 +68,10 @@ The model architecture remains strictly identical to the frozen Candidate 3 desi
   5. Zonal Wind Component ($U$, m/s)
   6. Meridional Wind Component ($V$, m/s)
 
-### 3.2 Diffusion Parameterization and Schedule
+### 3.2 Diffusion Parameterization and Schedule Audit
 - **Objective Formulation**: Velocity prediction ($v$-prediction) where $v_t \equiv \alpha_t \epsilon - \sigma_t x_0$.
-- **Training Noise Schedule**: Cosine variance schedule across $T = 100$ diffusion steps.
+- **Training Noise Schedule**: **Linear beta schedule**, `beta_start = 1e-4`, `beta_end = 0.035`, and $T = 100$ diffusion timesteps.
+  *(Audit Correction: Previous drafts incorrectly referred to a cosine variance schedule. The underlying codebase `src/models/residual_diffusion.py` lines 331-346 defines `betas = torch.linspace(beta_start, beta_end, timesteps)`. This audit formally rectifies the documentation to match the true model weights.)*
 - **Inference Sampler**: Standard DDIM discretization with uniform spacing spanning $[T-1, 0]$ (starts at $t = 99$, terminates at $t = 0$).
 
 ---
@@ -101,139 +104,120 @@ For reference, established baseline figures from Sprints 6 and 7 are summarized 
 
 ## 5. Mathematical Formulations of Probabilistic Estimators
 
-### 5.1 Fair-CRPS (Finite-Ensemble Unbiased Estimator)
-The Continuous Ranked Probability Score for a predictive cumulative distribution $F$ and realized observation $y$ is defined as:
+### 5.1 Fair-CRPS for $K \ge 2$ and Deterministic CRPS Fallback for $K = 1$
+The Continuous Ranked Probability Score for a predictive cumulative distribution $F$ and realized observation $y$ is:
 
 $$\text{CRPS}(F, y) = \int_{-\infty}^\infty \left(F(z) - \mathbb{I}(z \ge y)\right)^2 dz$$
 
-For an empirical ensemble of size $K$ with members $\{y^{(1)}, \dots, y^{(K)}\}$, the standard sample estimator is:
-
-$$\text{CRPS}_{\text{emp}}(F_K, y) = \frac{1}{K}\sum_{k=1}^K |y^{(k)} - y| - \frac{1}{2 K^2}\sum_{k=1}^K \sum_{j=1}^K |y^{(k)} - y^{(j)}|$$
-
-However, $\text{CRPS}_{\text{emp}}$ exhibits positive finite-sample bias: $\mathbb{E}[\text{CRPS}_{\text{emp}}(F_K, y)] > \text{CRPS}(F, y)$, which unfairly penalizes smaller ensembles when comparing $K=2$ versus $K=16$.
-
-Following Ferro et al. (2008) and Gneiting & Raftery (2007), Sprint 8 implements the strictly unbiased Fair-CRPS estimator:
+#### Case 1: Finite Ensemble with $K \ge 2$ (Fair-CRPS)
+For an empirical ensemble of size $K \ge 2$ with members $\{y^{(1)}, \dots, y^{(K)}\}$, the standard empirical estimator has positive finite-sample bias. Sprint 8 implements the strictly unbiased Fair-CRPS estimator (Ferro et al., 2008; Gneiting & Raftery, 2007):
 
 $$\text{CRPS}_{\text{fair}}(F_K, y) = \frac{1}{K}\sum_{k=1}^K |y^{(k)} - y| - \frac{1}{2 K (K - 1)}\sum_{k=1}^K \sum_{j=1}^K |y^{(k)} - y^{(j)}|$$
 
-**Proof of Bias Correction**:
-The expected value of the inter-member distance under independent draws from $F$ has expectation:
-$$\mathbb{E}[|Y - Y'|] = \frac{1}{K(K-1)} \sum_{k=1}^K \sum_{j \ne k} \mathbb{E}[|y^{(k)} - y^{(j)}|]$$
-The divisor $K(K-1)$ replaces $K^2$, eliminating the $k=j$ zero-distance self-terms and guaranteeing that $\mathbb{E}[\text{CRPS}_{\text{fair}}(F_K, y)] = \text{CRPS}(F, y)$ for any $K \ge 2$.
+The denominator $K(K-1)$ eliminates the self-distance terms ($k=j$), guaranteeing that $\mathbb{E}[\text{CRPS}_{\text{fair}}(F_K, y)] = \text{CRPS}(F, y)$.
 
-### 5.2 Brier Score and Climatological Skill Decomposition
-For extreme precipitation threshold events ($P > \tau$ for $\tau \in \{15, 30\}$ mm/day), the event indicator is $o_i = \mathbb{I}(y_{\text{true}, i} > \tau)$. The ensemble forecast probability is:
+#### Case 2: Deterministic Reference with $K = 1$ (Deterministic CRPS = MAE)
+When $K = 1$, the term $K(K-1) = 0$ in the denominator makes Fair-CRPS mathematically undefined. A single forecast represents a degenerate point distribution $F(z) = \mathbb{I}(z \ge y^{(1)})$. The integral reduces to:
 
-$$p_i = \frac{1}{K}\sum_{k=1}^K \mathbb{I}\left(y_i^{(k)} > \tau\right)$$
+$$\text{CRPS}_{\text{det}}(y^{(1)}, y) = \int_{-\infty}^\infty \left(\mathbb{I}(z \ge y^{(1)}) - \mathbb{I}(z \ge y)\right)^2 dz = |y^{(1)} - y| = \text{MAE}$$
+
+**Mandatory Reporting Policy**:
+In all matched-compute comparison tables (such as the flagship 32-NFE comparison: $K=1, S=32$ vs $K=2, S=16$ vs $K=4, S=8$ vs $K=8, S=4$), the metric for $K=1$ must be explicitly designated as $\text{CRPS}_{\text{det}}$ (= MAE). It must **never** be labeled as Fair-CRPS.
+
+### 5.2 Brier Score and Climatological Skill Baselines
+For extreme precipitation events ($P > \tau$ for $\tau \in \{15, 30\}$ mm/day), the observed event indicator is $o_i = \mathbb{I}(y_{\text{true}, i} > \tau)$ and predicted ensemble probability is $p_i = \frac{1}{K}\sum_{k=1}^K \mathbb{I}(y_i^{(k)} > \tau)$.
 
 The Brier Score across $N$ validation instances is:
 
 $$\text{BS} = \frac{1}{N}\sum_{i=1}^N (p_i - o_i)^2$$
 
-To place raw Brier scores into proper meteorological perspective, Sprint 8 computes the Brier Skill Score (BSS) relative to the sample climatological base rate $\bar{o} = \frac{1}{N}\sum_{i=1}^N o_i$:
+To ensure rigorous meteorological attribution, Sprint 8 defines two explicit climatological baselines:
+1. **Primary Reference: Training-Derived Climatology**:
+   Calculated from the 2014-2021 training set for each lead $d \in \{0, \dots, 6\}$:
+   $$\bar{o}_{\text{train}}(d, \tau) = \frac{1}{N_{\text{train}}}\sum_{i \in \text{Train}} \mathbb{I}(y_{\text{train}, i}(d) > \tau)$$
+   $$\text{BS}_{\text{clim, train}}(d) = \bar{o}_{\text{train}}(d, \tau) \cdot (1 - \bar{o}_{\text{train}}(d, \tau))$$
+   $$\text{BSS}_{\text{train}}(d) = 1 - \frac{\text{BS}(d)}{\text{BS}_{\text{clim, train}}(d)}$$
+2. **Secondary Reference: Pooled Validation Climatology**:
+   Calculated across the 2022 validation split $\bar{o}_{\text{val}}$, reported as a secondary reference.
 
-$$\text{BS}_{\text{clim}} = \bar{o}(1 - \bar{o})$$
-$$\text{BSS} = 1 - \frac{\text{BS}}{\text{BS}_{\text{clim}}}$$
-
-Furthermore, the Brier Score is partitioned into Murphy's canonical components via binning predicted probabilities into $B_m$ bins ($m = 1, \dots, M$):
-
+Murphy's canonical decomposition is computed across $M$ probability bins:
 $$\text{BS} = \text{Reliability} - \text{Resolution} + \text{Uncertainty}$$
 
-where:
-- $\text{Reliability} = \sum_{m=1}^M \frac{n_m}{N} (\bar{p}_m - \bar{o}_m)^2$ (measures conditional calibration; lower is better, 0 is perfect).
-- $\text{Resolution} = \sum_{m=1}^M \frac{n_m}{N} (\bar{o}_m - \bar{o})^2$ (measures ability to distinguish event from non-event regimes; higher is better).
-- $\text{Uncertainty} = \bar{o}(1 - \bar{o})$ (inherent climatological entropy of the event).
+### 5.3 Direct Pairwise Ensemble Diversity Diagnostics
+To prevent the deceptive failure mode of an ensemble generating identical members, the audit mandates logging four diversity diagnostics for every configuration:
 
-### 5.3 Spread-Skill Ratio and Fair Spread
-For an ideally calibrated ensemble forecasting system, the ensemble spread matches the root-mean-square error of the ensemble mean.
+1. **Mean Pairwise Member RMSE**:
+   $$\text{Div}_{\text{RMSE}} = \frac{2}{K(K-1)} \sum_{k=1}^K \sum_{j=k+1}^K \sqrt{\frac{1}{N}\sum_{i=1}^N (y_i^{(k)} - y_i^{(j)})^2}$$
+2. **Mean Pairwise Spatial Correlation**:
+   $$\bar{\rho}_{\text{pair}} = \frac{2}{K(K-1)} \sum_{k=1}^K \sum_{j=k+1}^K \text{Corr}\left(y^{(k)}, y^{(j)}\right)$$
+3. **Ensemble Spatial Variance**:
+   $$\bar{\sigma}_{\text{ens}}^2 = \frac{1}{N} \sum_{i=1}^N \left(\frac{1}{K-1}\sum_{k=1}^K (y_i^{(k)} - \mu_i)^2\right)$$
+4. **Effective Diversity Ratio (EDR)**:
+   $$\text{EDR}(K) = \frac{\text{Div}_{\text{RMSE}}(K)}{\text{Div}_{\text{RMSE}}(K=2)}$$
+
+### 5.4 Spread-Skill Ratio and Fair Spread
 For finite ensemble size $K$, the sample variance per instance $i$ is:
-
 $$s_i^2 = \frac{1}{K - 1}\sum_{k=1}^K \left(y_i^{(k)} - \mu_i\right)^2, \quad \mu_i = \frac{1}{K}\sum_{k=1}^K y_i^{(k)}$$
+$$\text{Ensemble Spread} = \sqrt{\frac{1}{N}\sum_{i=1}^N s_i^2}, \quad \text{RMSE} = \sqrt{\frac{1}{N}\sum_{i=1}^N \left(\mu_i - y_{\text{true}, i}\right)^2}$$
+$$\text{SSR} = \frac{\text{Ensemble Spread}}{\text{RMSE}}$$
 
-The root-mean-square ensemble spread is:
-
-$$\text{Spread} = \sqrt{\frac{1}{N}\sum_{i=1}^N s_i^2}$$
-
-The root-mean-square error of the ensemble mean is:
-
-$$\text{RMSE} = \sqrt{\frac{1}{N}\sum_{i=1}^N \left(\mu_i - y_{\text{true}, i}\right)^2}$$
-
-The Spread-Skill Ratio (SSR) is:
-
-$$\text{SSR} = \frac{\text{Spread}}{\text{RMSE}}$$
-
-An ensemble is under-dispersive (overconfident) when $\text{SSR} < 1.0$ and over-dispersive when $\text{SSR} > 1.0$.
-
-### 5.4 Multivariate Energy Score
-To assess inter-variable correlation structures (e.g., wind vector $(U, V)$ consistency, precipitation-humidity coupling), Sprint 8 evaluates the Energy Score:
-
+### 5.5 Multivariate Energy Score
+To assess inter-variable correlation structures (e.g., wind vector $(U, V)$ consistency, precipitation-humidity coupling):
 $$\text{ES}(F_K, \mathbf{y}) = \frac{1}{K}\sum_{k=1}^K \|\mathbf{y}^{(k)} - \mathbf{y}\|_2 - \frac{1}{2 K (K - 1)}\sum_{k=1}^K \sum_{j=1}^K \|\mathbf{y}^{(k)} - \mathbf{y}^{(j)}\|_2$$
-
-where $\mathbf{y} \in \mathbb{R}^6$ represents the normalized multi-variable state vector at a given spatial grid cell.
 
 ---
 
-## 6. Test-Time Physical Safeguards and Transformation Invariants
+## 6. Test-Time Physical Safeguards, Invariants, and Diagnostics
 
 ### 6.1 Member-Wise Transformation Ordering Invariant
-A critical source of potential bias in probabilistic weather downscaling is the ordering of non-linear physical clipping operations relative to ensemble aggregation.
-
-**Mathematical Rule**: All denormalization and physical constraint enforcements must be executed on individual ensemble members **prior** to computing ensemble summary statistics (mean, variance, quantiles, exceedance probabilities).
+All denormalization and physical constraint enforcements must be executed on individual ensemble members **prior** to computing ensemble summary statistics:
 
 ```
 CORRECT (Member-Wise Invariant):
 Raw Latents y_norm^(k) 
   --> Unstandardize to Physical Space y_phys^(k) 
-  --> Non-Linear Physical Bounds [P >= 0, 0 <= RH <= 100, Tmin <= Tmax]
-  --> Compute Ensemble Mean, Quantiles, Spread, P(P > thresh)
+  --> Member-Wise Non-Linear Physical Bounds [P >= 0, 0 <= RH <= 100, Tmin <= Tmax]
+  --> Compute Ensemble Mean, Quantiles, Spread, P(P > thresh), Fair-CRPS
 
 INCORRECT (Ensemble-First Violation):
 Raw Latents y_norm^(k) 
   --> Average in Latent/Normalized Space 
   --> Unstandardize 
-  --> Apply Non-Linear Bounds (DESTROYS PROBABILISTIC CALIBRATION)
+  --> Apply Non-Linear Bounds (CORRUPTS PROBABILISTIC DISTRIBUTIONS)
 ```
 
-### 6.2 Mathematical Proof of the Non-Linear Clipping Invariant
-Let $X \in \mathbb{R}$ represent an unconstrained precipitation prediction before non-negativity clipping, and let $g(x) = \max(0, x)$ be the ReLU physical projection.
-The function $g(x)$ is convex.
+### 6.2 Mathematical Analysis of Non-Linear Clipping
+Let $X \in \mathbb{R}$ represent an unconstrained precipitation prediction before non-negativity clipping, and let $g(x) = \max(0, x)$ be the ReLU physical projection. The function $g(x)$ is convex.
 
-By **Jensen's Inequality**, for any random variable $X$:
-
+By **Jensen's Inequality**:
 $$\mathbb{E}[g(X)] \ge g(\mathbb{E}[X])$$
 
-Equality holds if and only if $X \ge 0$ almost everywhere.
-In regions with dry weather or light rainfall where the diffusion latents fluctuate around zero:
-1. If clipping is applied **after** averaging:
-   $$\mu_{\text{wrong}} = \max\left(0, \frac{1}{K}\sum_{k=1}^K X^{(k)}\right)$$
-   Negative member perturbations cancel positive member perturbations, systematically underestimating total precipitation volume and completely extinguishing convective tail signals.
-2. If clipping is applied **member-by-member**:
-   $$\mu_{\text{correct}} = \frac{1}{K}\sum_{k=1}^K \max\left(0, X^{(k)}\right)$$
-   Every positive excursion contributes physical rainfall volume, maintaining an unbiased expected precipitation rate.
-3. For threshold probability estimation:
-   $$P(P > 15) = \frac{1}{K}\sum_{k=1}^K \mathbb{I}\left(\max(0, X^{(k)}) > 15\right)$$
-   Averaging first would replace this with a binary step function $\mathbb{I}(\mu_{\text{wrong}} > 15)$, destroying the entire continuous probability distribution.
+Because $g(x)$ is non-linear, $\mathbb{E}[\max(0, X)] \neq \mathbb{E}[X]$ in regions where $X$ takes negative values. Member-wise clipping does **not** preserve an unbiased rainfall expectation; rather, it guarantees that every individual ensemble member represents a physically realizable state ($P \ge 0$) and that threshold exceedance probabilities $P(P > \tau) = \frac{1}{K}\sum \mathbb{I}(P^{(k)} > \tau)$ follow correct probabilistic semantics.
 
-### 6.3 Thermodynamic Ordering Safeguard
-For temperature downscaling, physical consistency demands that $T_{\min} \le T_{\max}$ at every spatial location and forecast lead:
-$$\text{Violation Indicator}: \quad \mathcal{V}_T = \mathbb{I}\left(T_{\min}^{(k)} > T_{\max}^{(k)}\right)$$
-The evaluation audit tracks $\mathcal{V}_T$ across all members. If $\mathcal{V}_T = 1$, the member is repaired via:
-$$T_{\max, \text{repaired}}^{(k)} = \max\left(T_{\max}^{(k)}, T_{\min}^{(k)}\right)$$
-The occurrence rate of such violations is logged as a primary physical diagnostic metric.
+### 6.3 Mandatory Physical Repair Burden Tracking
+To turn potential distribution shifts into transparent scientific metrics, the audit mandates tracking:
+1. **Pre-Repair Violation Rates**:
+   - Fraction of precipitation grid cells with $\tilde{P} < 0$.
+   - Fraction of RH grid cells outside $[0, 100\%]$.
+   - Fraction of temperature cells with $\tilde{T}_{\min} > \tilde{T}_{\max}$.
+2. **Precipitation Mass Shift**:
+   $$\Delta M_{\text{precip}} = \frac{\sum \max(0, \tilde{P}) - \sum \tilde{P}}{\sum \max(0, \tilde{P})} \times 100\%$$
+3. **Ensemble Mean Shift**:
+   $$|\Delta \mu_P| = \frac{1}{N}\sum_{i=1}^N \left| \frac{1}{K}\sum_{k=1}^K \max(0, \tilde{P}_i^{(k)}) - \max\left(0, \frac{1}{K}\sum_{k=1}^K \tilde{P}_i^{(k)}\right) \right|$$
+4. **Thermodynamic Ordering Modification**:
+   Logging the empirical frequency of $T_{\max} = \max(T_{\max}, T_{\min})$ and mean absolute adjustment magnitude $|\Delta T_{\max}|$, as this is a distribution-altering operation.
 
 ---
 
-## 7. Compute Budget and Accelerator Resource Allocation Audit
+## 7. Compute Budget, Memory Chunking, and Resource Allocation
 
-### 7.1 Hardware Platform Specification
-All Sprint 8 benchmark runs execute on Kaggle accelerators under authenticated API credentials (`rohitajitbharadwaj`):
-- **Accelerators**: 2x Tesla T4 (16 GB GDDR6 per GPU, 32 GB total VRAM).
-- **Weekly Allowance**: 6.0 hours (360 minutes).
-- **Target Utilization**: Mixed-precision FP16 with PyTorch `torch.cuda.amp.autocast(dtype=torch.float16)`.
-- **Peak VRAM Cap**: Maximum batch size capped at 12 GB per GPU to eliminate CUDA out-of-memory risks.
+### 7.1 Memory-Safe Chunked Ensemble Execution
+To eliminate CUDA out-of-memory risks on 16 GB Tesla T4 GPUs:
+- Parameter `ensemble_member_chunk_size` is constrained to $C_{\text{ens}} \in \{1, 2, 4\}$.
+- For evaluation cubes, members are generated in chunks of size $C_{\text{ens}}$. Intermediate latents are cleared from VRAM immediately upon physical conversion.
+- Peak VRAM is capped at $< 12$ GB per GPU.
 
-### 7.2 Detailed Execution Time Budget
-The 360-minute GPU quota is allocated as follows:
+### 7.2 Detailed Execution Time Budget (6.0 Hours Total)
 
 | Campaign Phase | Runs | Steps / Member | Sample Count ($K$) | Target GPU | Time / Run | Total Time | Cumulative |
 |---|---|---|---|---|---|---|---|
@@ -246,46 +230,29 @@ The 360-minute GPU quota is allocated as follows:
 | **Phase 3: Matched Budget 32** | 4 | (32,1), (16,2), (8,4), (4,8) | {1, 2, 4, 8} | GPUs 0, 1 | 14 min | 56 min | 255 min |
 | **Phase 3: Matched Budget 64** | 5 | (64,1), (32,2), (16,4), (8,8), (4,16) | {1, 2, 4, 8, 16} | GPUs 0, 1 | 16 min | 80 min | 335 min |
 | **Phase 4: Holdout Champion Run** | 1 | Champion $(K^*, S^*, \eta^*)$ | $K^*$ | GPUs 0, 1 | 15 min | 15 min | 350 min |
-| **Reserve Buffer** | - | Bootstrap, plotting, disk I/O | - | Host CPU | 10 min | 10 min | **360 min** |
+| **Reserve Buffer** | - | Bootstrap, plotting, disk I/O | - | Host CPU | 10 min | 10 min | **360 min (6.0 h)** |
 
 ---
 
-## 8. Seed Manifest and Random Number Generator Determinism Audit
+## 8. Seed Manifest and RNG Determinism Audit
 
 ### 8.1 Seed Manifest Architecture
-To guarantee paired, reproducible comparisons across varying ensemble sizes $K$ and trajectory noise parameters $\eta$, Sprint 8 establishes an explicit nested seed architecture:
-
 $$\text{Seed}(k, b) = \text{base\_seed} + 1000 \cdot k + b$$
+where $\text{base\_seed} = 20260927$, $k \in \{1, \dots, K\}$, and $b$ is the validation batch index.
 
-where:
-- $\text{base\_seed} = 20260927$ (sprint launch date).
-- $k \in \{1, \dots, K\}$ is the ensemble member index.
-- $b$ is the validation batch index.
-
-### 8.2 Nested Property Invariant
-For any two ensemble sizes $K_1 < K_2$:
-$$\text{Seeds}(K_1) \subset \text{Seeds}(K_2)$$
-For example:
-- $K=2$: seeds $[s_1, s_2]$
-- $K=4$: seeds $[s_1, s_2, s_3, s_4]$
-- $K=8$: seeds $[s_1, s_2, s_3, s_4, s_5, s_6, s_7, s_8]$
-
-This nested property guarantees that any difference observed when moving from $K=4$ to $K=8$ is strictly attributable to the addition of members $5 \dots 8$, rather than a confounding resampling of members $1 \dots 4$.
-
-### 8.3 Paired $\eta$ Invariant
-When comparing $\eta = 0$ against $\eta \in \{0.25, 0.5, 1.0\}$, the initial latent noise $z_T^{(k)}$ is drawn using the identical seed $s_k$. Only the subsequent intermediate trajectory noise updates differ.
+### 8.2 Nested and Paired Invariants
+- **Nested Property**: $\text{Seeds}(K_1) \subset \text{Seeds}(K_2)$ for $K_1 < K_2$.
+- **Paired $\eta$ Invariant**: Identical initial latent noise seeds $s_k$ used across all $\eta$ values.
 
 ---
 
 ## 9. Data Leakage, Holdout Isolation, and Provenance Metadata Audit
 
 ### 9.1 Quarantined Holdout Protocol
-The 2023 holdout test set represents unseen operational evaluation data.
-- **Strict Quarantine**: No tuning, selection of $K$, optimization of $\eta$, or calibrator fitting is performed on 2023 data.
-- **Single Shot Evaluation**: Once all 2022 validation evaluations are complete and the champion ensemble configuration is selected, exactly one evaluation run is executed on the 2023 test set.
+The 2023 holdout test set is quarantined. No exploratory parameter sweeps, threshold tuning, or hyperparameter selection are conducted on 2023 data. Exactly one evaluation run is executed on 2023 data after all validation evaluations are finalized.
 
 ### 9.2 Provenance Metadata Schema
-Every evaluation artifact produced in Sprint 8 must persist a complete provenance header conforming to the following JSON schema:
+Every evaluation artifact produced in Sprint 8 must persist a complete provenance header:
 
 ```json
 {
@@ -295,14 +262,15 @@ Every evaluation artifact produced in Sprint 8 must persist a complete provenanc
     "checkpoint_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
     "parameter_count": 15685478,
     "model_architecture": "MultiTaskUNet_ResidualDiffusion",
+    "noise_schedule": "linear_beta_1e-4_to_0.035_T100",
     "sampler": "Standard_DDIM",
     "total_nfe": 32,
     "ensemble_size_K": 8,
     "denoising_steps_S": 4,
     "eta": 0.5,
     "base_seed": 20260927,
+    "ensemble_member_chunk_size": 4,
     "dataset_split": "validation_2022",
-    "batch_size": 4,
     "precision": "torch.float16",
     "accelerator": "2x Tesla T4",
     "execution_timestamp": "2026-09-27T12:00:00Z"
@@ -314,8 +282,9 @@ Every evaluation artifact produced in Sprint 8 must persist a complete provenanc
 
 ## 10. Audit Conclusion and Execution Readiness
 
-1. **Model Weights**: Frozen Candidate 3 weights are verified and protected by hard failure gates.
-2. **Mathematical Foundations**: Fair-CRPS, Brier Skill Score, and Spread-Skill metrics are properly formulated to eliminate finite-sample bias.
-3. **Physical Transformation**: Member-by-member transformation ordering is formally proven and enforced.
-4. **Compute Allocation**: 6.0 hours of 2x Tesla T4 GPU compute is realistically allocated across all matched-budget permutations.
-5. **Readiness**: The specifications are complete, scientifically grounded, and approved for Phase 0 execution.
+1. **Noise Schedule Rectified**: Documented as linear beta schedule (`beta_start=1e-4`, `beta_end=0.035`, $T=100$), exactly matching code.
+2. **Estimator Domains Clarified**: Fair-CRPS strictly defined for $K \ge 2$; $K=1$ fallback formally designated as $\text{CRPS}_{\text{det}} = \text{MAE}$.
+3. **Physical Transformation Validated**: Member-wise clipping Jensen analysis corrected; physical repair burden tracking established.
+4. **Diversity Diagnostics Integrated**: Pairwise RMSE and correlation metrics added to detect degenerate ensembles.
+5. **Memory Safety Established**: Chunked batching ($C_{\text{ens}} \le 4$) prevents OOM risks.
+6. **Execution Readiness**: All review amendments are fully integrated; documentation is ready for stakeholder sign-off prior to implementation.

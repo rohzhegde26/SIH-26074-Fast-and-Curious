@@ -4,7 +4,7 @@
 **Corpus**: `rohzhegde26/SIH-26074-Fast-and-Curious`  
 **Branch**: `feat/spatiotemporal-diffusion-downscaler`  
 **Sprint**: 8 of 10 (Research Roadmap)  
-**Date**: September 27, 2026  
+**Date**: September 27, 2026 (Revised with Review Amendments)  
 
 ---
 
@@ -24,25 +24,28 @@ The central question addressed is:
 
 ---
 
-## 2. Key Methodological Invariants
+## 2. Key Methodological Invariants and Review Amendments
 
 1. **Frozen Weights**: Zero network retraining. All experiments evaluate the Sprint 6 Candidate 3 champion weights (`models/checkpoints/sprint6_candidate3_multitask_champion.pt`), locked at 15,685,478 parameters.
-2. **Decoupled Stochasticity**: Initial-noise diversity ($\eta = 0$) is evaluated separately from intermediate trajectory noise injection ($\eta \in \{0.25, 0.5, 1.0\}$) using paired, nested seed manifests.
-3. **Member-Wise Inversion Invariant**: Predictions are converted to physical units and non-linear physical bounds ($P \ge 0$, $0 \le \text{RH} \le 100\%$, $T_{\min} \le T_{\max}$) applied member-by-member before ensemble reduction.
-4. **Fair Probabilistic Scoring**: Unbiased Fair-CRPS and Brier Skill Score relative to sample climatology.
-5. **Statistical Rigor**: 7-lead cube-preserving paired bootstrap confidence intervals on 2022 validation; 2023 holdout evaluated exactly once.
-6. **Compute Platform**: Scheduled across 6.0 hours of 2x Tesla T4 Kaggle student-tier GPU accelerators.
+2. **Audited Noise Schedule**: Verified linear beta schedule (`beta_start = 1e-4`, `beta_end = 0.035`, $T = 100$), matching the codebase.
+3. **Decoupled Stochasticity**: Initial-noise diversity ($\eta = 0$) is evaluated separately from intermediate trajectory noise injection ($\eta \in \{0.25, 0.5, 1.0\}$) using paired, nested seed manifests.
+4. **Member-Wise Inversion Invariant & Repair Burden**: Predictions are converted to physical units and non-linear physical bounds ($P \ge 0$, $0 \le \text{RH} \le 100\%$, $T_{\min} \le T_{\max}$) applied member-by-member before ensemble reduction. Repair frequency and adjustment magnitudes are explicitly tracked as diagnostics.
+5. **Fair Probabilistic Scoring**: Unbiased Fair-CRPS for $K \ge 2$; deterministic CRPS fallback ($\text{CRPS}_{\text{det}} = \text{MAE}$) for $K=1$. Brier Skill Score evaluated against training-derived climatology as primary reference.
+6. **Ensemble Diversity Diagnostics**: Explicit tracking of mean pairwise member RMSE, spatial correlation, and effective diversity ratio to detect degenerate ensembles.
+7. **Memory-Safe Chunked Execution**: Constrained member chunking ($C_{\text{ens}} \le 4$) to eliminate VRAM exhaustion risks on Tesla T4 GPUs.
+8. **Statistical Rigor**: 7-lead cube-preserving paired bootstrap confidence intervals on 2022 validation; 2023 holdout evaluated exactly once.
+9. **Compute Platform**: Scheduled across 6.0 hours of 2x Tesla T4 Kaggle student-tier GPU accelerators.
 
 ---
 
 ## 3. Matched-Compute Experimental Grid
 
-| Budget ($B$) | Member Count ($K$) | Denoising Steps ($S$) | Primary Evaluation Metric |
-|---|---|---|---|
-| **8 NFE** | $K=1, S=8$ vs $K=2, S=4$ | 8 | Fair-CRPS, Wet-MAE, BSS@15 |
-| **16 NFE** | $K=1, S=16$ vs $K=2, S=8$ vs $K=4, S=4$ | 16 | Fair-CRPS, Wet-MAE, BSS@15 |
-| **32 NFE (Flagship)** | $K=1, S=32$ vs $K=2, S=16$ vs $K=4, S=8$ vs $K=8, S=4$ | 32 | Fair-CRPS, BSS@30, SSR, Reliability |
-| **64 NFE** | $K=1, S=64$ vs $K=2, S=32$ vs $K=4, S=16$ vs $K=8, S=8$ vs $K=16, S=4$ | 64 | Fair-CRPS, BSS@30, Saturation Curve |
+| Budget ($B$) | Member Count ($K$) | Denoising Steps ($S$) | CRPS Metric Type | Primary Probabilistic Metrics |
+|---|---|---|---|---|
+| **8 NFE** | $K=1, S=8$ vs $K=2, S=4$ | 8 | $\text{CRPS}_{\text{det}}$ vs $\text{CRPS}_{\text{fair}}$ | Fair-CRPS, Wet-MAE, BSS@15, Pairwise RMSE |
+| **16 NFE** | $K=1, S=16$ vs $K=2, S=8$ vs $K=4, S=4$ | 16 | $\text{CRPS}_{\text{det}}$ vs $\text{CRPS}_{\text{fair}}$ | Fair-CRPS, Wet-MAE, BSS@15, Pairwise Correlation |
+| **32 NFE (Flagship)** | $K=1, S=32$ vs $K=2, S=16$ vs $K=4, S=8$ vs $K=8, S=4$ | 32 | $\text{CRPS}_{\text{det}}$ vs $\text{CRPS}_{\text{fair}}$ | Fair-CRPS, BSS@30, SSR, Reliability, Energy Score |
+| **64 NFE** | $K=1, S=64$ vs $K=2, S=32$ vs $K=4, S=16$ vs $K=8, S=8$ vs $K=16, S=4$ | 64 | $\text{CRPS}_{\text{det}}$ vs $\text{CRPS}_{\text{fair}}$ | Fair-CRPS, BSS@30, Saturation Curve, Effective Diversity |
 
 ---
 
