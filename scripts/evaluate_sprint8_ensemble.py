@@ -705,7 +705,24 @@ def main():
     out_root, reports_dir, zarr_path, index_path, stats_path = resolve_paths(args)
     reports_dir.mkdir(parents=True, exist_ok=True)
 
-    ckpt_path = Path(args.checkpoint_path) if args.checkpoint_path else (ROOT / "models" / "checkpoints" / "sprint6_candidate3_multitask_champion.pt")
+    if args.checkpoint_path:
+        ckpt_path = Path(args.checkpoint_path)
+    else:
+        ckpt_cands = [
+            out_root / "models" / "checkpoints" / "sprint6_candidate3_multitask_champion.pt",
+            ROOT / "models" / "checkpoints" / "sprint6_candidate3_multitask_champion.pt",
+            Path("/kaggle/working/models/checkpoints/sprint6_candidate3_multitask_champion.pt"),
+            Path("/kaggle/input/sih26074-sprint6-checkpoints/sprint6_candidate3_multitask_champion.pt"),
+        ]
+        ckpt_path = next((c for c in ckpt_cands if c.exists()), None)
+        if ckpt_path is None and Path("/kaggle/input").exists():
+            for p in Path("/kaggle/input").rglob("*.pt"):
+                if "candidate3" in p.name.lower() or "sprint6" in p.name.lower() or "champion" in p.name.lower():
+                    ckpt_path = p
+                    break
+        if ckpt_path is None:
+            ckpt_path = ROOT / "models" / "checkpoints" / "sprint6_candidate3_multitask_champion.pt"
+
     verify_checkpoint(ckpt_path)
 
     model = load_model(ckpt_path, device=device)
@@ -733,13 +750,42 @@ def main():
     print(f"[+] Loaded validation split: {len(val_ds)} samples ({len(val_loader)} batches).")
 
     # Filter conditions to run
-    target_cond = args.condition.upper()
-    if target_cond == "ALL":
-        to_run = CONDITIONS
-    elif target_cond in ["FLAGSHIP", "BUDGET32"]:
-        to_run = [c for c in CONDITIONS if c["budget"] == 32]
-    else:
-        to_run = [c for c in CONDITIONS if c["id"].upper() == target_cond]
+    raw_tokens = [tok.strip().upper() for tok in args.condition.split(",") if tok.strip()]
+    to_run = []
+    seen_ids = set()
+
+    for tok in raw_tokens:
+        if tok == "ALL":
+            for c in CONDITIONS:
+                if c["id"] not in seen_ids:
+                    to_run.append(c)
+                    seen_ids.add(c["id"])
+        elif tok in ["FLAGSHIP", "BUDGET32"]:
+            for c in CONDITIONS:
+                if c["budget"] == 32 and c["id"] not in seen_ids:
+                    to_run.append(c)
+                    seen_ids.add(c["id"])
+        elif tok == "BUDGET8":
+            for c in CONDITIONS:
+                if c["budget"] == 8 and c["id"] not in seen_ids:
+                    to_run.append(c)
+                    seen_ids.add(c["id"])
+        elif tok == "BUDGET16":
+            for c in CONDITIONS:
+                if c["budget"] == 16 and c["id"] not in seen_ids:
+                    to_run.append(c)
+                    seen_ids.add(c["id"])
+        elif tok == "BUDGET64":
+            for c in CONDITIONS:
+                if c["budget"] == 64 and c["id"] not in seen_ids:
+                    to_run.append(c)
+                    seen_ids.add(c["id"])
+        else:
+            matched = [c for c in CONDITIONS if c["id"].upper() == tok]
+            for c in matched:
+                if c["id"] not in seen_ids:
+                    to_run.append(c)
+                    seen_ids.add(c["id"])
 
     if not to_run:
         print(f"[!] No matching conditions found for '{args.condition}'. Available IDs:")
