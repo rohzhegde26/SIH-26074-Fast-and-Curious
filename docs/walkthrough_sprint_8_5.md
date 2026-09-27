@@ -11,7 +11,7 @@
 ## 1. Overview and Motivation
 
 Sprint 8 established that inference compute can be traded between denoising depth ($S$) and ensemble breadth ($K$). Under a fixed budget of 32 neural function evaluations (NFEs):
-- **Deeper ensembles** ($K=2, S=16, \eta=0.0$) achieve superior continuous probabilistic scores (Fair-CRPS = 0.5401, Multivariate Energy Score = 2.083).
+- **Deeper ensembles** ($K=2, S=16, \eta=0.0$) achieve superior continuous probabilistic scores (Fair-CRPS = 0.5401, Multivariate Energy Score ≈ 0.2769).
 - **Broader ensembles** ($K=8, S=4, \eta=0.5$) achieve superior deterministic point accuracy and convective storm recall (Wet-MAE = 6.51 mm, CSI@30 = 0.728).
 
 However, Sprint 8 revealed a fundamental vulnerability:
@@ -67,7 +67,7 @@ To address the low nominal coverage (21.0% at 90%), split-conformal calibration 
 $$R_i = \frac{|y_i - \hat{\mu}_i|}{\hat{\sigma}_i + \epsilon}$$
 Prediction intervals are constructed on unseen validation cases as:
 $$C(x) = [\max(0, \hat{\mu}(x) - \hat{q}_{1-\gamma} \hat{\sigma}(x)), \; \hat{\mu}(x) + \hat{q}_{1-\gamma} \hat{\sigma}(x)]$$
-This provides guaranteed finite-sample coverage while respecting the non-negative physical boundary ($P \ge 0$).
+Under the relevant exchangeability assumptions, this construction targets finite-sample marginal coverage while respecting the non-negative physical boundary ($P \ge 0$). Because the Sprint 8.5 split is chronological weather data, coverage must be verified empirically rather than assumed.
 
 ### 3.4 Pillar 4: Sampler vs Calibration Attribution
 To cleanly isolate the source of the uncertainty deficit, we evaluate four orthogonal states:
@@ -77,7 +77,7 @@ To cleanly isolate the source of the uncertainty deficit, we evaluate four ortho
 4. **Combined:** Jointly optimized sampler plus post-hoc calibration.
 
 ### 3.5 Pillar 5: Physical Repair-Burden Attribution
-Sprint 8 reported that 31% to 37% of precipitation predictions undergo non-negativity repair ($P = \max(0, P)$), shifting 7% to 8% of total rainfall mass. We will conduct an attribution test on raw unclipped diffusion outputs to determine whether negative values indicate:
+Sprint 8 reported that 31% to 37% of precipitation predictions undergo non-negativity repair ($P = \max(0, P)$), shifting 7% to 8% of total rainfall mass. This is a candidate mechanism for under-dispersion, not yet a proven cause. We will conduct an attribution test on raw unclipped diffusion outputs to determine whether negative values indicate:
 - A systematic negative bias in light rain areas, or
 - Standard diffusion noise around the zero boundary.
 
@@ -102,7 +102,7 @@ To eliminate data leakage during post-hoc calibration:
 
 | Finding | Diagnostic Conclusion | Decision for Sprint 9 |
 |---|---|---|
-| Post-hoc calibration resolves spread (SSR $\ge 0.85$, Cov@90 $\ge 75\%$) without harming Wet-MAE ($<1\%$ shift) or CSI@30 ($<0.01$ shift). | Bottleneck was calibration scale. | Focus Sprint 9 model scaling entirely on advancing deterministic point accuracy and high-resolution storm features. |
+| Post-hoc calibration resolves spread (SSR $\ge 0.85$, Cov@90 $\ge 75\%$) without harming Wet-MAE (within 1% relative shift) or CSI@30 (within 0.01 absolute). | Bottleneck was calibration scale. | Focus Sprint 9 model scaling entirely on advancing deterministic point accuracy and high-resolution storm features. |
 | Post-hoc calibration fails or distorts physical fields, but sampler adjustments restore spread. | Bottleneck was sampler dynamics. | Introduce advanced diffusion samplers (predictor-corrector, Langevin) alongside capacity scaling. |
 | Neither post-hoc calibration nor sampler tuning can resolve under-dispersion without degrading point skill. | Bottleneck is neural representation. | Increase model capacity and introduce explicit dispersion-promoting loss objectives (e.g. CRPS loss, ensemble distillation). |
 
@@ -111,3 +111,10 @@ To eliminate data leakage during post-hoc calibration:
 ## 6. Next Steps
 
 With deep research and Phase 0 reconciliation complete, the implementation plan, model training audit, and metric reconciliation artifacts have been drafted. Following user review and approval, we will proceed to generate the calibration and diagnostic scripts (`src/models/calibration.py`, `scripts/evaluate_sprint8_5_calibration.py`, `tests/models/test_calibration.py`).
+
+
+## 7. Diagnostic Interpretation Caveats
+
+- Thermodynamic and wind variables show substantially better uncertainty behavior than precipitation, but they should not be described as perfectly calibrated solely from SSR and empirical coverage.
+- For precipitation, use ensemble rank histograms; ordinary continuous PIT is inappropriate with zero-mass and finite K unless a randomized tie-handling procedure is explicitly implemented.
+- Physical clipping is treated as a candidate mechanism for precipitation under-dispersion and is tested in Sprint 8.5 rather than assumed to be causal.
