@@ -119,3 +119,12 @@ I certify that:
 2. The pre-experiment metric discrepancy has been verified and documented with mathematical certainty.
 3. The 2023 holdout test set remains strictly quarantined.
 4. All computational experiments in Sprint 8.5 adhere to the scientific constraints of Problem Statement 26074.
+
+
+## 6. Methodological Cautions Added Before Implementation
+
+1. **Uncertainty calibration claims:** thermodynamic and wind variables are substantially better behaved than precipitation, but are not certified as perfectly calibrated.
+2. **Precipitation clipping:** the observed clipping burden is a candidate mechanism for under-dispersion, not a proven causal explanation; Sprint 8.5 must quantify its effect.
+3. **Conformal prediction:** finite-sample marginal coverage depends on the relevant exchangeability assumptions. The chronological weather split does not automatically satisfy them, so Sprint 8.5 must report empirical coverage rather than promise a formal guarantee.
+4. **Precipitation PIT:** because precipitation has zero mass and the ensemble is finite, precipitation rank histograms are preferred; randomized PIT is used only with explicit treatment of ties/discrete support.
+5. **Sprint 9 decision gate:** use the explicit SSR ≥ 0.85 and 90% coverage ≥ 75% gate with the existing Wet-MAE / CSI@30 guardrails; do not use an independent generic "70% of gap closed" criterion.
