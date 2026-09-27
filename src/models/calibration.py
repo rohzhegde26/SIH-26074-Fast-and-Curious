@@ -141,16 +141,17 @@ class LogisticProbabilityCalibrator:
         raw_flat = np.clip(np.asarray(raw_probs, dtype=np.float64).ravel(), self.eps, 1.0 - self.eps)
         tgt_flat = np.asarray(binary_targets, dtype=np.int64).ravel()
 
-        logit_raw = np.log(raw_flat / (1.0 - raw_flat)).reshape(-1, 1)
-
-        if SKLEARN_AVAILABLE:
-            clf = LogisticRegression(solver="lbfgs", C=1.0)
-            clf.fit(logit_raw, tgt_flat)
-            self.w1 = float(clf.coef_[0, 0])
-            self.w0 = float(clf.intercept_[0])
-        else:
+        if len(np.unique(tgt_flat)) < 2 or not SKLEARN_AVAILABLE:
             self.w0 = 0.0
             self.w1 = 1.0
+            self.fitted = True
+            return self
+
+        logit_raw = np.log(raw_flat / (1.0 - raw_flat)).reshape(-1, 1)
+        clf = LogisticRegression(solver="lbfgs", C=1.0)
+        clf.fit(logit_raw, tgt_flat)
+        self.w1 = float(clf.coef_[0, 0])
+        self.w0 = float(clf.intercept_[0])
 
         self.fitted = True
         return self

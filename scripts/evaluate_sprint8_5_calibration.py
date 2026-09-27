@@ -282,10 +282,10 @@ def evaluate_sprint8_5_full_pipeline(
     eval_p_members = eval_members[:, :, :, 0] # [N_eval, K, T_f, H, W]
     eval_p_targets = eval_targets[:, :, 0] # [N_eval, T_f, H, W]
 
+    eval_members_k_first = eval_members.permute(1, 0, 2, 3, 4, 5) # [K, N_eval, T_f, C, H, W]
     for i in range(len(eval_members)):
-        # members shape [K, T_f, C, H, W], target shape [T_f, C, H, W]
-        m_i = eval_members[i].permute(1, 0, 2, 3, 4)
-        t_i = eval_targets[i]
+        m_i = eval_members_k_first[:, i:i+1] # [K, 1, T_f, C, H, W]
+        t_i = eval_targets[i:i+1] # [1, T_f, C, H, W]
         c_val, _ = compute_crps(m_i, t_i)
         pv_crps = compute_per_variable_crps(m_i, t_i)
         case_crps_baseline.append(float(c_val))
@@ -326,9 +326,10 @@ def evaluate_sprint8_5_full_pipeline(
         cov_50_hits, cov_80_hits, cov_90_hits, total_pixels = 0, 0, 0, 0
         all_sharp_90 = []
 
+        scaled_p_k_first = scaled_p_mem_eval.permute(1, 0, 2, 3, 4) # [K, N_eval, T_f, H, W]
         for i in range(len(eval_members)):
-            m_p_i = scaled_p_mem_eval[i] # [K, T_f, H, W]
-            t_p_i = eval_p_targets[i] # [T_f, H, W]
+            m_p_i = scaled_p_k_first[:, i:i+1] # [K, 1, T_f, H, W]
+            t_p_i = eval_p_targets[i:i+1] # [1, T_f, H, W]
 
             c_val, _ = compute_crps(m_p_i, t_p_i)
             case_p_crps.append(float(c_val))

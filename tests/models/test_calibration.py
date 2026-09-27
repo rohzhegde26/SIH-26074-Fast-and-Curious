@@ -168,3 +168,30 @@ class TestSpatialSharpnessSeam:
         assert len(freqs) == len(power)
         assert len(freqs) > 0
         assert (power >= 0.0).all()
+
+
+def test_evaluate_sprint8_5_full_pipeline_end_to_end():
+    """Verify that evaluate_sprint8_5_full_pipeline executes all phases without error on synthetic data."""
+    from scripts.evaluate_sprint8_5_calibration import evaluate_sprint8_5_full_pipeline
+
+    N, K, T_f, C, H, W = 6, 4, 7, 6, 16, 16
+    members_raw = torch.randn(N, K, T_f, C, H, W) * 2.0 + 5.0
+    targets = torch.randn(N, T_f, C, H, W) * 2.0 + 5.0
+
+    synthetic_data = {
+        "members_phys_raw": members_raw,
+        "target_phys": targets,
+        "num_cases": N,
+    }
+
+    results = evaluate_sprint8_5_full_pipeline(synthetic_data, calib_split_idx=3)
+
+    assert "case_level_baseline" in results
+    assert "phase2a_spread_rescaling" in results
+    assert "phase2b_probability_calibration" in results
+    assert "phase2c_conformal_intervals" in results
+    assert "phase3_lead_time_dynamics" in results
+    assert "phase4_repair_burden" in results
+    assert "phase5_spatial_sharpness" in results
+    assert len(results["phase3_lead_time_dynamics"]) == T_f
+
