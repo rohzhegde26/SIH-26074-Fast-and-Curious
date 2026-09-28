@@ -186,9 +186,11 @@ class MoETimeConditionedConvNeXtBlock(nn.Module):
         out = self.dwconv(x)
         out = self.norm(out)
 
-        # Time modulation: scale and shift
+        # Time modulation: scale and shift with stability clamping
         scale_shift = self.time_proj(time_emb)
         scale, shift = scale_shift.chunk(2, dim=-1)
+        scale = torch.clamp(scale, min=-4.0, max=4.0)
+        shift = torch.clamp(shift, min=-8.0, max=8.0)
         out = out * (1.0 + scale.unsqueeze(-1).unsqueeze(-1)) + shift.unsqueeze(-1).unsqueeze(-1)
 
         # Compute routing representation per sample (spatially pooled token)
