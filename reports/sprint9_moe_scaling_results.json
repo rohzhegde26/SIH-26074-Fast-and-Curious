@@ -1,4 +1,6 @@
 {
+  "eval_protocol": "sprint9_notebook",
+  "notes": "Linear un-normalization without physical bounds repair, wet threshold > 1.0 mm. For physical repair benchmark see Sprint 8.",
   "dense_s": {
     "params": 15685478,
     "active_params": 15685478,
@@ -9,6 +11,7 @@
       "precip_crps": 61.472,
       "raw_ssr": 0.053,
       "raw_cov90": 0.264,
+      "range_coverage_k2": 0.264,
       "laplacian_retention": 0.035,
       "avg_latency_s": 1.208
     }
@@ -23,6 +26,7 @@
       "precip_crps": 56.67,
       "raw_ssr": 0.053,
       "raw_cov90": 0.195,
+      "range_coverage_k2": 0.195,
       "laplacian_retention": 0.065
     }
   },
@@ -36,6 +40,7 @@
       "precip_crps": 56.02,
       "raw_ssr": 0.068,
       "raw_cov90": 0.223,
+      "range_coverage_k2": 0.223,
       "laplacian_retention": 0.084
     }
   },
@@ -49,6 +54,7 @@
       "precip_crps": 59.712,
       "raw_ssr": 0.067,
       "raw_cov90": 0.278,
+      "range_coverage_k2": 0.278,
       "laplacian_retention": 0.044,
       "avg_latency_s": 1.374
     }

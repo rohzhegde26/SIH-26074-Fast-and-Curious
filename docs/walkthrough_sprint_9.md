@@ -24,6 +24,8 @@ Each model tier is audited under matched inference compute:
 | **Dense-L** | 51,997,958 | 51,997,958 | 3.31x | 61.85 | 0.6207 | **0.6602** | **56.020** | **0.068** | 0.223 | **0.084** | 1.845 |
 | **MoE-4 (Top-1)** | 22,773,350 | **15,688,550** | **1.00x** | **61.56** | **0.6251** | 0.6521 | 59.712 | 0.067 | **0.278** | 0.044 | 1.374 |
 
+*Note: Wet-MAE and Fair-CRPS reflect the Sprint 9 exploratory notebook protocol (linear un-normalization with wet-mask > 1.0 mm, without Sprint 8 member-wise physical bounds repair). They are internally self-consistent across tiers, but distinct from Sprint 8's 6.51 mm physical repair benchmark. Coverage reflects K=2 ensemble range coverage.*
+
 ## 5. Artifacts and Checkpoints
 - `models/checkpoints/sprint9_dense_m_weights.pt` (124.8 MB)
 - `models/checkpoints/sprint9_dense_l_weights.pt` (208.0 MB)

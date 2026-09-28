@@ -117,7 +117,10 @@ Following execution across Phase 1 (Dense Scaling Ladder) and Phase 2 (Sparse Mo
 | **Dense-L** | 51,997,958 | 51,997,958 | 3.31x | 61.85 | 0.6207 | **0.6602** | **56.020** | **0.068** | 0.223 | **0.084** | 1.845 |
 | **MoE-4 (Top-1)** | 22,773,350 | **15,688,550** | **1.00x** | **61.56** | **0.6251** | 0.6521 | 59.712 | 0.067 | **0.278** | 0.044 | 1.374 |
 
+*Note on Metric Comparability: Wet-MAE and Fair-CRPS were evaluated under the Sprint 9 exploratory notebook protocol (linear un-normalization with wet-mask > 1.0 mm, without Sprint 8 member-wise physical bounds repair). They are internally self-consistent across tiers, but distinct from Sprint 8's 6.51 mm physical repair metric. Coverage reflects K=2 ensemble range coverage.*
+
 ### Verdict: Outcome E Validated
 1. **MoE-4 Point Skill Champion**: MoE-4 achieved the lowest Wet-MAE (**61.56 mm**) and highest CSI@15 (**0.6251**) while maintaining 15.69M active parameters (1.00x Candidate 3 baseline) and 1.37s inference latency.
 2. **Dense-L Extreme & Texture Champion**: Dense-L achieved peak CSI@30 (**0.6602**), lowest Fair-CRPS (**56.02**), and highest spatial Laplacian retention (**0.084**, +140% over control).
 3. **Deployment Strategy**: MoE-4 is established as the default lightweight engine for real-time edge Panchayat inference, while Dense-L serves high-performance regional forecasting and cloudburst early warning.
+

@@ -19,5 +19,6 @@
 - In Phase 1 (Dense-S, Dense-M, Dense-L evaluated together over 122 forecast cubes at 32 NFE), Dense-S control achieved Fair-CRPS 58.349 mm and Wet-MAE 62.63 mm.
 - In Phase 2 (Dense-S vs MoE-4 evaluated in an independent stochastic pass), Dense-S control scored Fair-CRPS 61.472 mm and Wet-MAE 62.77 mm, against which MoE-4 achieved 59.712 mm (-1.760 mm delta) and 61.56 mm (-1.21 mm delta).
 - Both evaluation phases demonstrate consistent improvements from architectural scaling, showing ~1.7 to 2.3 mm Fair-CRPS reductions over Candidate 3 control.
+- Note on Evaluation Protocol: Wet-MAE and Fair-CRPS reflect the Sprint 9 exploratory notebook protocol (linear un-normalization with wet threshold > 1.0 mm, without Sprint 8 member-wise physical bounds repair). They are internally self-consistent across tiers, but distinct from Sprint 8's 6.51 mm physical repair benchmark. Coverage reflects K=2 ensemble range coverage.
 
 [+] Phase 1 Dense Capacity Scaling Execution Complete.
