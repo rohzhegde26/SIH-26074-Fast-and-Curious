@@ -26,11 +26,11 @@ This report analyzes the empirical routing behavior, quantitative skill, and eff
 
 ## 3. Quantitative Analysis & Hypothesis Verification
 
-### H6: MoE Efficiency & Capacity Decoupling (CONFIRMED)
+### H6: MoE Efficiency Trade-Off (Partially Supported - Selective Efficiency Win)
 - **Point Accuracy**: MoE-4 achieves the lowest Wet-MAE (**61.56 mm**) across all models, outperforming both Dense-S (62.77 mm, -1.21 mm delta) and dense scaled models (Dense-M 61.62 mm, Dense-L 61.85 mm).
 - **Moderate Precipitation Recall**: MoE-4 delivers the highest CSI@15 (**0.6251**), outperforming Dense-S (0.6087, +0.0164 delta) and Dense-M (0.6209).
-- **Active Compute Invariance**: MoE-4 executes with only 15.69M active parameters during inference (1.0002x ratio vs Candidate 3), preserving low latency (1.37s vs 1.85s for Dense-L).
-- **Uncertainty Calibration**: MoE-4 achieves the highest ensemble range coverage (**0.278**) across 2 stochastic members and improves Fair-CRPS to 59.712 (-1.76 vs Dense-S).
+- **Active Compute Decoupling**: MoE-4 executes with only 15.69M active parameters during inference (1.0002x ratio vs Candidate 3), preserving low latency (1.37s vs 1.85s for Dense-L).
+- **Trade-Off Boundary**: MoE-4 does not uniformly dominate Dense-M or Dense-L across all axes. Dense-M retains better Fair-CRPS (56.67 vs 59.71) and CSI@30 (0.6589 vs 0.6521), while Dense-L achieves the highest extreme storm recall (CSI@30 = 0.6602) and spatial texture (0.084). MoE-4 represents a specialized active-compute efficiency strategy rather than a universal quality replacement.
 
 ### Spatial Detail & Convective Extremes Tradeoff
 - While MoE-4 dominates point accuracy and efficiency, **Dense-L** achieves superior high-frequency spatial Laplacian retention (**0.084**, +140% over control) and highest CSI@30 (**0.6602**), showing that full-width dense representations excel at resolving sharp convective storm boundaries.
@@ -39,14 +39,15 @@ This report analyzes the empirical routing behavior, quantitative skill, and eff
 
 ## 4. Empirical Routing Diagnostics
 
-- **Soft Routing Entropy**: The router outputs a normalized entropy of 1.000 over the softmax gating distribution $P_e$, confirming that the gating network assigns continuous non-zero probability mass across all 4 expert pathways prior to selection.
-- **Hard Top-1 Dispatch Frequencies**: Across the 122 validation cubes, hard Top-1 expert assignments measured:
+- **Soft Routing Entropy**: The router outputs a normalized entropy of 1.000 over the continuous softmax gating distribution $P_e$, confirming that the gating network assigns continuous non-zero probability mass across all 4 expert pathways prior to selection.
+- **Hard Top-1 Dispatch Frequencies (Final Validation Batch)**: Measured on the final validation batch (14 spatiotemporal tokens across 2 cubes and 7 lead days), hard Top-1 expert assignments were:
   $$\mathbf{f} = [0.857, 0.071, 0.000, 0.071]$$
 - **Dispatch Interpretation**:
-  - Expert 0 serves as the primary backbone denoiser, processing 85.7% of cubes.
-  - Experts 1 and 3 receive 7.1% each, capturing outlier and localized features.
-  - Expert 2 received zero Top-1 assignments in this sample, indicating that under Top-1 hard routing, one expert remained inactive while the remaining 3 handled the domain diversity.
-  - Note: Attributing specific experts to named meteorological phenomena (such as stratiform flow or orographic shear) requires conditioned clustering analysis and remains an area for future empirical investigation.
+  - Expert 0 serves as the primary backbone denoiser, receiving 12 of 14 token assignments (85.7%).
+  - Experts 1 and 3 receive 1 token assignment each (7.1%), capturing non-modal patterns.
+  - Expert 2 received zero Top-1 assignments in this batch, indicating that discrete selection concentrated on 3 of the 4 available experts.
+  - Note: Attributing specific experts to named meteorological phenomena (such as stratiform flow or orographic shear) requires conditioned clustering analysis across all validation cubes and remains an area for future empirical investigation.
+
 
 ---
 

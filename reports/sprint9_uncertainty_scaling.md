@@ -21,8 +21,8 @@ Dense-M, Dense-L, and MoE-4 were trained under the Sprint 9 protocol from scratc
    With K=2 stochastic members in Distribution Mode, the coverage metric measures the fraction of ground-truth observations falling between the minimum and maximum of the ensemble members. Note that for K=2, this represents empirical range coverage rather than a true 5th to 95th percentile quantile interval.
 
 3. **Continuous Ranked Probability Score (Fair-CRPS)**:
-   $$\text{CRPS}_{\text{Fair}} = \mathbb{E}[|x - y|] - \frac{1}{2(K-1)} \sum_{k=1}^K \sum_{m=1}^K |x_k - x_m|$$
-   Evaluates full probabilistic distributional accuracy while penalizing finite ensemble size bias ($K=2$ stochastic members in Distribution Mode).
+   $$\text{CRPS}_{\text{Fair}} = \frac{1}{K} \sum_{k=1}^K |x_k - y| - \frac{1}{2K(K-1)} \sum_{k=1}^K \sum_{m=1}^K |x_k - x_m|$$
+   Evaluates full probabilistic distributional accuracy with the finite-ensemble unbiased correction (Ferro et al., 2008) across $K=2$ stochastic members in Distribution Mode.
 
 4. **Spread Rescaling Requirement ($\alpha^*$)**:
    The post-hoc ensemble variance inflation multiplier required to bring ensemble spread into skill parity ($\text{SSR} \to 1.0$).

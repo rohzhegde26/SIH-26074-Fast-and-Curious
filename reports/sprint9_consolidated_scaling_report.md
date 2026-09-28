@@ -15,11 +15,12 @@ Important Metric Comparability Note:
 - However, they MUST NOT be directly compared to or conflated with Sprint 8's Candidate-3 benchmark result (~6.51 mm), which was evaluated under non-linear inverse normalization with physical bounds repair and a standard meteorological wet threshold of p_tgt > 2.5 mm.
 
 ### Primary Findings
-1. **Outcome E Verified (Dual Champions)**: Model capacity scaling and sparse routing achieve distinct, non-overlapping Pareto frontiers:
-   - **MoE-4 is the Inference Efficiency & Wet-MAE Champion**: Achieves the lowest point prediction error (Wet-MAE 61.56 mm), highest moderate precipitation recall (CSI@15 = 0.6251), and highest ensemble range coverage (0.278) while executing at active parameter parity (15.69M active parameters, 1.374 s/cube latency).
+1. **Outcome E Partially Supported (Selective Efficiency Win & Distinct Champions)**:
+   - **MoE-4 is the Active-Compute Efficiency Champion**: Achieves the lowest point prediction error (Wet-MAE 61.56 mm) and highest moderate precipitation recall (CSI@15 = 0.6251) while executing at active parameter parity (15.69M active parameters, 1.374 s/cube latency). However, it does not uniformly replace larger dense models, as Dense-M and Dense-L retain superior scores on severe storm recall (CSI@30) and continuous ranked probability score (Fair-CRPS).
    - **Dense-L is the Extreme Storm & Spatial Sharpness Champion**: Achieves highest extreme cloudburst recall (CSI@30 = 0.6602), highest spatial texture retention (Laplacian energy 0.084, +47.4% over control), and lowest continuous ranked probability score (Fair-CRPS 56.02 mm) across the 52.00M parameter tier.
 2. **True Compute Decoupling**: MoE-4 expands parameter capacity from 15.69M to 22.77M (+7.09M parameters) with only 3,072 additional active routing parameters (1.0002x active compute ratio), achieving high-capacity representation with edge-compatible inference speed.
 3. **Finite Numerical Stability**: Training with Smooth L1 loss on convective tails and loss scaler initialization at 2048.0 maintained 100% finite gradients through 30 epochs without any NaN occurrences across all tiers.
+
 
 ---
 
@@ -58,14 +59,15 @@ The table below compiles measured architectural footprints, inference latencies,
 
 ### 3.1 Sparse Mixture of Experts Routing Dynamics
 - **Structural Design**: The MoE implementation places 4 ConvNeXt pointwise experts (expansion factor 2) at the 10x10 bottleneck stage (`down3_block`). A lightweight linear router selects the Top-1 expert per sample based on intermediate feature embeddings.
-- **Soft Routing Entropy**: Evaluated across all validation cubes, the normalized entropy of the softmax gating distribution P_e is 1.000, demonstrating that the router distributes continuous probability mass across all 4 expert candidates before hard selection.
-- **Hard Top-1 Dispatch Frequencies**: Across the 122 validation cubes, hard Top-1 expert dispatch frequencies measured:
+- **Soft Routing Entropy**: Evaluated across validation samples, the normalized entropy of the continuous softmax gating distribution P_e is 1.000, demonstrating that the router distributes continuous probability mass across all 4 expert candidates before hard selection.
+- **Hard Top-1 Dispatch Frequencies (Final Validation Batch)**: Measured on the final validation batch (14 tokens across 2 cubes x 7 lead days), hard Top-1 expert assignments were:
   $$\mathbf{f} = [0.857, 0.071, 0.000, 0.071]$$
 - **Dispatch Interpretation**:
-  - Expert 0 serves as the primary backbone denoiser, processing 85.7% of all cubes.
-  - Experts 1 and 3 receive 7.1% each, capturing specialized non-modal patterns.
-  - Expert 2 received zero Top-1 assignments in this sample, indicating that hard selection concentrated on 3 of the 4 available experts.
-  - While the network demonstrates architectural specialization away from Expert 0 on 14.3% of cubes, correlating specific experts to named meteorological phenomena (such as stratiform rain or orographic shear) requires conditioned clustering analysis in future work.
+  - Expert 0 serves as the primary backbone denoiser, receiving 12 of 14 token assignments (85.7%).
+  - Experts 1 and 3 receive 1 token each (7.1%), capturing non-modal patterns.
+  - Expert 2 received zero Top-1 assignments in this batch, indicating that discrete selection concentrated on 3 of the 4 available experts.
+  - While the network demonstrates architectural specialization away from Expert 0 on 14.3% of tokens in this batch, correlating specific experts to named meteorological phenomena (such as stratiform rain or orographic shear) requires conditioned clustering analysis across all validation cubes in future work.
+
 - **Latency Impact**: Router evaluation and expert dispatch adds only 166 ms per cube (1.374 s vs 1.208 s), maintaining high throughput while capturing +7.09M parameters of specialized meteorological capacity.
 
 ### 3.2 Dense Width Scaling Dynamics

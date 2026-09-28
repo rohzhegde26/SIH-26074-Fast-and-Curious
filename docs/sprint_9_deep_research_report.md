@@ -70,14 +70,11 @@ Sparse Mixture of Experts decouples parameter count from active computational co
 - **Auxiliary Load-Balancing Loss**:
   $$\mathcal{L}_{aux} = \alpha_{aux} \cdot E \sum_{e=1}^E f_e P_e$$
   where $f_e$ is the fraction of tokens routed to expert $e$, and $P_e$ is the average routing probability. This prevents expert collapse (where 1 expert dominates) and dead experts.
-- **Regime Specialization**: In atmospheric downscaling, experts can naturally specialize across distinct physical regimes:
-  - Expert 1: Dry / stratiform conditions.
-  - Expert 2: Heavy convective precipitation and cloudbursts.
-  - Expert 3: Orographic lifting along mountain slopes.
-  - Expert 4: Thermal extremes and boundary-layer inversions.
-- **Compute Efficiency**: In MoE-4 (4 bottleneck experts, Top-1 routing), total parameters reach 35.8M while active forward compute matches Dense-S (15.7M active parameters).
+- **Regime Specialization**: In atmospheric downscaling, experts can be hypothesized to specialize across distinct physical regimes (e.g. stratiform monsoon precipitation, heavy convective storm cores, orographic lifting along mountain slopes, or dry thermal boundaries).
+- **Compute Efficiency**: In MoE-4 (4 bottleneck experts, Top-1 routing), total parameters reach 22.77M while active forward compute matches Dense-S (15.69M active parameters).
 
 ---
+
 
 ## 2. Sprint 9 Hypotheses & Experimental Framework
 
@@ -119,8 +116,9 @@ Following execution across Phase 1 (Dense Scaling Ladder) and Phase 2 (Sparse Mo
 
 *Note on Metric Comparability: Wet-MAE and Fair-CRPS were evaluated under the Sprint 9 exploratory notebook protocol (linear un-normalization with wet-mask > 1.0 mm, without Sprint 8 member-wise physical bounds repair). They are internally self-consistent across tiers, but distinct from Sprint 8's 6.51 mm physical repair metric. Coverage reflects K=2 ensemble range coverage.*
 
-### Verdict: Outcome E Validated
-1. **MoE-4 Point Skill Champion**: MoE-4 achieved the lowest Wet-MAE (**61.56 mm**) and highest CSI@15 (**0.6251**) while maintaining 15.69M active parameters (1.00x Candidate 3 baseline) and 1.37s inference latency.
-2. **Dense-L Extreme & Texture Champion**: Dense-L achieved peak CSI@30 (**0.6602**), lowest Fair-CRPS (**56.02**), and highest spatial Laplacian retention (**0.084**, +140% over control).
-3. **Deployment Strategy**: MoE-4 is established as the default lightweight engine for real-time edge Panchayat inference, while Dense-L serves high-performance regional forecasting and cloudburst early warning.
+### Verdict: Outcome E Partially Supported (Selective Efficiency Trade-Off)
+1. **MoE-4 Point Skill and Moderate Convective Champion**: MoE-4 achieved the lowest Wet-MAE (**61.56 mm**) and highest CSI@15 (**0.6251**) while maintaining 15.69M active parameters (1.0002x Candidate 3 baseline) and 1.37s inference latency.
+2. **Dense Scaling Retains Extreme Storm & CRPS Lead**: MoE-4 does not uniformly dominate Dense-M or Dense-L across all axes. Dense-M achieves better Fair-CRPS (56.67 vs 59.71) and CSI@30 (0.6589 vs 0.6521), while Dense-L achieves peak CSI@30 (**0.6602**), lowest Fair-CRPS (**56.02**), and highest spatial Laplacian retention (**0.084**).
+3. **Deployment Strategy**: MoE-4 functions effectively as an active-compute efficiency strategy for edge Panchayat serving, while Dense-L is optimal when compute allows and extreme convective storm detection and fine boundary sharpness are paramount.
+
 

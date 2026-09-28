@@ -177,6 +177,15 @@ def evaluate_model_on_val_loader(
     lap_single_list, lap_mean_list = [], []
     hf_single_list = []
 
+    # Routing diagnostic aggregation across all batches (for MoE denoiser)
+    expert_token_counts = [0] * 4
+    total_tokens_routed = 0
+    moe_block = None
+    if hasattr(model, "denoiser") and hasattr(model.denoiser, "down3_block"):
+        if hasattr(model.denoiser.down3_block, "last_metrics"):
+            moe_block = model.denoiser.down3_block
+
+
     # Fallback linear stats for sprint9_notebook mode
     m_p = 6.266
     s_p = 18.620
@@ -325,13 +334,21 @@ def evaluate_model_on_val_loader(
             range_cov_hits += int(((p_tgt >= ens_min) & (p_tgt <= ens_max)).sum().item())
             total_pts += p_tgt.numel()
 
+            # Accumulate router dispatch frequencies across batches if evaluating MoE
+            if moe_block is not None and getattr(moe_block, "last_metrics", None) is not None:
+                last_m = moe_block.last_metrics
+                n_tok = b_size * 7
+                total_tokens_routed += n_tok
+                for e_idx, freq in enumerate(last_m.get("expert_frequencies", [])):
+                    expert_token_counts[e_idx] += int(round(freq * n_tok))
+
             cubes_processed += b_size
 
     mean_sp = float(np.mean(spread_list))
     mean_rmse = float(np.mean(rmse_list))
     ssr = mean_sp / max(1e-6, mean_rmse)
 
-    return {
+    res = {
         "cubes_evaluated": cubes_processed,
         "eval_protocol": eval_protocol,
         "wet_mae_mm": round(float(np.mean(wet_maes)), 2),
@@ -346,6 +363,13 @@ def evaluate_model_on_val_loader(
         "laplacian_retention_mean": round(float(np.mean(lap_mean_list)), 3),
         "high_freq_psd_retention": round(float(np.mean(hf_single_list)), 3),
     }
+    if total_tokens_routed > 0:
+        res["aggregated_expert_frequencies"] = [
+            round(c / max(1, total_tokens_routed), 4) for c in expert_token_counts
+        ]
+        res["total_tokens_routed"] = total_tokens_routed
+
+    return res
 
 
 def main():
@@ -354,6 +378,7 @@ def main():
     parser.add_argument("--checkpoint-dense-m", type=str, default="models/checkpoints/sprint9_dense_m_weights.pt")
     parser.add_argument("--checkpoint-dense-l", type=str, default="models/checkpoints/sprint9_dense_l_weights.pt")
     parser.add_argument("--checkpoint-moe", type=str, default="models/checkpoints/sprint9_moe4_weights.pt")
+    parser.add_argument("--eval-tiers", nargs="+", default=["dense_s"], help="Tiers to evaluate dynamically (e.g. dense_s dense_m dense_l moe_4, or all)")
     parser.add_argument("--eval-protocol", type=str, choices=["sprint8_physical", "sprint9_notebook"], default="sprint8_physical")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--batch-size", type=int, default=2)
@@ -388,39 +413,65 @@ def main():
     val_loader = DataLoader(ds_val, batch_size=args.batch_size, shuffle=False, num_workers=0)
     print(f"[+] Loaded {len(ds_val)} forecast cubes for 2022 validation evaluation.")
 
-    # 2. Candidate 3 Control Evaluation
-    ckpt_s = Path(args.checkpoint_dense_s)
-    if not ckpt_s.exists() and Path("/kaggle/input").exists():
-        for f in Path("/kaggle/input").rglob("sprint6_candidate3_multitask_champion.pt"):
-            ckpt_s = f
-            break
+    tiers_to_eval = args.eval_tiers
+    if "all" in tiers_to_eval:
+        tiers_to_eval = ["dense_s", "dense_m", "dense_l", "moe_4"]
 
-    print(f"\n[*] Evaluating Candidate 3 Control (Dense-S, 15.69M params)...")
-    model_s = load_verified_model("dense_s", ckpt_s, device, verify_sha=True)
-    res_s = evaluate_model_on_val_loader(model_s, val_loader, ds_val.stats, device, eval_protocol=args.eval_protocol, max_cubes=args.max_cubes)
-    print(f"[+] Dense-S Evaluated: Wet-MAE={res_s['wet_mae_mm']}, CSI@30={res_s['csi30']}, CRPS={res_s['precip_crps']}, SSR={res_s['raw_ssr']}")
+    tier_ckpts = {
+        "dense_s": Path(args.checkpoint_dense_s),
+        "dense_m": Path(args.checkpoint_dense_m),
+        "dense_l": Path(args.checkpoint_dense_l),
+        "moe_4": Path(args.checkpoint_moe),
+    }
 
-    # 3. Compile report dictionary
+    eval_results = {}
+    for tier in tiers_to_eval:
+        ckpt_path = tier_ckpts[tier]
+        if not ckpt_path.exists() and Path("/kaggle/input").exists():
+            for f in Path("/kaggle/input").rglob(ckpt_path.name):
+                ckpt_path = f
+                break
+
+        if not ckpt_path.exists():
+            print(f"[!] Warning: Checkpoint for {tier} not found at {ckpt_path}. Skipping dynamic evaluation.")
+            continue
+
+        print(f"\n[*] Evaluating {tier.upper()} ({ckpt_path.name})...")
+        verify_sha = (tier == "dense_s")
+        model = load_verified_model(tier, ckpt_path, device, verify_sha=verify_sha)
+        res = evaluate_model_on_val_loader(model, val_loader, ds_val.stats, device, eval_protocol=args.eval_protocol, max_cubes=args.max_cubes)
+        eval_results[tier] = res
+        print(f"[+] {tier.upper()} Evaluated: Wet-MAE={res['wet_mae_mm']}, CSI@30={res['csi30']}, CRPS={res['precip_crps']}, SSR={res['raw_ssr']}")
+
+    # Compile report dictionary
     evaluation_summary = {
+        "eval_protocol": args.eval_protocol,
+        "protocol_description": (
+            "Canonical cross-sprint physical bounds repair (invert_normalization, bounds repair, p_tgt > 2.5 mm)"
+            if args.eval_protocol == "sprint8_physical"
+            else "Sprint 9 exploratory linear un-normalization protocol (without physical bounds repair, p_tgt > 1.0 mm)"
+        ),
         "dense_s": {
             "tier": "dense_s",
             "base_channels": 96,
             "trainable_parameters": EXPECTED_PARAM_COUNT_DENSE_S,
-            "status": "VALIDATED_EMPIRICAL_EVALUATION",
-            "metrics": res_s,
+            "status": "VALIDATED_EMPIRICAL_EVALUATION" if "dense_s" in eval_results else "FROZEN_CANDIDATE3_CONTROL",
+            "metrics": eval_results.get("dense_s"),
         },
         "dense_m": {
             "tier": "dense_m",
             "base_channels": 136,
             "trainable_parameters": EXPECTED_PARAM_COUNT_DENSE_M,
-            "status": "VALIDATED_EMPIRICAL_EVALUATION",
+            "status": "VALIDATED_EMPIRICAL_EVALUATION" if "dense_m" in eval_results else "RECORDED_EXPLORATORY_FRONTIER",
+            "metrics": eval_results.get("dense_m"),
             "checkpoint_available": Path(args.checkpoint_dense_m).exists(),
         },
         "dense_l": {
             "tier": "dense_l",
             "base_channels": 176,
             "trainable_parameters": EXPECTED_PARAM_COUNT_DENSE_L,
-            "status": "VALIDATED_EMPIRICAL_EVALUATION",
+            "status": "VALIDATED_EMPIRICAL_EVALUATION" if "dense_l" in eval_results else "RECORDED_EXPLORATORY_FRONTIER",
+            "metrics": eval_results.get("dense_l"),
             "checkpoint_available": Path(args.checkpoint_dense_l).exists(),
         },
         "moe_4": {
@@ -428,7 +479,8 @@ def main():
             "base_channels": 96,
             "trainable_parameters": EXPECTED_PARAM_COUNT_MOE4_TOTAL,
             "active_parameters": EXPECTED_PARAM_COUNT_MOE4_ACTIVE,
-            "status": "VALIDATED_EMPIRICAL_EVALUATION",
+            "status": "VALIDATED_EMPIRICAL_EVALUATION" if "moe_4" in eval_results else "RECORDED_EXPLORATORY_FRONTIER",
+            "metrics": eval_results.get("moe_4"),
             "checkpoint_available": Path(args.checkpoint_moe).exists(),
         },
     }
@@ -442,8 +494,21 @@ def main():
 
     # Generate Markdown Summary
     out_md = Path(args.output_md)
+    protocol_label = (
+        "Canonical Physical Repair Benchmark (Sprint 8 Aligned)"
+        if args.eval_protocol == "sprint8_physical"
+        else "Sprint 9 Exploratory Notebook Protocol"
+    )
+    res_s = eval_results.get("dense_s", {})
+    s_mae = res_s.get("wet_mae_mm", "62.63*")
+    s_csi30 = res_s.get("csi30", "0.6499*")
+    s_crps = res_s.get("precip_crps", "58.349*")
+    s_ssr = res_s.get("raw_ssr", "0.051*")
+    s_cov = res_s.get("range_coverage_k2", "0.243*")
+    s_lap = res_s.get("laplacian_retention_single", "0.057*")
+
     lines = [
-        "# Sprint 9: Model Capacity Scaling Pareto Frontier Report",
+        f"# Sprint 9: Model Capacity Scaling Pareto Frontier Report ({protocol_label})",
         "",
         "## 1. Executive Capacity Frontier Overview",
         "",
@@ -453,10 +518,12 @@ def main():
         "",
         "| Model Tier | Total Params | Active Params | Status | Wet-MAE (mm) | CSI@30 | Fair-CRPS | Raw SSR | Range Cov (K=2) | Lap Single |",
         "| :--- | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
-        f"| **Dense-S (Control)** | 15,685,478 | 15,685,478 | VALIDATED_BASELINE | {res_s['wet_mae_mm']} | {res_s['csi30']} | {res_s['precip_crps']} | {res_s['raw_ssr']} | {res_s['range_coverage_k2']} | {res_s['laplacian_retention_single']} |",
-        "| **Dense-M** | 31,198,518 | 31,198,518 | EMPIRICALLY_VALIDATED | 61.62 | 0.6589 | 56.670 | 0.053 | 0.195 | 0.065 |",
-        "| **Dense-L** | 51,997,958 | 51,997,958 | EMPIRICALLY_VALIDATED | 61.85 | 0.6602 | 56.020 | 0.068 | 0.223 | 0.084 |",
-        "| **MoE-4** | 22,773,350 | 15,688,550 | EMPIRICALLY_VALIDATED | 61.56 | 0.6521 | 59.712 | 0.067 | 0.278 | 0.044 |",
+        f"| **Dense-S (Control)** | 15,685,478 | 15,685,478 | VALIDATED_BASELINE | {s_mae} | {s_csi30} | {s_crps} | {s_ssr} | {s_cov} | {s_lap} |",
+        "| **Dense-M** | 31,198,518 | 31,198,518 | RECORDED_EXPLORATORY | 61.62* | 0.6589* | 56.670* | 0.053* | 0.195* | 0.065* |",
+        "| **Dense-L** | 51,997,958 | 51,997,958 | RECORDED_EXPLORATORY | 61.85* | 0.6602* | 56.020* | 0.068* | 0.223* | 0.084* |",
+        "| **MoE-4** | 22,773,350 | 15,688,550 | RECORDED_EXPLORATORY | 61.56* | 0.6521* | 59.712* | 0.067* | 0.278* | 0.044* |",
+        "",
+        "*Note: Values marked with an asterisk reflect the Sprint 9 exploratory notebook protocol. Tiers dynamically evaluated in this run reflect the active protocol specified above.",
         "",
         "## 2. Invariant Scientific Verification",
         "- All configurations preserve history H=14, context N=24, output crop M=16.",
@@ -470,3 +537,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

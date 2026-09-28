@@ -14,17 +14,19 @@
 ---
 
 ## 2. Hypothesis Evaluation (MoE vs Dense)
-- **Active Parameter Efficiency**: MoE-4 operates at 15,688,550 active parameters (1.0002x Candidate 3), while matching Dense capacity.
-- **MoE-4 vs Dense-S Wet-MAE**: Delta = -1.21 mm
-- **MoE-4 vs Dense-S CSI@30**: Delta = +0.0022
-- **MoE-4 vs Dense-S Fair-CRPS**: Delta = -1.760
+- **Active Parameter Efficiency**: MoE-4 operates at 15,688,550 active parameters (1.0002x Candidate 3), while expanding total capacity to 22.77M.
+- **MoE-4 vs Dense-S Wet-MAE**: Delta = -1.21 mm (61.56 vs 62.77)
+- **MoE-4 vs Dense-S CSI@15**: Delta = +0.0164 (0.6251 vs 0.6087)
+- **MoE-4 vs Dense-S Fair-CRPS**: Delta = -1.760 (59.712 vs 61.472)
+- **Multidimensional Trade-Off**: While MoE-4 matches or exceeds Dense-M on Wet-MAE and CSI@15 at 15.69M active compute, Dense-M and Dense-L retain advantages on extreme-event CSI@30 (0.6589 and 0.6602) and Fair-CRPS (56.67 and 56.02 mm).
 
 ---
 
 ## 3. MoE Routing Diagnostics
 - **Soft Routing Entropy**: 1.000 (computed across continuous router probability distributions P_e).
-- **Hard Top-1 Dispatch Frequencies**: `[85.7%, 7.1%, 0.0%, 7.1%]`.
-- **Assignment Distribution**: Expert 0 serves as the primary backbone (85.7%), Experts 1 and 3 receive 7.1% each, and Expert 2 is unassigned in this validation sample. Attributing specific experts to named meteorological regimes requires future conditioned clustering.
+- **Hard Top-1 Dispatch Frequencies (Final Validation Batch)**: `[85.7%, 7.1%, 0.0%, 7.1%]`.
+- **Assignment Distribution**: On the final validation batch (14 tokens across 2 cubes x 7 lead days), 12 tokens routed to Expert 0 (85.7%), 1 token to Expert 1 (7.1%), 0 to Expert 2 (0.0%), and 1 to Expert 3 (7.1%). Expert 0 acts as primary backbone. Correlating experts to physical meteorological regimes across all cubes requires future conditioned clustering.
+
 
 ---
 
