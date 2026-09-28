@@ -349,6 +349,8 @@ class TimeConditionedConvNeXtBlock(nn.Module):
         out = self.norm(out)
         scale_shift = self.time_proj(time_emb)
         scale, shift = scale_shift.chunk(2, dim=-1)
+        scale = torch.clamp(scale, min=-4.0, max=4.0)
+        shift = torch.clamp(shift, min=-8.0, max=8.0)
         out = out * (1.0 + scale.unsqueeze(-1).unsqueeze(-1)) + shift.unsqueeze(-1).unsqueeze(-1)
         out = self.pwconv1(out)
         out = self.act(out)
@@ -553,12 +555,16 @@ class ScalableSpatiotemporalResidualDiffusion(nn.Module):
         model_pred = self.denoiser(r_t=r_t, t=t, history=history, future_forecast=future_forecast, terrain=terrain)
         v_target = self.compute_v_target(r_0, t, noise)
 
+        # Cast predictions and targets to float32 for stable loss computation in FP16 mixed precision
+        pred_f = model_pred.float()
+        target_f = v_target.float()
+
         ref_precip = target_norm[:, :, 0:1] if target_norm is not None else r_0[:, :, 0:1]
-        tail_mask = (ref_precip > 0.469).float()
+        tail_mask = (ref_precip.float() > 0.469).float()
         precip_weights = 1.0 + 2.0 * tail_mask
-        p_loss = (precip_weights * (model_pred[:, :, 0:1] - v_target[:, :, 0:1]) ** 2).mean()
-        thermo_loss = F.mse_loss(model_pred[:, :, 1:4], v_target[:, :, 1:4])
-        wind_loss = F.mse_loss(model_pred[:, :, 4:6], v_target[:, :, 4:6])
+        p_loss = (precip_weights * F.smooth_l1_loss(pred_f[:, :, 0:1], target_f[:, :, 0:1], beta=1.0, reduction="none")).mean()
+        thermo_loss = F.smooth_l1_loss(pred_f[:, :, 1:4], target_f[:, :, 1:4], beta=1.0)
+        wind_loss = F.smooth_l1_loss(pred_f[:, :, 4:6], target_f[:, :, 4:6], beta=1.0)
 
         loss = 1.0 * p_loss + 1.2 * thermo_loss + 1.1 * wind_loss
         return loss, model_pred, v_target
@@ -665,7 +671,7 @@ def train_scaled_model(tier_name: str, base_channels: int, epochs: int = TRAIN_E
     m.train()
     optimizer = torch.optim.AdamW(m.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
-    scaler = torch.amp.GradScaler("cuda", enabled=torch.cuda.is_available())
+    scaler = torch.amp.GradScaler("cuda", enabled=torch.cuda.is_available(), init_scale=2048.0)
 
     for epoch in range(1, epochs + 1):
         total_loss = 0.0
@@ -682,9 +688,20 @@ def train_scaled_model(tier_name: str, base_channels: int, epochs: int = TRAIN_E
             with torch.amp.autocast("cuda", enabled=torch.cuda.is_available()):
                 loss, _, _ = m.compute_training_loss(r0, h, f, terr, target_norm=y)
 
+            if not torch.isfinite(loss):
+                print(f"    [WARNING] Non-finite loss encountered ({loss.item()}). Flushing gradients and skipping batch.")
+                optimizer.zero_grad(set_to_none=True)
+                continue
+
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(m.parameters(), max_norm=1.0)
+            grad_norm = torch.nn.utils.clip_grad_norm_(m.parameters(), max_norm=1.0)
+            if not torch.isfinite(grad_norm):
+                print(f"    [WARNING] Non-finite grad_norm ({grad_norm}). Flushing gradients and skipping step.")
+                optimizer.zero_grad(set_to_none=True)
+                scaler.update()
+                continue
+
             scaler.step(optimizer)
             scaler.update()
 
@@ -702,7 +719,36 @@ def train_scaled_model(tier_name: str, base_channels: int, epochs: int = TRAIN_E
     print(f"[+] Saved {tier_name.upper()} weights to {ckpt_path.name}")
     return m
 
-model_m = train_scaled_model("dense_m", base_channels=136, epochs=TRAIN_EPOCHS)
+# 1. Check for completed Dense-M champion weights to avoid redundant compute
+dense_m_path = None
+for p in [models_dir / "sprint9_dense_m_weights.pt", Path("models/checkpoints/sprint9_dense_m_weights.pt"), Path("/kaggle/input/sprint9_dense_m_weights.pt")]:
+    if p.exists():
+        dense_m_path = p
+        break
+
+if dense_m_path is None and Path("/kaggle/input").exists():
+    for f in Path("/kaggle/input").rglob("sprint9_dense_m_weights.pt"):
+        dense_m_path = f
+        break
+
+model_m = None
+if dense_m_path and dense_m_path.exists():
+    print(f"[+] Located completed Dense-M weights at: {dense_m_path}")
+    m_dict = torch.load(dense_m_path, map_location=device)
+    if m_dict.get("epochs", 0) >= 30:
+        model_m = ScalableSpatiotemporalResidualDiffusion(tier="dense_m", base_channels=136).to(device)
+        model_m.load_state_dict(m_dict.get("model_state_dict", m_dict), strict=True)
+        print(f"[+] Dense-M champion loaded successfully with strict=True (Epochs: {m_dict.get('epochs')}, Loss: {m_dict.get('loss'):.4f}). Skipping retraining!")
+        out_ckpt = models_dir / "sprint9_dense_m_weights.pt"
+        if not out_ckpt.exists() or out_ckpt.resolve() != dense_m_path.resolve():
+            torch.save(m_dict, out_ckpt)
+    else:
+        print(f"[*] Dense-M checkpoint has fewer than 30 epochs ({m_dict.get('epochs')}). Retraining...")
+
+if model_m is None:
+    model_m = train_scaled_model("dense_m", base_channels=136, epochs=TRAIN_EPOCHS)
+
+# 2. Train Dense-L with numerical stability safeguards
 model_l = train_scaled_model("dense_l", base_channels=176, epochs=TRAIN_EPOCHS)""")
 
     # -------------------------------------------------------------

@@ -98,9 +98,11 @@ class TimeConditionedConvNeXtBlock(nn.Module):
         out = self.dwconv(x)
         out = self.norm(out)
 
-        # Time modulation: scale and shift
+        # Time modulation: scale and shift with stability clamping
         scale_shift = self.time_proj(time_emb)  # [B * leads, 2 * dim]
         scale, shift = scale_shift.chunk(2, dim=-1)
+        scale = torch.clamp(scale, min=-4.0, max=4.0)
+        shift = torch.clamp(shift, min=-8.0, max=8.0)
         out = out * (1.0 + scale.unsqueeze(-1).unsqueeze(-1)) + shift.unsqueeze(-1).unsqueeze(-1)
 
         out = self.pwconv1(out)
@@ -403,27 +405,30 @@ class SpatiotemporalResidualDiffusion(nn.Module):
         else:
             target_val = noise
 
+        # Cast to float32 for stable loss computation under FP16 mixed precision
+        pred_f = model_pred.float()
+        target_f = target_val.float()
+
         if self.loss_weighting == "group_tail":
             # Multi-Task Variable-Aware Noise Weighting with Convective-Tail Calibration
             # Channel 0: Precipitation (focal tail weighting on extreme wet cells > 15 mm)
             # In normalized space: norm_thresh = (15.0 - 6.266) / 18.620 approx 0.469
             ref_precip = target_norm[:, :, 0:1] if target_norm is not None else r_0[:, :, 0:1]
-            tail_mask = (ref_precip > 0.469).float()
+            tail_mask = (ref_precip.float() > 0.469).float()
             precip_weights = 1.0 + 2.0 * tail_mask  # 3.0 for extreme wet cells (> 15mm)
-            precip_diff_sq = (model_pred[:, :, 0:1] - target_val[:, :, 0:1]) ** 2
-            precip_loss = (precip_weights * precip_diff_sq).mean()
+            precip_loss = (precip_weights * F.smooth_l1_loss(pred_f[:, :, 0:1], target_f[:, :, 0:1], beta=1.0, reduction="none")).mean()
 
             # Channels 1-3: Thermodynamic variables (Tmax, Tmin, RH)
-            thermo_loss = F.mse_loss(model_pred[:, :, 1:4], target_val[:, :, 1:4])
+            thermo_loss = F.smooth_l1_loss(pred_f[:, :, 1:4], target_f[:, :, 1:4], beta=1.0)
 
             # Channels 4-5: Dynamic Wind Vector (U, V)
-            wind_loss = F.mse_loss(model_pred[:, :, 4:6], target_val[:, :, 4:6])
+            wind_loss = F.smooth_l1_loss(pred_f[:, :, 4:6], target_f[:, :, 4:6], beta=1.0)
 
             # Group Balancing Weights (Plan Section 5.1 EXP-03):
             # lambda_precip = 1.0, lambda_thermo = 1.2, lambda_wind = 1.1
             loss = 1.0 * precip_loss + 1.2 * thermo_loss + 1.1 * wind_loss
         else:
-            loss = F.mse_loss(model_pred, target_val)
+            loss = F.smooth_l1_loss(pred_f, target_f, beta=1.0)
 
         return loss, model_pred, target_val
 

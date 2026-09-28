@@ -112,15 +112,29 @@ def train_epoch(
                 target_norm=target,
             )
 
+        if not torch.isfinite(loss):
+            print(f"    [WARNING] Non-finite loss encountered ({loss.item()}). Flushing gradients and skipping batch.")
+            optimizer.zero_grad(set_to_none=True)
+            continue
+
         if use_amp and device.type == "cuda":
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            if not torch.isfinite(grad_norm):
+                print(f"    [WARNING] Non-finite grad_norm ({grad_norm}). Flushing gradients and skipping step.")
+                optimizer.zero_grad(set_to_none=True)
+                scaler.update()
+                continue
             scaler.step(optimizer)
             scaler.update()
         else:
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            if not torch.isfinite(grad_norm):
+                print(f"    [WARNING] Non-finite grad_norm ({grad_norm}). Flushing gradients and skipping step.")
+                optimizer.zero_grad(set_to_none=True)
+                continue
             optimizer.step()
 
         total_loss += loss.item()
@@ -189,7 +203,7 @@ def main():
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-6)
-    scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"))
+    scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"), init_scale=2048.0)
 
     save_path = Path(args.save_dir)
     save_path.mkdir(parents=True, exist_ok=True)
