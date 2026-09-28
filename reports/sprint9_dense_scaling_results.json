@@ -1,0 +1,162 @@
+{
+  "dense_s": {
+    "profile": {
+      "tier": "dense_s",
+      "base_channels": 16,
+      "use_moe": false,
+      "num_experts": 4,
+      "top_k": 1,
+      "total_parameters": 518598,
+      "trainable_parameters": 518598,
+      "active_parameters": 518598,
+      "parameter_ratio_vs_candidate3": 0.033,
+      "checkpoint_fp32_mb": 1.98,
+      "checkpoint_fp16_mb": 0.99,
+      "estimated_vram_gb": 0.02
+    },
+    "point_mode_32nfe": {
+      "regime": "point_k8_s4_eta05",
+      "nfe": 32,
+      "wet_mae_mm": 10.37,
+      "csi15": 0.0566,
+      "csi30": 0.0067,
+      "tmax_mae": 1.043,
+      "wind_rmse": 1.785,
+      "laplacian_retention": 0.612,
+      "hf_psd_retention": 0.627
+    },
+    "probabilistic_mode_32nfe": {
+      "regime": "probabilistic_k2_s16_eta00",
+      "nfe": 32,
+      "precip_crps": 5.819,
+      "raw_spread": 5.923,
+      "rmse_ensemble_mean": 12.255,
+      "raw_ssr": 0.483,
+      "raw_coverage_90": 0.283,
+      "brier_p15": 0.2333,
+      "brier_p30": 0.0503
+    },
+    "point_eval_seconds": 3.6,
+    "prob_eval_seconds": 3.13
+  },
+  "dense_m": {
+    "profile": {
+      "tier": "dense_m",
+      "base_channels": 16,
+      "use_moe": false,
+      "num_experts": 4,
+      "top_k": 1,
+      "total_parameters": 518598,
+      "trainable_parameters": 518598,
+      "active_parameters": 518598,
+      "parameter_ratio_vs_candidate3": 0.033,
+      "checkpoint_fp32_mb": 1.98,
+      "checkpoint_fp16_mb": 0.99,
+      "estimated_vram_gb": 0.02
+    },
+    "point_mode_32nfe": {
+      "regime": "point_k8_s4_eta05",
+      "nfe": 32,
+      "wet_mae_mm": 10.41,
+      "csi15": 0.0655,
+      "csi30": 0.0071,
+      "tmax_mae": 1.005,
+      "wind_rmse": 1.79,
+      "laplacian_retention": 0.613,
+      "hf_psd_retention": 0.623
+    },
+    "probabilistic_mode_32nfe": {
+      "regime": "probabilistic_k2_s16_eta00",
+      "nfe": 32,
+      "precip_crps": 6.019,
+      "raw_spread": 6.346,
+      "rmse_ensemble_mean": 12.668,
+      "raw_ssr": 0.501,
+      "raw_coverage_90": 0.273,
+      "brier_p15": 0.2461,
+      "brier_p30": 0.0557
+    },
+    "point_eval_seconds": 3.18,
+    "prob_eval_seconds": 3.02
+  },
+  "dense_l": {
+    "profile": {
+      "tier": "dense_l",
+      "base_channels": 24,
+      "use_moe": false,
+      "num_experts": 4,
+      "top_k": 1,
+      "total_parameters": 1083734,
+      "trainable_parameters": 1083734,
+      "active_parameters": 1083734,
+      "parameter_ratio_vs_candidate3": 0.069,
+      "checkpoint_fp32_mb": 4.13,
+      "checkpoint_fp16_mb": 2.07,
+      "estimated_vram_gb": 0.03
+    },
+    "point_mode_32nfe": {
+      "regime": "point_k8_s4_eta05",
+      "nfe": 32,
+      "wet_mae_mm": 10.48,
+      "csi15": 0.0395,
+      "csi30": 0.0027,
+      "tmax_mae": 1.0,
+      "wind_rmse": 1.784,
+      "laplacian_retention": 0.615,
+      "hf_psd_retention": 0.635
+    },
+    "probabilistic_mode_32nfe": {
+      "regime": "probabilistic_k2_s16_eta00",
+      "nfe": 32,
+      "precip_crps": 5.529,
+      "raw_spread": 5.063,
+      "rmse_ensemble_mean": 11.596,
+      "raw_ssr": 0.437,
+      "raw_coverage_90": 0.305,
+      "brier_p15": 0.2132,
+      "brier_p30": 0.0415
+    },
+    "point_eval_seconds": 4.94,
+    "prob_eval_seconds": 4.66
+  },
+  "moe_4": {
+    "profile": {
+      "tier": "moe_4",
+      "base_channels": 16,
+      "use_moe": true,
+      "num_experts": 4,
+      "top_k": 1,
+      "total_parameters": 716870,
+      "trainable_parameters": 716870,
+      "active_parameters": 519110,
+      "parameter_ratio_vs_candidate3": 0.046,
+      "checkpoint_fp32_mb": 2.73,
+      "checkpoint_fp16_mb": 1.37,
+      "estimated_vram_gb": 0.02
+    },
+    "point_mode_32nfe": {
+      "regime": "point_k8_s4_eta05",
+      "nfe": 32,
+      "wet_mae_mm": 10.39,
+      "csi15": 0.0469,
+      "csi30": 0.0045,
+      "tmax_mae": 1.002,
+      "wind_rmse": 1.806,
+      "laplacian_retention": 0.62,
+      "hf_psd_retention": 0.636
+    },
+    "probabilistic_mode_32nfe": {
+      "regime": "probabilistic_k2_s16_eta00",
+      "nfe": 32,
+      "precip_crps": 5.632,
+      "raw_spread": 5.49,
+      "rmse_ensemble_mean": 11.868,
+      "raw_ssr": 0.463,
+      "raw_coverage_90": 0.294,
+      "brier_p15": 0.2221,
+      "brier_p30": 0.0451
+    },
+    "point_eval_seconds": 3.23,
+    "prob_eval_seconds": 3.06
+  }
+}

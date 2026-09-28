@@ -10,6 +10,16 @@ except ImportError:
     get_dataloaders = None
 
 from src.models.multitask_unet import MultiTaskUNet5x
+from src.models.residual_diffusion import SpatiotemporalResidualDiffusion
+from src.models.scalable_residual_diffusion import (
+    ScalableSpatiotemporalResidualDiffusion,
+    create_scalable_residual_diffusion,
+    TIER_CHANNEL_CONFIGS,
+)
+from src.models.moe import (
+    TopKRouter,
+    MoETimeConditionedConvNeXtBlock,
+)
 
 __all__ = [
     "UNet5x",
@@ -18,4 +28,10 @@ __all__ = [
     "MonsoonPatchDataset",
     "get_dataloaders",
     "MultiTaskUNet5x",
+    "SpatiotemporalResidualDiffusion",
+    "ScalableSpatiotemporalResidualDiffusion",
+    "create_scalable_residual_diffusion",
+    "TIER_CHANNEL_CONFIGS",
+    "TopKRouter",
+    "MoETimeConditionedConvNeXtBlock",
 ]
