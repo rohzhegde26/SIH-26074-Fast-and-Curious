@@ -52,4 +52,6 @@ def test_notebook_budget_and_eval_invariants():
         assert "TRAIN_EPOCHS = 30" in txt, f"30-epoch training schedule missing in {nb.name}"
         assert "MAX_EVAL_CUBES = None" in txt, f"Full validation set evaluation missing in {nb.name}"
         assert "CosineAnnealingLR" in txt, f"CosineAnnealingLR scheduler missing in {nb.name}"
+        assert "Ferro et al. 2008" in txt, f"Canonical Fair-CRPS missing in {nb.name}"
+
 

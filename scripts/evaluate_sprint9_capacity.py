@@ -245,11 +245,20 @@ def evaluate_model_on_val_loader(
 
             d_mean = dist_t.mean(dim=0)
             d_std = dist_t.std(dim=0, unbiased=True)
-            mae = torch.mean(torch.abs(d_mean - p_tgt)).item()
             sp = d_std.mean().item()
-            crps_list.append(mae - 0.5 * sp)
             spread_list.append(sp)
             rmse_list.append(torch.sqrt(torch.mean((d_mean - p_tgt)**2)).item())
+
+            # Canonical unbiased Fair-CRPS (Ferro et al. 2008)
+            k_ens = dist_t.shape[0]
+            term1 = torch.mean(torch.abs(dist_t - p_tgt.unsqueeze(0)), dim=0)
+            diff_sum = torch.zeros_like(term1)
+            for i_mem in range(k_ens):
+                for j_mem in range(k_ens):
+                    diff_sum += torch.abs(dist_t[i_mem] - dist_t[j_mem])
+            term2 = diff_sum / (2.0 * k_ens * (k_ens - 1))
+            fair_crps = float(torch.mean(term1 - term2).item())
+            crps_list.append(fair_crps)
 
             q05 = torch.quantile(dist_t, 0.05, dim=0)
             q95 = torch.quantile(dist_t, 0.95, dim=0)
