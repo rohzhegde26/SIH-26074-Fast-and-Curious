@@ -135,7 +135,7 @@ def train_epoch(
 def main():
     parser = argparse.ArgumentParser(description="Sprint 9 Model Capacity Training Pipeline")
     parser.add_argument("--tier", type=str, default="dense_m", choices=list(TIER_CHANNEL_CONFIGS.keys()))
-    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
@@ -188,6 +188,7 @@ def main():
     print(f"[+] Loaded authentic training dataset with {len(ds_train)} cubes (2015-2021).")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-6)
     scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"))
 
     save_path = Path(args.save_dir)
@@ -203,7 +204,9 @@ def main():
             device=device,
             use_amp=(device.type == "cuda"),
         )
-        print(f"[Epoch {epoch:02d}/{args.epochs:02d}] Loss: {loss:.4f} | Throughput: {throughput:.2f} samples/s")
+        scheduler.step()
+        cur_lr = optimizer.param_groups[0]["lr"]
+        print(f"[Epoch {epoch:02d}/{args.epochs:02d}] Loss: {loss:.4f} | LR: {cur_lr:.6f} | Throughput: {throughput:.2f} samples/s")
 
         if loss < best_loss:
             best_loss = loss

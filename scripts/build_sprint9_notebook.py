@@ -771,8 +771,8 @@ print("[+] Successfully loaded Candidate 3 weights into Dense-S with strict=True
     # -------------------------------------------------------------
     # CELL 13: Markdown - Training on Authentic Data
     # -------------------------------------------------------------
-    add_md("""## 6. Training Dense-M and Dense-L on Authentic 2015-2021 Data
-Trains Dense-M and Dense-L using the authentic `SpatiotemporalDownscalingDataset(split='train')`.""")
+    add_md("""## 6. Training Scaled Models on Authentic 2015-2021 Data
+Trains Dense-M and Dense-L using the authentic `SpatiotemporalDownscalingDataset(split='train')` for 30 epochs each with AdamW (lr=1e-4, weight_decay=1e-4) and Cosine Annealing learning rate schedule, strictly matching the frozen Candidate 3 control training budget.""")
 
     # -------------------------------------------------------------
     # CELL 14: Code - Training Routine
@@ -786,11 +786,14 @@ ds_train = SpatiotemporalDownscalingDataset(zarr_path, index_path, stats_path, s
 train_loader = DataLoader(ds_train, batch_size=2, shuffle=True, num_workers=0)
 print(f"[+] Loaded {len(ds_train)} authentic training cubes (2015-2021).")
 
-def train_model(tier_name: str, epochs: int = 5, lr: float = 1e-4):
-    print(f"\\n[*] Starting Training for {tier_name.upper()}...")
+TRAIN_EPOCHS = 30  # Matched to Candidate 3 30-epoch training schedule
+
+def train_model(tier_name: str, epochs: int = TRAIN_EPOCHS, lr: float = 1e-4):
+    print(f"\\n[*] Starting Training for {tier_name.upper()} (epochs={epochs})...")
     m = models[tier_name]
     m.train()
     optimizer = torch.optim.AdamW(m.parameters(), lr=lr, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
     scaler = torch.amp.GradScaler("cuda", enabled=torch.cuda.is_available())
 
     for epoch in range(1, epochs + 1):
@@ -817,23 +820,25 @@ def train_model(tier_name: str, epochs: int = 5, lr: float = 1e-4):
             total_loss += loss.item()
             n_b += 1
 
+        scheduler.step()
         avg_loss = total_loss / max(1, n_b)
         elapsed = time.time() - t0
-        print(f"    [{tier_name.upper()} Epoch {epoch:02d}/{epochs:02d}] Loss: {avg_loss:.4f} | Time: {elapsed:.1f}s")
+        cur_lr = optimizer.param_groups[0]["lr"]
+        print(f"    [{tier_name.upper()} Epoch {epoch:02d}/{epochs:02d}] Loss: {avg_loss:.4f} | LR: {cur_lr:.6f} | Time: {elapsed:.1f}s")
 
     ckpt = models_dir / f"sprint9_{tier_name}_weights.pt"
-    torch.save({"tier": tier_name, "model_state_dict": m.state_dict(), "loss": avg_loss}, ckpt)
+    torch.save({"tier": tier_name, "model_state_dict": m.state_dict(), "loss": avg_loss, "epochs": epochs}, ckpt)
     print(f"[+] Saved {tier_name.upper()} checkpoint to {ckpt.name}")
 
 # Train Dense-M and Dense-L
-train_model("dense_m", epochs=3)
-train_model("dense_l", epochs=3)""")
+train_model("dense_m", epochs=TRAIN_EPOCHS)
+train_model("dense_l", epochs=TRAIN_EPOCHS)""")
 
     # -------------------------------------------------------------
     # CELL 15: Markdown - Matched 32 NFE Evaluation
     # -------------------------------------------------------------
     add_md("""## 7. Matched 32 NFE Evaluation on Authentic 2022 Validation Season
-Evaluates all models across the authentic 2022 validation dataset (`split='val'`).""")
+Evaluates all models across the complete authentic 2022 validation dataset (`split='val'`, all 122 cubes, 427 daily slices) with zero truncation.""")
 
     # -------------------------------------------------------------
     # CELL 16: Code - Evaluation Engine
@@ -843,7 +848,9 @@ ds_val = SpatiotemporalDownscalingDataset(zarr_path, index_path, stats_path, spl
 val_loader = DataLoader(ds_val, batch_size=2, shuffle=False, num_workers=0)
 print(f"[+] Loaded {len(ds_val)} authentic validation cubes (2022).")
 
-def evaluate_tier(model: nn.Module, loader: DataLoader, stats: Dict[str, Any], max_cubes: int = 30):
+MAX_EVAL_CUBES = None  # None evaluates the complete 2022 validation set (all 122 forecast cubes)
+
+def evaluate_tier(model: nn.Module, loader: DataLoader, stats: Dict[str, Any], max_cubes: Optional[int] = MAX_EVAL_CUBES):
     model.eval()
     wet_maes, csi15s, csi30s = [], [], []
     crps_list, spread_list, rmse_list = [], [], []
@@ -856,7 +863,7 @@ def evaluate_tier(model: nn.Module, loader: DataLoader, stats: Dict[str, Any], m
 
     with torch.no_grad():
         for b_idx, batch in enumerate(loader):
-            if b_idx >= max_cubes:
+            if max_cubes is not None and b_idx >= max_cubes:
                 break
             h = batch["history"].to(device)
             f = batch["future_forecast"].to(device)
@@ -928,8 +935,8 @@ def evaluate_tier(model: nn.Module, loader: DataLoader, stats: Dict[str, Any], m
 
 eval_results = {}
 for t in tiers:
-    print(f"[*] Evaluating {t.upper()} on 2022 validation set...")
-    eval_results[t] = evaluate_tier(models[t], val_loader, ds_val.stats)
+    print(f"[*] Evaluating {t.upper()} on full 2022 validation set...")
+    eval_results[t] = evaluate_tier(models[t], val_loader, ds_val.stats, max_cubes=MAX_EVAL_CUBES)
     print(f"    {t.upper()}: Wet-MAE={eval_results[t]['wet_mae_mm']}, CSI@30={eval_results[t]['csi30']}, CRPS={eval_results[t]['precip_crps']}")""")
 
     # -------------------------------------------------------------

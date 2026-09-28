@@ -620,7 +620,9 @@ print(f"[+] Loaded {len(ds_val)} cubes for 2022 validation evaluation.")""")
     add_md("""## 5. Training Dense-M and Dense-L on Authentic 2015-2021 Data
 Trains:
 1. **Dense-M** (31,198,518 params, base_channels = 136)
-2. **Dense-L** (51,997,958 params, base_channels = 176)""")
+2. **Dense-L** (51,997,958 params, base_channels = 176)
+
+Training budget: 30 epochs each with AdamW (lr=1e-4, weight_decay=1e-4) and Cosine Annealing learning rate schedule, strictly matching the frozen Candidate 3 control training budget.""")
 
     # -------------------------------------------------------------
     # CELL 12: Code Training Routine
@@ -630,11 +632,14 @@ ds_train = SpatiotemporalDownscalingDataset(zarr_file, index_file, stats_file, s
 train_loader = DataLoader(ds_train, batch_size=2, shuffle=True)
 print(f"[+] Loaded {len(ds_train)} training cubes (2015-2021).")
 
-def train_scaled_model(tier_name: str, base_channels: int, epochs: int = 5, lr: float = 1e-4):
-    print(f"\\n[*] Starting Training for {tier_name.upper()} (base_channels={base_channels})...")
+TRAIN_EPOCHS = 30  # Matched to Candidate 3 30-epoch training schedule
+
+def train_scaled_model(tier_name: str, base_channels: int, epochs: int = TRAIN_EPOCHS, lr: float = 1e-4):
+    print(f"\\n[*] Starting Training for {tier_name.upper()} (base_channels={base_channels}, epochs={epochs})...")
     m = ScalableSpatiotemporalResidualDiffusion(tier=tier_name, base_channels=base_channels).to(device)
     m.train()
     optimizer = torch.optim.AdamW(m.parameters(), lr=lr, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
     scaler = torch.amp.GradScaler("cuda", enabled=torch.cuda.is_available())
 
     for epoch in range(1, epochs + 1):
@@ -661,32 +666,37 @@ def train_scaled_model(tier_name: str, base_channels: int, epochs: int = 5, lr: 
             total_loss += loss.item()
             n_b += 1
 
+        scheduler.step()
         avg_loss = total_loss / max(1, n_b)
         elapsed = time.time() - t0
-        print(f"    [{tier_name.upper()} Epoch {epoch:02d}/{epochs:02d}] Loss: {avg_loss:.4f} | Time: {elapsed:.1f}s")
+        cur_lr = optimizer.param_groups[0]["lr"]
+        print(f"    [{tier_name.upper()} Epoch {epoch:02d}/{epochs:02d}] Loss: {avg_loss:.4f} | LR: {cur_lr:.6f} | Time: {elapsed:.1f}s")
 
     ckpt_path = models_dir / f"sprint9_{tier_name}_weights.pt"
-    torch.save({"tier": tier_name, "model_state_dict": m.state_dict(), "loss": avg_loss}, ckpt_path)
+    torch.save({"tier": tier_name, "model_state_dict": m.state_dict(), "loss": avg_loss, "epochs": epochs}, ckpt_path)
     print(f"[+] Saved {tier_name.upper()} weights to {ckpt_path.name}")
     return m
 
-model_m = train_scaled_model("dense_m", base_channels=136, epochs=3)
-model_l = train_scaled_model("dense_l", base_channels=176, epochs=3)""")
+model_m = train_scaled_model("dense_m", base_channels=136, epochs=TRAIN_EPOCHS)
+model_l = train_scaled_model("dense_l", base_channels=176, epochs=TRAIN_EPOCHS)""")
 
     # -------------------------------------------------------------
     # CELL 13: Markdown Matched 32 NFE Evaluation
     # -------------------------------------------------------------
     add_md("""## 6. Matched 32 NFE Comparative Evaluation
-Evaluates Dense-S, Dense-M, and Dense-L on the identical 2022 validation dataset across:
+Evaluates Dense-S, Dense-M, and Dense-L across the complete 2022 validation dataset (all 122 cubes, 427 daily slices) across:
 - **Point Mode**: K=8, S=4, eta=0.5 (32 NFE)
 - **Distribution Mode**: K=2, S=16, eta=0.0 (32 NFE)
+- Complete evaluation with zero cube truncation (evaluates all available validation cubes).
 - Measures Wet-MAE, CSI@15, CSI@30, Fair-CRPS, Spread-Skill Ratio (SSR), 90% Coverage, and Laplacian Retention.""")
 
     # -------------------------------------------------------------
     # CELL 14: Code Comparative Evaluation
     # -------------------------------------------------------------
     add_code("""# Cell 7: Full 32 NFE Comparative Evaluation Engine
-def evaluate_model_pipeline(model: nn.Module, loader: DataLoader, stats: Dict[str, Any], max_cubes: int = 20):
+MAX_EVAL_CUBES = None  # None evaluates the complete 2022 validation set (all 122 forecast cubes)
+
+def evaluate_model_pipeline(model: nn.Module, loader: DataLoader, stats: Dict[str, Any], max_cubes: Optional[int] = MAX_EVAL_CUBES):
     model.eval()
     wet_maes, csi15s, csi30s = [], [], []
     crps_list, spread_list, rmse_list = [], [], []
@@ -700,7 +710,7 @@ def evaluate_model_pipeline(model: nn.Module, loader: DataLoader, stats: Dict[st
 
     with torch.no_grad():
         for b_idx, batch in enumerate(loader):
-            if b_idx >= max_cubes:
+            if max_cubes is not None and b_idx >= max_cubes:
                 break
             h = batch["history"].to(device)
             f = batch["future_forecast"].to(device)
@@ -775,16 +785,16 @@ def evaluate_model_pipeline(model: nn.Module, loader: DataLoader, stats: Dict[st
         "laplacian_retention": round(float(np.mean(lap_ratios)), 3),
     }
 
-print("[*] Evaluating Dense-S Control...")
-res_s = evaluate_model_pipeline(model_s, val_loader, ds_val.stats)
+print("[*] Evaluating Dense-S Control on full 2022 validation set...")
+res_s = evaluate_model_pipeline(model_s, val_loader, ds_val.stats, max_cubes=MAX_EVAL_CUBES)
 print(f"    Dense-S: Wet-MAE={res_s['wet_mae_mm']}, CSI@30={res_s['csi30']}, CRPS={res_s['precip_crps']}, SSR={res_s['raw_ssr']}")
 
-print("[*] Evaluating Dense-M...")
-res_m = evaluate_model_pipeline(model_m, val_loader, ds_val.stats)
+print("[*] Evaluating Dense-M on full 2022 validation set...")
+res_m = evaluate_model_pipeline(model_m, val_loader, ds_val.stats, max_cubes=MAX_EVAL_CUBES)
 print(f"    Dense-M: Wet-MAE={res_m['wet_mae_mm']}, CSI@30={res_m['csi30']}, CRPS={res_m['precip_crps']}, SSR={res_m['raw_ssr']}")
 
-print("[*] Evaluating Dense-L...")
-res_l = evaluate_model_pipeline(model_l, val_loader, ds_val.stats)
+print("[*] Evaluating Dense-L on full 2022 validation set...")
+res_l = evaluate_model_pipeline(model_l, val_loader, ds_val.stats, max_cubes=MAX_EVAL_CUBES)
 print(f"    Dense-L: Wet-MAE={res_l['wet_mae_mm']}, CSI@30={res_l['csi30']}, CRPS={res_l['precip_crps']}, SSR={res_l['raw_ssr']}")""")
 
     # -------------------------------------------------------------

@@ -35,3 +35,21 @@ def test_zero_em_dashes_in_sprint9_source_files():
             content = p.read_text(encoding="utf-8")
             assert "\u2014" not in content, f"Em dash (\\u2014) found in {p.name}"
             assert "\u2013" not in content, f"En dash (\\u2013) found in {p.name}"
+
+
+def test_notebook_budget_and_eval_invariants():
+    """Verify notebooks match 30-epoch Candidate 3 training budget and full 2022 validation evaluation."""
+    notebooks = [
+        ROOT / "notebooks" / "sprint_9_phase1_dense_capacity_scaling.ipynb",
+        ROOT / "notebooks" / "sprint_9_model_capacity_scaling.ipynb",
+    ]
+
+    for nb in notebooks:
+        assert nb.exists(), f"Notebook {nb.name} does not exist"
+        txt = nb.read_text(encoding="utf-8")
+        assert "\u2014" not in txt, f"Em dash in {nb.name}"
+        assert "\u2013" not in txt, f"En dash in {nb.name}"
+        assert "TRAIN_EPOCHS = 30" in txt, f"30-epoch training schedule missing in {nb.name}"
+        assert "MAX_EVAL_CUBES = None" in txt, f"Full validation set evaluation missing in {nb.name}"
+        assert "CosineAnnealingLR" in txt, f"CosineAnnealingLR scheduler missing in {nb.name}"
+
