@@ -1,4 +1,4 @@
-const CACHE = "mandya-pwa-v25";
+const CACHE = "national-pwa-v26";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -9,6 +9,8 @@ const STATIC_ASSETS = [
   "/icon-192.png",
   "/icon-512.png",
   "/mandya_simplified.topojson",
+  "/baghpat_simplified.topojson",
+  "/barpeta_simplified.topojson",
   "/leaflet/leaflet.js",
   "/leaflet/leaflet.css",
   "/audio/ragi_veg_rain_kn.mp3",

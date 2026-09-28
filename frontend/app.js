@@ -121,6 +121,66 @@ async function syncQueuedDispatches() {
   }
 }
 
+// =============================================================
+// National Pilot Domain Registry (SIH PS 26074 Subcontinent Deployment)
+// =============================================================
+const DISTRICT_REGISTRY = {
+  mandya: {
+    id: "mandya",
+    name: "Mandya",
+    state: "KA",
+    stateFullName: "Karnataka",
+    zoneTag: "South • Deccan",
+    center: [12.6366, 76.8317],
+    zoom: 10,
+    bounds: [[12.2179, 76.3296], [13.0553, 77.3338]],
+    topojson: "/mandya_simplified.topojson",
+    gpCount: 234,
+    contrasts: [
+      { code: "219388", name: "Nalligere Peak", desc: "Convective peak vs block average", key: "N", cls: "chip-burst" },
+      { code: "215504", name: "Banavasi Valley", desc: "Valley rainfall", key: "B", cls: "chip-safe" },
+      { code: "219331", name: "Dudda (Dry Shadow)", desc: "Rain shadow window", key: "D", cls: "chip-dry" }
+    ]
+  },
+  baghpat: {
+    id: "baghpat",
+    name: "Baghpat",
+    state: "UP",
+    stateFullName: "Uttar Pradesh",
+    zoneTag: "North • Gangetic",
+    center: [29.0374, 77.3180],
+    zoom: 11,
+    bounds: [[28.7766, 77.1314], [29.2981, 77.5045]],
+    topojson: "/baghpat_simplified.topojson",
+    gpCount: 242,
+    contrasts: [
+      { code: "119854", name: "Baghpat Rural Peak", desc: "Convective rain cell", key: "N", cls: "chip-burst" },
+      { code: "119762", name: "Baraut Agro Hub", desc: "Sugarcane irrigation belt", key: "B", cls: "chip-safe" },
+      { code: "119910", name: "Khekra Dry Window", desc: "Dry window for spraying", key: "D", cls: "chip-dry" }
+    ]
+  },
+  barpeta: {
+    id: "barpeta",
+    name: "Barpeta",
+    state: "AS",
+    stateFullName: "Assam",
+    zoneTag: "East • Brahmaputra",
+    center: [26.3583, 90.9680],
+    zoom: 11,
+    bounds: [[26.0897, 90.6534], [26.6270, 91.2827]],
+    topojson: "/barpeta_simplified.topojson",
+    gpCount: 109,
+    contrasts: [
+      { code: "112340", name: "Barpeta Floodplain", desc: "Brahmaputra rainfall surge", key: "N", cls: "chip-burst" },
+      { code: "112415", name: "Sarthebari Wetland", desc: "Wetland microclimate", key: "B", cls: "chip-safe" },
+      { code: "112280", name: "Chenga Low Shower", desc: "Moderate shower gap", key: "D", cls: "chip-dry" }
+    ]
+  }
+};
+let currentDistrict = "mandya";
+window.currentDistrict = currentDistrict;
+window.DISTRICT_REGISTRY = DISTRICT_REGISTRY;
+
 // Application State
 let currentRecords = [];
 let selectedLgdCode = null;
@@ -1212,11 +1272,12 @@ async function renderMap(records) {
   }
 
   try {
+    const distCfg = DISTRICT_REGISTRY[currentDistrict] || DISTRICT_REGISTRY.mandya;
     if (!leafletMap) {
       leafletMap = L.map("leaflet-map", {
-        center: [12.52, 76.89],
-        zoom: 10,
-        minZoom: 8,
+        center: distCfg.center,
+        zoom: distCfg.zoom,
+        minZoom: 5,
         maxZoom: 16,
         zoomControl: true,
         attributionControl: true
@@ -1234,8 +1295,8 @@ async function renderMap(records) {
       });
     }
 
-    const res = await fetch("/mandya_simplified.topojson");
-    if (!res.ok) throw new Error("Could not load TopoJSON map boundary");
+    const res = await fetch(distCfg.topojson);
+    if (!res.ok) throw new Error(`Could not load TopoJSON map boundary for ${distCfg.name}`);
     const topology = await res.json();
 
     const geojsonData = topoToGeoJSON(topology);
@@ -1310,7 +1371,7 @@ async function renderMap(records) {
     setTimeout(() => leafletMap.invalidateSize(), 150);
 
     if (status) {
-      status.textContent = `${geojsonData.features.length} Mandya panchayats loaded with 5× downscaled GIS choropleth.`;
+      status.textContent = `${geojsonData.features.length} ${distCfg.name} panchayats loaded with 5× downscaled GIS choropleth.`;
     }
   } catch (err) {
     if (status) status.textContent = "Map boundary rendering fallback. Search is operational.";
@@ -1887,7 +1948,7 @@ async function loadData() {
   let isCachedMode = false;
 
   try {
-    const res = await fetch("/api/forecasts");
+    const res = await fetch(`/api/forecasts?district=${currentDistrict}`);
     if (!res.ok) throw new Error("Network API unavailable");
     if (res.headers.get("X-Cache-Fallback") === "1") {
       isCachedMode = true;
@@ -1895,7 +1956,9 @@ async function loadData() {
     records = await res.json();
     await saveAllToDb(records);
   } catch {
-    records = await getAllFromDb();
+    const allDb = await getAllFromDb();
+    records = allDb.filter(r => (r.district || "").toLowerCase() === currentDistrict);
+    if (!records.length) records = allDb;
     isCachedMode = true;
   }
 
@@ -2155,29 +2218,9 @@ async function loadData() {
     };
   }
 
-  // 60-Second Demo Contrast Chips Handlers & Dynamic Live Rainfall Labels
-  document.querySelectorAll(".demo-chip").forEach(chip => {
-    const code = chip.dataset.code;
-    const match = records.find(r => String(r.lgd_code) === String(code));
-    if (match) {
-      const exp = match.rainfall_mm?.expected ?? match.expected_mm ?? 0.0;
-      if (code === "219388") {
-        chip.innerHTML = `⚡ Nalligere (${exp.toFixed(1)} mm Peak) [N]`;
-      } else if (code === "215504") {
-        chip.innerHTML = `⚡ Banavasi (${exp.toFixed(1)} mm) [B]`;
-      } else if (code === "219431") {
-        chip.innerHTML = `⚡ Naguvanahalli (${exp.toFixed(1)} mm)`;
-      }
-    }
-    chip.onclick = () => {
-      const code = chip.dataset.code;
-      const match = records.find(r => String(r.lgd_code) === String(code));
-      if (match) {
-        selectPanchayat(match);
-        showToast(`Selected: ${match.panchayat_name} (${(match.rainfall_mm?.expected ?? match.expected_mm).toFixed(1)} mm)`);
-      }
-    };
-  });
+  // Initial Demo Contrast Chips Setup
+  const initialDistCfg = DISTRICT_REGISTRY[currentDistrict] || DISTRICT_REGISTRY.mandya;
+  updateDemoChipsForDistrict(initialDistCfg, records);
 
   // Keyboard Shortcuts
   window.addEventListener("keydown", (e) => {
@@ -2207,24 +2250,28 @@ async function loadData() {
       return;
     }
 
-    // Presenter Stage Hotkey: 'n' or 'N' -> Nalligere Convective Peak
+    // Presenter Stage Hotkey: 'n' or 'N' -> First contrast (Peak)
     if (e.key.toLowerCase() === "n" && !isEditing) {
       e.preventDefault();
-      const match = records.find(r => String(r.lgd_code) === "219388");
+      const distCfg = DISTRICT_REGISTRY[currentDistrict] || DISTRICT_REGISTRY.mandya;
+      const targetCode = distCfg.contrasts[0]?.code;
+      const match = records.find(r => String(r.lgd_code) === String(targetCode));
       if (match) {
         selectPanchayat(match);
-        showToast("⚡ Nalligere (Convective Peak — ₹2,600 Savings)");
+        showToast(`⚡ ${distCfg.contrasts[0].name} (${(match.rainfall_mm?.expected ?? match.expected_mm).toFixed(1)} mm)`);
       }
       return;
     }
 
-    // Presenter Stage Hotkey: 'b' or 'B' -> Banavasi 1.7mm Safe Window
+    // Presenter Stage Hotkey: 'b' or 'B' -> Second contrast (Safe/Valley)
     if (e.key.toLowerCase() === "b" && !isEditing) {
       e.preventDefault();
-      const match = records.find(r => String(r.lgd_code) === "215504");
+      const distCfg = DISTRICT_REGISTRY[currentDistrict] || DISTRICT_REGISTRY.mandya;
+      const targetCode = distCfg.contrasts[1]?.code;
+      const match = records.find(r => String(r.lgd_code) === String(targetCode));
       if (match) {
         selectPanchayat(match);
-        showToast("⚡ Banavasi (1.7 mm Safe Spray Window)");
+        showToast(`⚡ ${distCfg.contrasts[1].name} (${(match.rainfall_mm?.expected ?? match.expected_mm).toFixed(1)} mm)`);
       }
       return;
     }
@@ -2251,12 +2298,136 @@ async function loadData() {
   updateStatsBar(records);
   await renderMap(records);
 
+  // Wire National Pilot Domain Switcher Pills
+  wirePilotDomainPills();
+
   if (records.length) {
-    // Select Nalligere by default to immediately showcase Exclave & Convective Peak Variance
-    const initial = records.find(r => String(r.lgd_code) === "219388") || records[0];
+    const targetCode = initialDistCfg.contrasts[0]?.code;
+    const initial = records.find(r => String(r.lgd_code) === String(targetCode)) || records[0];
     selectPanchayat(initial);
   }
 }
+
+// -------------------------------------------------------------
+// National Pilot Domain Switcher & Demo Chips Management
+// -------------------------------------------------------------
+function updateDemoChipsForDistrict(dist, records) {
+  const container = document.querySelector(".mission-demo-chips");
+  if (!container || !dist.contrasts) return;
+
+  container.innerHTML = `
+    <span class="control-bar-label">DEMO CONTRAST:</span>
+    ${dist.contrasts.map(c => {
+      const match = records ? records.find(r => String(r.lgd_code) === String(c.code)) : null;
+      const exp = match ? (match.rainfall_mm?.expected ?? match.expected_mm ?? 0.0) : null;
+      const rainStr = exp !== null ? ` (${exp.toFixed(1)} mm)` : "";
+      return `
+        <button type="button" class="demo-chip ${c.cls}" data-code="${c.code}" title="${c.desc} [Key: ${c.key}]">
+          ⚡ ${c.name}${rainStr} [${c.key}]
+        </button>
+      `;
+    }).join("")}
+  `;
+
+  container.querySelectorAll(".demo-chip").forEach(chip => {
+    chip.onclick = () => {
+      const code = chip.dataset.code;
+      const rec = (currentRecords || []).find(r => String(r.lgd_code) === String(code));
+      if (rec && typeof selectPanchayat === "function") {
+        selectPanchayat(rec);
+        showToast(`Selected: ${rec.panchayat_name} (${(rec.rainfall_mm?.expected ?? rec.expected_mm).toFixed(1)} mm)`);
+      }
+    };
+  });
+}
+
+function wirePilotDomainPills() {
+  document.querySelectorAll(".btn-pilot-pill").forEach(pill => {
+    pill.onclick = () => {
+      const distId = pill.dataset.district;
+      if (distId && distId !== currentDistrict) {
+        switchDistrict(distId);
+      }
+    };
+  });
+}
+
+async function switchDistrict(districtId) {
+  if (!DISTRICT_REGISTRY[districtId] || districtId === currentDistrict) return;
+  const dist = DISTRICT_REGISTRY[districtId];
+  currentDistrict = districtId;
+  window.currentDistrict = currentDistrict;
+
+  // 1. Update UI active button pills
+  document.querySelectorAll(".btn-pilot-pill").forEach(btn => {
+    const isAct = btn.dataset.district === districtId;
+    btn.classList.toggle("active", isAct);
+    btn.setAttribute("aria-selected", isAct ? "true" : "false");
+  });
+
+  // 2. Update Header Subtitle & Map Title
+  const mapTitle = document.querySelector("#map-card-title");
+  if (mapTitle) mapTitle.textContent = `${dist.name} Panchayat Interactive GIS Map`;
+
+  const missionSub = document.querySelector("#mission-sub-domain");
+  if (missionSub) {
+    missionSub.textContent = `${dist.name} Pilot District (${dist.gpCount} Gram Panchayats) • Direct 5× Physics-Conserved Super-Resolution (0.25° → 0.05°) • ${dist.zoneTag}`;
+  }
+
+  const brandTagline = document.querySelector("#header-brand-tagline");
+  if (brandTagline) {
+    brandTagline.textContent = `5× Downscaled Panchayat Advisory (SIH PS 26074) • ${dist.name} Pilot`;
+  }
+
+  // 3. Smooth flyTo / zoom Leaflet map to new domain
+  if (leafletMap) {
+    triggerCockpitFeedback();
+    leafletMap.flyToBounds(dist.bounds, {
+      duration: 1.2,
+      easeLinearity: 0.25,
+      padding: [24, 24]
+    });
+  }
+
+  // 4. Fetch district forecasts
+  let records = [];
+  try {
+    const res = await fetch(`/api/forecasts?district=${districtId}`);
+    if (res.ok) {
+      records = await res.json();
+      await saveAllToDb(records);
+    } else {
+      throw new Error(`Status ${res.status}`);
+    }
+  } catch (e) {
+    console.warn("API fallback to DB:", e);
+    const allDb = await getAllFromDb();
+    records = allDb.filter(r => (r.district || "").toLowerCase() === districtId);
+    if (!records.length) records = allDb;
+  }
+
+  currentRecords = records;
+  window.currentRecords = records;
+
+  // 5. Reload GIS boundary layer
+  await renderMap(records);
+
+  // 6. Update aggregate stats bar
+  updateStatsBar(records);
+
+  // 7. Update Demo Contrast shortcuts
+  updateDemoChipsForDistrict(dist, records);
+
+  // 8. Select initial representative GP
+  const initialCode = dist.contrasts[0]?.code;
+  const initialRec = records.find(r => String(r.lgd_code) === String(initialCode)) || records[0];
+  if (initialRec && typeof selectPanchayat === "function") {
+    selectPanchayat(initialRec);
+  }
+
+  showToast(`Switched pilot domain: ${dist.name}, ${dist.stateFullName} (${records.length} Panchayats)`);
+}
+window.switchDistrict = switchDistrict;
 
 // -------------------------------------------------------------
 // Dual Map Synchronized Audit Modal (Double Leaflet for MoES/IMD)

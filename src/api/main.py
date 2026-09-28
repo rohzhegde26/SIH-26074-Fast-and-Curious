@@ -42,10 +42,16 @@ from src.api import feedback_store
 FEEDBACK_DB_PATH = ROOT / "data" / "serving" / "nandini_feedback.db"
 FEEDBACK_PATH = ROOT / "data" / "serving" / "nandini_feedback.json"
 CENTROIDS_PATH = ROOT / "data" / "serving" / "mandya_centroids.json"
+REGISTRY_PATH = ROOT / "src" / "data" / "districts_registry.json"
 
 
-@lru_cache(maxsize=1)
-def _centroids() -> dict[str, dict]:
+@lru_cache(maxsize=8)
+def _centroids(district: str = "mandya") -> dict[str, dict]:
+    dist_slug = district.lower().strip()
+    path = ROOT / "data" / "serving" / f"{dist_slug}_centroids.json"
+    if path.exists():
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
     if CENTROIDS_PATH.exists():
         with open(CENTROIDS_PATH, encoding="utf-8") as f:
             return json.load(f)
@@ -69,9 +75,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Mandya Weather Advisory API & Virtual ARG Service",
-    version="0.2.0",
-    description="5× Downscaled Weather Advisory, Conformal Uncertainty (CQR), Virtual ARG Network, and KMF Nandini Ground-Truth Validation Loop.",
+    title="National Agro-Weather Advisory & Virtual ARG Service",
+    version="0.3.0",
+    description="5× Downscaled Weather Advisory, Conformal Uncertainty (CQR), Virtual ARG Network, and Multi-District Subcontinent Deployment (MoES SIH PS 26074).",
     lifespan=lifespan,
 )
 
@@ -195,18 +201,26 @@ def _response(record: dict) -> ForecastResponse:
     )
 
 
+@app.get("/api/districts", tags=["districts"], summary="List registered national pilot domains")
+def districts() -> dict:
+    if REGISTRY_PATH.exists():
+        with open(REGISTRY_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    return {"districts": []}
+
+
 @app.get("/api/forecast/{lgd_code}", response_model=ForecastResponse, tags=["forecast"])
-def forecast(lgd_code: str) -> ForecastResponse:
-    record = get_forecast(lgd_code)
+def forecast(lgd_code: str, district: Optional[str] = None) -> ForecastResponse:
+    record = get_forecast(lgd_code, district=district)
     if record is None:
         raise HTTPException(status_code=404, detail="Panchayat forecast not found")
     return _response(record)
 
 
 @app.get("/api/forecasts", response_model=list[ForecastResponse], tags=["forecast"])
-def forecasts() -> list[ForecastResponse]:
+def forecasts(district: str = "mandya") -> list[ForecastResponse]:
     """Bulk sync endpoint for offline cache population."""
-    return [_response(record) for record in list_forecasts()]
+    return [_response(record) for record in list_forecasts(district=district)]
 
 
 @app.get(
@@ -221,24 +235,37 @@ def forecasts() -> list[ForecastResponse]:
     tags=["panchayat-feed"],
     include_in_schema=False,
 )
-def panchayat_feed(lgd_code: str) -> VirtualARGResponse:
-    record = get_forecast(lgd_code)
+def panchayat_feed(lgd_code: str, district: Optional[str] = None) -> VirtualARGResponse:
+    record = get_forecast(lgd_code, district=district)
     if record is None:
         raise HTTPException(status_code=404, detail="Panchayat not found")
 
-    centroids = _centroids()
+    rec_district = record.get("district", "MANDYA")
+    centroids = _centroids(rec_district)
     coords = centroids.get(str(lgd_code), {"lat": 12.52, "lon": 76.89, "elevation_m": 660.0})
 
     expected = float(record["expected_mm"])
     l_min = float(record["likely_min_mm"])
     l_max = float(record["likely_max_mm"])
 
+    # Determine state from district
+    dist_upper = rec_district.upper()
+    if dist_upper == "BAGHPAT":
+        st_name = "UTTAR PRADESH"
+        st_code = "UP_BAG"
+    elif dist_upper == "BARPETA":
+        st_name = "ASSAM"
+        st_code = "AS_BAR"
+    else:
+        st_name = "KARNATAKA"
+        st_code = "KA_MAN"
+
     return VirtualARGResponse(
-        station_id=f"VARG_KA_MAN_{lgd_code}",
+        station_id=f"VARG_{st_code}_{lgd_code}",
         station_name=f"{record['panchayat_name']} Virtual ARG / Panchayat Feed",
         lgd_code=str(lgd_code),
-        district=record.get("district", "MANDYA"),
-        state="KARNATAKA",
+        district=dist_upper,
+        state=st_name,
         latitude=coords["lat"],
         longitude=coords["lon"],
         elevation_m=coords["elevation_m"],

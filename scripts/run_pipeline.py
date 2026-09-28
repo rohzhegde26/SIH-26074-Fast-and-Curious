@@ -56,6 +56,31 @@ def load_multiday_coarse(
     return data, is_fallback
 
 
+DISTRICT_CONFIGS = {
+    "MANDYA": {
+        "center_lat": 12.52,
+        "hr_lats": np.linspace(10.90, 14.85, 80),
+        "hr_lons": np.linspace(74.90, 78.85, 80),
+        "dem_lat_slice": slice(0, 80),
+        "dem_lon_slice": slice(0, 80),
+    },
+    "BAGHPAT": {
+        "center_lat": 29.04,
+        "hr_lats": np.linspace(27.06, 31.01, 80),
+        "hr_lons": np.linspace(75.34, 79.29, 80),
+        "dem_lat_slice": slice(350, 430),
+        "dem_lon_slice": slice(130, 210),
+    },
+    "BARPETA": {
+        "center_lat": 26.36,
+        "hr_lats": np.linspace(24.38, 28.33, 80),
+        "hr_lons": np.linspace(88.99, 92.94, 80),
+        "dem_lat_slice": slice(300, 380),
+        "dem_lon_slice": slice(400, 480),
+    },
+}
+
+
 def run_pipeline(
     forecast_date: str = "2026-09-10",
     district: str = "MANDYA",
@@ -71,8 +96,27 @@ def run_pipeline(
     mode: str = "operational",
 ) -> list[dict]:
     t_start = time.time()
-    if district.upper() != "MANDYA":
-        raise ValueError(f"District {district} not supported. Only MANDYA is configured for Sprint 4.")
+    dist_key = district.upper()
+    if dist_key not in DISTRICT_CONFIGS:
+        raise ValueError(f"District {district} not supported. Supported: {list(DISTRICT_CONFIGS.keys())}")
+
+    dist_cfg = DISTRICT_CONFIGS[dist_key]
+    dist_slug = dist_key.lower()
+
+    # Automatically adapt default paths if running for non-Mandya district
+    if dist_key != "MANDYA":
+        if geojson_path == ROOT / "data" / "processed" / "mandya_full.geojson":
+            geojson_path = ROOT / "data" / "processed" / f"{dist_slug}_full.geojson"
+        if topojson_path == ROOT / "frontend" / "mandya_simplified.topojson":
+            topojson_path = ROOT / "frontend" / f"{dist_slug}_simplified.topojson"
+        if output_json_path == ROOT / "data" / "serving" / "mandya_forecasts.json":
+            output_json_path = ROOT / "data" / "serving" / f"{dist_slug}_forecasts.json"
+        if output_geojson_path == ROOT / "data" / "serving" / "mandya_forecasts.geojson":
+            output_geojson_path = ROOT / "data" / "serving" / f"{dist_slug}_forecasts.geojson"
+        if forecast_file is None:
+            dist_coarse = ROOT / "data" / "raw" / "forecast" / f"multiday_coarse_{dist_slug}_20260910.json"
+            if dist_coarse.exists():
+                forecast_file = dist_coarse
 
     # 1. Load Operational Multi-day Coarse NWP Grids
     coarse_data, is_committed_fallback = load_multiday_coarse(forecast_file)
@@ -102,7 +146,7 @@ def run_pipeline(
         lr_slice_day1 = np.nan_to_num(np.maximum(lr_slice_day1, 0.0))
         base_d = date.fromisoformat(actual_date_str)
         day_dates = [(base_d + timedelta(days=d)).isoformat() for d in range(7)]
-        print(f"[*] Starting Mandya Hybrid Multi-Day Pipeline (Day 0: IMD {actual_date_str}, Days 1-6: NWP)...")
+        print(f"[*] Starting {dist_key} Hybrid Multi-Day Pipeline (Day 0: IMD {actual_date_str}, Days 1-6: NWP)...")
     else:
         use_unified_nwp = True
         actual_date_str = cycle_date
@@ -111,7 +155,7 @@ def run_pipeline(
         else:
             base_d = date.fromisoformat(cycle_date)
             day_dates = [(base_d + timedelta(days=d)).isoformat() for d in range(7)]
-        print(f"[*] Starting Mandya Unified Multi-Day NWP Forecast Pipeline for cycle: {cycle_date}...")
+        print(f"[*] Starting {dist_key} Unified Multi-Day NWP Forecast Pipeline for cycle: {cycle_date}...")
 
     # 2. Model setup with checkpoint-aware residual handling
     v3_1_path = ROOT / "models" / "checkpoints" / "best_5x_model_v3_1.pt"
@@ -138,18 +182,20 @@ def run_pipeline(
 
     mc_model = MCDropoutWrapper(base_model, p=0.1).to(device)
 
-    # Build 5-channel terrain features for Mandya domain if DEM is present
+    # Build 5-channel terrain features for target domain if DEM is present
     terrain_tensor = None
     dem_path = ROOT / "data" / "raw" / "dem" / "synthetic_terrain.nc"
     if dem_path.exists():
         try:
             from src.data.terrain_features import build_terrain_tensor_5ch
             dem_ds = xr.open_dataset(dem_path)
-            elev_p = dem_ds["elevation"].values[:80, :80]
-            slope_p = dem_ds["slope"].values[:80, :80]
-            aspect_p = dem_ds["aspect"].values[:80, :80]
+            lat_sl = dist_cfg.get("dem_lat_slice", slice(0, 80))
+            lon_sl = dist_cfg.get("dem_lon_slice", slice(0, 80))
+            elev_p = dem_ds["elevation"].values[lat_sl, lon_sl]
+            slope_p = dem_ds["slope"].values[lat_sl, lon_sl]
+            aspect_p = dem_ds["aspect"].values[lat_sl, lon_sl]
             month_num = int(actual_date_str.split("-")[1])
-            t_5ch = build_terrain_tensor_5ch(elev_p, slope_p, aspect_p, center_lat_deg=12.52, month=month_num)
+            t_5ch = build_terrain_tensor_5ch(elev_p, slope_p, aspect_p, center_lat_deg=dist_cfg["center_lat"], month=month_num)
             terrain_tensor = t_5ch.unsqueeze(0).to(device)
         except Exception as e:
             print(f"[!] Warning: Terrain extraction fallback: {e}")
@@ -157,8 +203,8 @@ def run_pipeline(
     # Downscaler and Aggregator setup
     multi_downscaler = MultivariatePhysicalDownscaler().to(device)
     aggregator = ZonalAggregator(str(geojson_path))
-    hr_lats = np.linspace(10.90, 14.85, 80)
-    hr_lons = np.linspace(74.90, 78.85, 80)
+    hr_lats = dist_cfg["hr_lats"]
+    hr_lons = dist_cfg["hr_lons"]
 
     # 3. Multi-Day Loop (7 Independent Passes)
     daily_results = []
@@ -464,11 +510,14 @@ def main() -> int:
         simulate_live_imd_ingest(args.date)
 
     fc_file = Path(args.forecast_file) if args.forecast_file else None
+    out_path = Path(args.output)
+    if args.district.upper() != "MANDYA" and args.output == "data/serving/mandya_forecasts.json":
+        out_path = ROOT / "data" / "serving" / f"{args.district.lower()}_forecasts.json"
 
     run_pipeline(
         forecast_date=args.date,
         district=args.district,
-        output_json_path=Path(args.output),
+        output_json_path=out_path,
         forecast_file=fc_file,
         mode=args.mode,
     )

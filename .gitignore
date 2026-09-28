@@ -153,3 +153,5 @@ node_modules/
 .omo/
 # -- Temporary inventory files ----------------------------------------------
 _*.csv
+output/
+.kaggle_staging_temporal/

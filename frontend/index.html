@@ -9,8 +9,8 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
     <link rel="stylesheet" href="/leaflet/leaflet.css">
-    <link rel="stylesheet" href="/styles.css?v=25">
-    <title>Mandya Agro-Weather — MoES Agrometeorological Command Center (SIH 26074)</title>
+    <link rel="stylesheet" href="/styles.css?v=26">
+    <title>National Agro-Weather — MoES Agrometeorological Command Center (SIH 26074)</title>
   </head>
   <body data-view="mission-control">
     <!-- Top Offline Warning Banner (Sticky) -->
@@ -27,8 +27,8 @@
         <div class="header-brand">
           <img src="/icon.svg" alt="Weather logo" class="header-logo" width="34" height="34">
           <div class="brand-text">
-            <h1>Mandya Agro-Weather</h1>
-            <span class="brand-tagline">5× Downscaled Panchayat Advisory (SIH PS 26074)</span>
+            <h1 id="header-brand-title">National Agro-Weather</h1>
+            <span class="brand-tagline" id="header-brand-tagline">5× Downscaled Panchayat Advisory (SIH PS 26074) • Mandya Pilot</span>
           </div>
         </div>
 
@@ -57,12 +57,40 @@
             <div class="mission-title-wrap">
               <span class="mission-badge">MINISTRY OF EARTH SCIENCES (MoES)</span>
               <h2>Hyper-Local Agrometeorological Downscaling Command Center</h2>
-              <p class="mission-sub">Mandya Pilot District (234 Gram Panchayats) • Direct 5× Physics-Conserved Super-Resolution (0.25° → 0.05°)</p>
+              <p class="mission-sub" id="mission-sub-domain">Mandya Pilot District (234 Gram Panchayats) • Direct 5× Physics-Conserved Super-Resolution (0.25° → 0.05°)</p>
             </div>
             <div class="mission-meta-pills">
               <span class="meta-pill">Monsoon JJAS Ingestion</span>
               <span class="meta-pill pill-verified">Terrain-Conditioned DEM</span>
               <span class="meta-pill pill-cqr">CQR 90% Calibrated</span>
+            </div>
+          </div>
+
+          <!-- Top Subcontinent Pilot Region Switcher Bar -->
+          <div class="top-pilot-domain-bar" id="top-pilot-domain-bar" role="region" aria-label="National Pilot Domains">
+            <div class="pilot-domain-label">
+              <span class="pilot-pulse-icon">📍</span>
+              <span class="pilot-domain-title">SELECT PILOT DOMAIN:</span>
+            </div>
+            <div class="pilot-pills-wrap" role="tablist" aria-label="Select Pilot Domain">
+              <button type="button" class="btn-pilot-pill active" data-district="mandya" role="tab" aria-selected="true" title="South India: Mandya District, Karnataka (234 Gram Panchayats)">
+                <span class="pill-dot"></span>
+                <span class="pill-title">Mandya, KA</span>
+                <span class="pill-tag">South • Deccan</span>
+                <span class="pill-count">234 GPs</span>
+              </button>
+              <button type="button" class="btn-pilot-pill" data-district="baghpat" role="tab" aria-selected="false" title="North India: Baghpat District, Uttar Pradesh (242 Gram Panchayats)">
+                <span class="pill-dot"></span>
+                <span class="pill-title">Baghpat, UP</span>
+                <span class="pill-tag">North • Gangetic</span>
+                <span class="pill-count">242 GPs</span>
+              </button>
+              <button type="button" class="btn-pilot-pill" data-district="barpeta" role="tab" aria-selected="false" title="East/Northeast India: Barpeta District, Assam (109 Gram Panchayats)">
+                <span class="pill-dot"></span>
+                <span class="pill-title">Barpeta, AS</span>
+                <span class="pill-tag">East • Brahmaputra</span>
+                <span class="pill-count">109 GPs</span>
+              </button>
             </div>
           </div>
 
@@ -124,10 +152,38 @@
               </div>
 
               <!-- Map Card -->
-              <div class="card map-card" id="main-map-card" aria-label="Mandya 234-Panchayat Choropleth">
+              <div class="card map-card" id="main-map-card" aria-label="Interactive Panchayat Choropleth Map">
+                <!-- National Pilot Domain Switcher Bar (Subcontinent Pilot Selection) -->
+                <div class="pilot-domain-bar" id="pilot-domain-bar" role="region" aria-label="National Pilot Domains">
+                  <div class="pilot-domain-label">
+                    <span class="pilot-pulse-icon">📍</span>
+                    <span class="pilot-domain-title">PILOT DOMAIN:</span>
+                  </div>
+                  <div class="pilot-pills-wrap" role="tablist" aria-label="Select Pilot Domain">
+                    <button type="button" class="btn-pilot-pill active" data-district="mandya" id="btn-pilot-mandya" role="tab" aria-selected="true" title="South India: Mandya District, Karnataka (234 Gram Panchayats)">
+                      <span class="pill-dot"></span>
+                      <span class="pill-title">Mandya, KA</span>
+                      <span class="pill-tag">South • Deccan</span>
+                      <span class="pill-count">234 GPs</span>
+                    </button>
+                    <button type="button" class="btn-pilot-pill" data-district="baghpat" id="btn-pilot-baghpat" role="tab" aria-selected="false" title="North India: Baghpat District, Uttar Pradesh (242 Gram Panchayats)">
+                      <span class="pill-dot"></span>
+                      <span class="pill-title">Baghpat, UP</span>
+                      <span class="pill-tag">North • Gangetic</span>
+                      <span class="pill-count">242 GPs</span>
+                    </button>
+                    <button type="button" class="btn-pilot-pill" data-district="barpeta" id="btn-pilot-barpeta" role="tab" aria-selected="false" title="East/Northeast India: Barpeta District, Assam (109 Gram Panchayats)">
+                      <span class="pill-dot"></span>
+                      <span class="pill-title">Barpeta, AS</span>
+                      <span class="pill-tag">East • Brahmaputra</span>
+                      <span class="pill-count">109 GPs</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div class="card-header">
                   <div>
-                    <h3 class="card-title">Mandya Panchayat Interactive GIS Map</h3>
+                    <h3 class="card-title" id="map-card-title">Mandya Panchayat Interactive GIS Map</h3>
                     <p class="card-sub" id="map-status">Click any panchayat to inspect localized downscaled forecast</p>
                   </div>
                   <div class="map-layer-selector" role="radiogroup" aria-label="Map display layer">
@@ -489,6 +545,6 @@
     <!-- Leaflet GIS Library (Cached locally for offline PWA) -->
     <script src="/leaflet/leaflet.js"></script>
     <!-- App Engine JavaScript -->
-    <script type="module" src="/app.js?v=25"></script>
+    <script type="module" src="/app.js?v=26"></script>
   </body>
 </html>

@@ -3767,6 +3767,192 @@ path.selected-gp-highlight,
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* ==========================================================================
+   National Pilot Domain Switcher Bar (SIH PS 26074 Subcontinent Deployment)
+   ========================================================================== */
+.top-pilot-domain-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pilot-domain-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.65rem 1.15rem;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.95));
+  border-bottom: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  backdrop-filter: blur(8px);
+}
+
+.pilot-domain-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pilot-pulse-icon {
+  font-size: 1.1rem;
+  display: inline-block;
+  animation: pilotPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pilotPulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.pilot-domain-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.pilot-pills-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-pilot-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.75rem;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.btn-pilot-pill:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.btn-pilot-pill .pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #94a3b8;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-pilot-pill .pill-title {
+  font-weight: 700;
+}
+
+.btn-pilot-pill .pill-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 0.1rem 0.35rem;
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.btn-pilot-pill .pill-count {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #0284c7;
+  padding: 0.08rem 0.35rem;
+  background: rgba(2, 132, 199, 0.1);
+  border-radius: 4px;
+}
+
+/* Active State */
+.btn-pilot-pill.active {
+  background: #ffffff;
+  border-color: #0b6e4f;
+  color: #064e3b;
+  box-shadow: 0 0 0 3px rgba(11, 110, 79, 0.14), 0 3px 10px rgba(11, 110, 79, 0.12);
+}
+
+.btn-pilot-pill.active .pill-dot {
+  background: #10b981;
+  transform: scale(1.2);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.btn-pilot-pill.active .pill-tag {
+  background: #e8f5ee;
+  color: #064e3b;
+}
+
+/* Specific Zone Highlights when Active */
+.btn-pilot-pill[data-district="baghpat"].active {
+  border-color: #0284c7;
+  color: #075985;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.14), 0 3px 10px rgba(2, 132, 199, 0.12);
+}
+
+.btn-pilot-pill[data-district="baghpat"].active .pill-dot {
+  background: #0284c7;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.6);
+}
+
+.btn-pilot-pill[data-district="baghpat"].active .pill-tag {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.btn-pilot-pill[data-district="barpeta"].active {
+  border-color: #d97706;
+  color: #92400e;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.14), 0 3px 10px rgba(217, 119, 6, 0.12);
+}
+
+.btn-pilot-pill[data-district="barpeta"].active .pill-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.btn-pilot-pill[data-district="barpeta"].active .pill-tag {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+@media (max-width: 768px) {
+  .pilot-domain-bar {
+    padding: 0.5rem 0.75rem;
+  }
+  .pilot-pills-wrap {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .btn-pilot-pill {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.75rem;
+  }
+  .btn-pilot-pill .pill-tag {
+    display: none;
+  }
+}
+
+
 
 
 
