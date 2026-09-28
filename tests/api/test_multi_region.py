@@ -99,3 +99,18 @@ def test_topojson_sizes_under_pwa_budget():
         assert p.exists(), f"TopoJSON missing: {p}"
         size_kb = p.stat().st_size / 1024
         assert size_kb < 400.0, f"{slug}_simplified.topojson exceeds 400 KB: {size_kb:.1f} KB"
+
+
+def test_district_demo_contrast_codes_exist():
+    """Verify demo contrast shortcut codes in registry exist in served forecasts."""
+    districts = client.get("/api/districts").json()["districts"]
+    for d in districts:
+        slug = d["id"]
+        fc_list = client.get(f"/api/forecasts?district={slug}").json()
+        lgd_set = {str(item["lgd_code"]) for item in fc_list}
+        contrasts = d.get("demo_contrasts", [])
+        assert len(contrasts) > 0, f"No demo contrasts registered for {slug}"
+        for c in contrasts:
+            code = str(c["code"])
+            assert code in lgd_set, f"Contrast code {code} ({c['name']}) not found in {slug} forecasts"
+

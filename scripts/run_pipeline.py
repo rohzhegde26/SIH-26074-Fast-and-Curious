@@ -239,10 +239,22 @@ def run_pipeline(
         int_lo = torch.clamp(q_lo - q_hat, min=0.0)
         int_hi = torch.clamp(q_hi + q_hat, min=0.0)
 
-        # Enforce cell-by-cell local block mass conservation
+        mean_raw = mean_pred.clone()
+        delta_lo = torch.clamp(mean_raw - int_lo, min=0.0)
+        delta_hi = torch.clamp(int_hi - mean_raw, min=0.0)
+
+        # Enforce cell-by-cell local block mass conservation on expected physical rainfall
         mean_pred = conservative_renorm_local(mean_pred, x_tensor)
-        int_lo = torch.clamp(conservative_renorm_local(int_lo, x_tensor), min=0.0)
-        int_hi = torch.clamp(conservative_renorm_local(int_hi, x_tensor), min=0.0)
+
+        # Scale conformal uncertainty intervals proportionally with conserved mass,
+        # preserving the calibrated CQR spread rather than renormalizing bounds to the mean
+        scale_ratio = torch.where(
+            mean_raw > 1e-6,
+            mean_pred / torch.clamp(mean_raw, min=1e-6),
+            torch.ones_like(mean_raw)
+        )
+        int_lo = torch.clamp(mean_pred - delta_lo * scale_ratio, min=0.0)
+        int_hi = torch.clamp(mean_pred + delta_hi * scale_ratio, min=0.0)
         int_lo = torch.minimum(int_lo, mean_pred)
         int_hi = torch.maximum(int_hi, mean_pred)
 

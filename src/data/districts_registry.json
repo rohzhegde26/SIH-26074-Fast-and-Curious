@@ -66,22 +66,22 @@
       "centroids_path": "data/serving/baghpat_centroids.json",
       "demo_contrasts": [
         {
-          "code": "119854",
-          "name": "Baghpat Rural Peak",
+          "code": "48625",
+          "name": "Bachhor Peak",
           "tag": "peak",
           "desc": "Intense convective rain cell",
           "shortcut": "N"
         },
         {
-          "code": "119762",
-          "name": "Baraut Agricultural Hub",
+          "code": "264070",
+          "name": "Dadri Agro Hub",
           "tag": "valley",
           "desc": "Sugarcane irrigation belt",
           "shortcut": "B"
         },
         {
-          "code": "119910",
-          "name": "Khekra Dry Window",
+          "code": "48574",
+          "name": "Bhadal Dry Window",
           "tag": "dry",
           "desc": "Dry window suitable for spraying",
           "shortcut": "D"
@@ -110,22 +110,22 @@
       "centroids_path": "data/serving/barpeta_centroids.json",
       "demo_contrasts": [
         {
-          "code": "112340",
-          "name": "Barpeta Floodplain Peak",
+          "code": "105687",
+          "name": "Sonabori Floodplain Peak",
           "tag": "peak",
           "desc": "Brahmaputra high rainfall surge",
           "shortcut": "N"
         },
         {
-          "code": "112415",
-          "name": "Sarthebari Wetland Basin",
+          "code": "105611",
+          "name": "Madhya Paka Wetland Basin",
           "tag": "valley",
           "desc": "Bell metal & paddy wetland microclimate",
           "shortcut": "B"
         },
         {
-          "code": "112280",
-          "name": "Chenga Low Shower",
+          "code": "105638",
+          "name": "Bahari Low Shower",
           "tag": "dry",
           "desc": "Moderate shower gap",
           "shortcut": "D"

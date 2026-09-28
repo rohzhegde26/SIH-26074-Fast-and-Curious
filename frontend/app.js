@@ -154,9 +154,9 @@ const DISTRICT_REGISTRY = {
     topojson: "/baghpat_simplified.topojson",
     gpCount: 242,
     contrasts: [
-      { code: "119854", name: "Baghpat Rural Peak", desc: "Convective rain cell", key: "N", cls: "chip-burst" },
-      { code: "119762", name: "Baraut Agro Hub", desc: "Sugarcane irrigation belt", key: "B", cls: "chip-safe" },
-      { code: "119910", name: "Khekra Dry Window", desc: "Dry window for spraying", key: "D", cls: "chip-dry" }
+      { code: "48625", name: "Bachhor Peak", desc: "Convective rain cell (22.1 mm)", key: "N", cls: "chip-burst" },
+      { code: "264070", name: "Dadri Agro Hub", desc: "Sugarcane irrigation belt (15.3 mm)", key: "B", cls: "chip-safe" },
+      { code: "48574", name: "Bhadal Dry Window", desc: "Dry window for spraying (13.3 mm)", key: "D", cls: "chip-dry" }
     ]
   },
   barpeta: {
@@ -171,9 +171,9 @@ const DISTRICT_REGISTRY = {
     topojson: "/barpeta_simplified.topojson",
     gpCount: 109,
     contrasts: [
-      { code: "112340", name: "Barpeta Floodplain", desc: "Brahmaputra rainfall surge", key: "N", cls: "chip-burst" },
-      { code: "112415", name: "Sarthebari Wetland", desc: "Wetland microclimate", key: "B", cls: "chip-safe" },
-      { code: "112280", name: "Chenga Low Shower", desc: "Moderate shower gap", key: "D", cls: "chip-dry" }
+      { code: "105687", name: "Sonabori Floodplain", desc: "Brahmaputra rainfall surge (22.0 mm)", key: "N", cls: "chip-burst" },
+      { code: "105611", name: "Madhya Paka Wetland", desc: "Wetland microclimate (17.5 mm)", key: "B", cls: "chip-safe" },
+      { code: "105638", name: "Bahari Low Shower", desc: "Moderate shower gap (15.5 mm)", key: "D", cls: "chip-dry" }
     ]
   }
 };
@@ -763,8 +763,8 @@ function getFeatureStyle(feature, isSelected = false) {
     };
   }
 
-  // 2. 5x AI / Rainfall / Temp / RH / Wind Layer: Full Downscaled Spatial Choropleth
-  if (["ai", "rainfall", "temp", "rh", "wind"].includes(currentMapLayer)) {
+  // 2. Full Downscaled Spatial Choropleth: 5x AI / Rainfall / Temp / RH / Wind / Risk / Uncertainty Spread
+  if (["ai", "rainfall", "temp", "rh", "wind", "risk", "spread"].includes(currentMapLayer)) {
     const highlightColor = getLayerColor(record, currentMapLayer);
     if (isSelected) {
       return {
@@ -786,24 +786,24 @@ function getFeatureStyle(feature, isSelected = false) {
     };
   }
 
-  // 3. Other Layers (Risk / Spread): Selected is colored, others subdued grey
+  // Fallback styling for any unhandled layers
   if (isSelected) {
     const highlightColor = getLayerColor(record, currentMapLayer);
     return {
       fillColor: highlightColor,
       fillOpacity: 0.95,
       weight: 3.5,
-      color: "#000000", // Solid black border for selected GP
+      color: "#000000",
       dashArray: "",
       className: "selected-gp-highlight"
     };
   }
 
   return {
-    fillColor: "#cbd5e1", // Subdued neutral grey
+    fillColor: "#cbd5e1",
     fillOpacity: 0.55,
     weight: 1.0,
-    color: "#94a3b8", // Soft boundary border
+    color: "#94a3b8",
     dashArray: "",
     className: "inactive-gp-polygon"
   };
@@ -1025,30 +1025,31 @@ function updateMapLegend(layerType) {
       <div class="legend-item"><span class="legend-swatch" style="background:#10b981;"></span> Safe / Low</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#f59e0b;"></span> Advisory Alert</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#ef4444;"></span> Severe Spoilage</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#cbd5e1;border:1px solid #94a3b8;"></span> Other GPs (Grey)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected (Black)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:transparent;border:2px solid #000000;"></span> Selected GP</div>
     `;
-  } else if (layerType === "spread") {
+    return;
+  }
+
+  if (layerType === "spread") {
     legend.innerHTML = `
       <span class="legend-title">Uncertainty Spread:</span>
       <div class="legend-item"><span class="legend-swatch" style="background:#a7f3d0;"></span> &lt; 5 mm (Tight)</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#fde047;"></span> 5–15 mm</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#fb923c;"></span> 15–30 mm</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#f87171;"></span> &gt; 30 mm (High)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#cbd5e1;border:1px solid #94a3b8;"></span> Other GPs (Grey)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected (Black)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:transparent;border:2px solid #000000;"></span> Selected GP</div>
     `;
-  } else {
-    legend.innerHTML = `
-      <span class="legend-title">Precipitation:</span>
-      <div class="legend-item"><span class="legend-swatch band-dry"></span> &lt; 2.5 mm (Dry)</div>
-      <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5–15.5 mm (Light)</div>
-      <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5–64.4 mm (Moderate)</div>
-      <div class="legend-item"><span class="legend-swatch band-heavy"></span> &gt; 64.5 mm (Heavy)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#cbd5e1;border:1px solid #94a3b8;"></span> Other GPs (Grey)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected (Black)</div>
-    `;
+    return;
   }
+
+  legend.innerHTML = `
+    <span class="legend-title">Precipitation:</span>
+    <div class="legend-item"><span class="legend-swatch band-dry"></span> &lt; 2.5 mm (Dry)</div>
+    <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5–15.5 mm (Light)</div>
+    <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5–64.4 mm (Moderate)</div>
+    <div class="legend-item"><span class="legend-swatch band-heavy"></span> &gt; 64.5 mm (Heavy)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:transparent;border:2px solid #000000;"></span> Selected GP</div>
+  `;
 }
 
 function renderDownscalingPlots() {
@@ -1328,11 +1329,14 @@ async function renderMap(records) {
             if (String(code) !== String(selectedLgdCode)) {
               l.setStyle({
                 fillColor: getLayerColor(rec, currentMapLayer),
-                fillOpacity: 0.88,
-                weight: 2.2,
-                color: "#1e293b",
+                fillOpacity: 0.96,
+                weight: 2.5,
+                color: "#0f172a",
                 dashArray: ""
               });
+              if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                l.bringToFront();
+              }
             }
           },
           mousemove: (e) => {
