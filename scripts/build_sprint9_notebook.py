@@ -152,54 +152,82 @@ models_dir.mkdir(parents=True, exist_ok=True)
 reports_dir = working_dir / "reports"
 reports_dir.mkdir(parents=True, exist_ok=True)
 
-# 1. Unpack Zarr dataset if found in /kaggle/input
-zarr_zip = None
-if Path("/kaggle/input").exists():
-    for f in Path("/kaggle/input").rglob("*.zarr.zip"):
-        zarr_zip = f
+# 1. Locate Authentic Zarr archive
+zarr_file = None
+for p in [datasets_dir / "multitask_temporal_v2_h14.zarr", Path("datasets/multitask_temporal_v2_h14.zarr")]:
+    if p.exists() and ((p / ".zgroup").exists() or (p / "dates").exists() or (p / "zarr.json").exists()):
+        zarr_file = p
         break
 
-if zarr_zip and zarr_zip.exists():
-    stem = zarr_zip.name.replace(".zip", "")
-    target_zarr = datasets_dir / stem
-    if not target_zarr.exists():
-        print(f"[*] Extracting {zarr_zip.name} to {datasets_dir}...")
-        with zipfile.ZipFile(zarr_zip, "r") as zf:
-            zf.extractall(datasets_dir)
-        print("[+] Extracted Zarr archive successfully.")
+if zarr_file is None and Path("/kaggle/input").exists():
+    for f in Path("/kaggle/input").rglob("*.zarr.zip"):
+        stem = f.name.replace(".zip", "")
+        target_zarr = datasets_dir / stem
+        if not target_zarr.exists():
+            print(f"[*] Extracting {f.name}...")
+            with zipfile.ZipFile(f, "r") as zf:
+                zf.extractall(datasets_dir)
+        zarr_file = target_zarr
+        break
 
-# 2. Copy Parquet splits and YAML stats
-if Path("/kaggle/input").exists():
-    for f in Path("/kaggle/input").rglob("*.parquet"):
-        shutil.copy(f, data_dir / f.name)
-    for f in Path("/kaggle/input").rglob("*.yaml"):
-        shutil.copy(f, data_dir / f.name)
+    if zarr_file is None:
+        for d in Path("/kaggle/input").rglob("*.zarr"):
+            if (d / ".zgroup").exists() or (d / "dates").exists() or (d / "zarr.json").exists():
+                zarr_file = d
+                break
 
-# 3. Stage Candidate 3 Checkpoint
+if zarr_file is None or not zarr_file.exists():
+    raise FileNotFoundError("Authentic Zarr dataset 'multitask_temporal_v2_h14.zarr' not found in inputs! Attach 'rohitajitbharadwaj/sih26074-multitask-temporal-v2-h14'.")
+
+print(f"[+] Located authentic Zarr dataset: {zarr_file}")
+
+# 2. Locate Parquet index and YAML normalization stats
+index_file = None
+for p in [data_dir / "sample_index_v2_h14.parquet", Path("data/sample_index_v2_h14.parquet")]:
+    if p.exists():
+        index_file = p
+        break
+if index_file is None and Path("/kaggle/input").exists():
+    for f in Path("/kaggle/input").rglob("sample_index_v2_h14.parquet"):
+        index_file = f
+        break
+
+stats_file = None
+for p in [data_dir / "normalization_stats_v2.yaml", Path("data/normalization_stats_v2.yaml")]:
+    if p.exists():
+        stats_file = p
+        break
+if stats_file is None and Path("/kaggle/input").exists():
+    for f in Path("/kaggle/input").rglob("normalization_stats_v2.yaml"):
+        stats_file = f
+        break
+
+if index_file is None or stats_file is None:
+    raise FileNotFoundError("Parquet sample index or YAML normalization stats not found in inputs! Attach 'rohitajitbharadwaj/sih26074-multitask-temporal-v2-h14'.")
+
+print(f"[+] Located sample index: {index_file}")
+print(f"[+] Located normalization stats: {stats_file}")
+
+# 3. Stage and Verify Candidate 3 Checkpoint
 candidate3_path = None
 EXPECTED_SHA = "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92"
 
-if Path("/kaggle/input").exists():
+for p in [models_dir / "sprint6_candidate3_multitask_champion.pt", Path("models/checkpoints/sprint6_candidate3_multitask_champion.pt")]:
+    if p.exists():
+        candidate3_path = p
+        break
+
+if candidate3_path is None and Path("/kaggle/input").exists():
     for f in Path("/kaggle/input").rglob("sprint6_candidate3_multitask_champion.pt"):
-        dest = models_dir / f.name
-        if not dest.exists():
-            shutil.copy(f, dest)
-        candidate3_path = dest
-        print(f"[+] Found and staged Candidate 3 checkpoint: {dest}")
+        candidate3_path = f
         break
 
 if not candidate3_path or not candidate3_path.exists():
-    raise FileNotFoundError(
-        "Candidate 3 checkpoint 'sprint6_candidate3_multitask_champion.pt' not found in /kaggle/input!\n"
-        "Attach 'rohitajitbharadwaj/sih26074-sprint6-checkpoints' to the Kaggle session."
-    )
+    raise FileNotFoundError("Candidate 3 checkpoint 'sprint6_candidate3_multitask_champion.pt' not found in /kaggle/input! Attach 'rohitajitbharadwaj/sih26074-sprint6-checkpoints'.")
 
 raw_b = candidate3_path.read_bytes()
 if raw_b.startswith(b"version https://git-lfs.github.com"):
-    raise RuntimeError(
-        "Candidate 3 checkpoint is an unhydrated Git-LFS pointer!\n"
-        "Ensure full binary weights are attached in Kaggle dataset."
-    )
+    raise RuntimeError("Candidate 3 checkpoint is an unhydrated Git-LFS pointer! Ensure full binary weights are attached.")
 
 actual_sha = hashlib.sha256(raw_b).hexdigest()
 if actual_sha != EXPECTED_SHA:
@@ -778,11 +806,7 @@ Trains Dense-M and Dense-L using the authentic `SpatiotemporalDownscalingDataset
     # CELL 14: Code - Training Routine
     # -------------------------------------------------------------
     add_code("""# Cell 7: Training Routine for Dense-M and Dense-L
-zarr_path = datasets_dir / "multitask_temporal_v2_h14.zarr"
-index_path = data_dir / "sample_index_v2_h14.parquet"
-stats_path = data_dir / "normalization_stats_v2.yaml"
-
-ds_train = SpatiotemporalDownscalingDataset(zarr_path, index_path, stats_path, split="train")
+ds_train = SpatiotemporalDownscalingDataset(zarr_file, index_file, stats_file, split="train")
 train_loader = DataLoader(ds_train, batch_size=2, shuffle=True, num_workers=0)
 print(f"[+] Loaded {len(ds_train)} authentic training cubes (2015-2021).")
 
@@ -844,7 +868,7 @@ Evaluates all models across the complete authentic 2022 validation dataset (`spl
     # CELL 16: Code - Evaluation Engine
     # -------------------------------------------------------------
     add_code("""# Cell 8: Authentic 32 NFE Evaluation Pipeline
-ds_val = SpatiotemporalDownscalingDataset(zarr_path, index_path, stats_path, split="val")
+ds_val = SpatiotemporalDownscalingDataset(zarr_file, index_file, stats_file, split="val")
 val_loader = DataLoader(ds_val, batch_size=2, shuffle=False, num_workers=0)
 print(f"[+] Loaded {len(ds_val)} authentic validation cubes (2022).")
 
