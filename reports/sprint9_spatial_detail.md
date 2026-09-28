@@ -29,16 +29,17 @@ A fundamental physical principle governing generative weather downscaling:
 1. **Single Ensemble Members**: Retain sharp, physically plausible local storm gradients ($R_{\text{Lap}} \approx 20\% - 30\%$). Individual members place convective cells at specific coordinate locations.
 2. **Ensemble Mean**: Averages over stochastic members, which naturally cancels out high-wavenumber phase discrepancies ($R_{\text{Lap}} \approx 7\% - 10\%$). This spatial smoothing is a mathematical property of minimum-MSE expectation, not a defect of the model.
 
-## 4. Empirical Scaling Results Across 32 NFE
+## 4. Multi-Dimensional Spatial Texture Frontier Across 32 NFE
 
-| Model Tier | Base Channels | Single-Member $R_{\text{Lap}}$ | Ensemble-Mean $R_{\text{Lap}}$ | Single-Member $R_{\text{HF}}$ | Spatial Autocorrelation ($r_1$) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Dense-S (Control)** | 96 | 0.215 | 0.076 | 0.248 | 0.884 |
-| **Dense-M** | 136 | 0.264 | 0.089 | 0.298 | 0.862 |
-| **Dense-L** | 176 | 0.312 | 0.104 | 0.345 | 0.845 |
-| **MoE-4** | 96 | 0.258 | 0.086 | 0.291 | 0.866 |
+| Model Tier | Base Channels | Status | Single-Member $R_{\text{Lap}}$ | Ensemble-Mean $R_{\text{Lap}}$ | Single-Member $R_{\text{HF}}$ | Spatial Autocorrelation ($r_1$) |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: |
+| **Dense-S (Control)** | 96 | **VALIDATED_BASELINE** | 0.215 | 0.076 | 0.248 | 0.884 |
+| **Dense-M** | 136 | TARGET_PENDING_KAGGLE | Target > 0.250 | Target > 0.085 | Target > 0.285 | Target ~ 0.865 |
+| **Dense-L** | 176 | TARGET_PENDING_KAGGLE | Target > 0.300 | Target > 0.100 | Target > 0.320 | Target ~ 0.850 |
+| **MoE-4** | 96 | TARGET_PENDING_KAGGLE | Match Dense-M | Match Dense-M | Match Dense-M | Match Dense-M |
 
-## 5. Key Findings
-1. **Capacity Directly Restores Spatial Sharpness**: Increasing base channels from 96 to 176 increases single-member Laplacian energy retention from 21.5% to 31.2% (+45.1% relative improvement).
-2. **High-Frequency Power Recovery**: High-frequency spectral energy increases from 24.8% to 34.5%, proving that larger denoiser width reduces artificial numerical diffusion.
-3. **MoE Spatial Quality**: MoE-4 achieves single-member Laplacian retention (25.8%) comparable to Dense-M (26.4%) while executing at Dense-S active parameter scale.
+## 5. Architectural Hypotheses
+1. **Capacity Directly Restores Spatial Sharpness**: Increasing base channels from 96 to 176 is hypothesized to increase single-member Laplacian energy retention from 21.5% to > 30.0% (> 39% relative improvement).
+2. **High-Frequency Power Recovery**: High-frequency spectral energy is hypothesized to exceed 32.0% in Dense-L, proving that larger denoiser width reduces artificial numerical diffusion.
+3. **MoE Spatial Quality**: MoE-4 is designed to achieve single-member Laplacian retention comparable to Dense-M while executing at Dense-S active parameter scale.
+4. **Validation Grounding**: Empirical numbers for Dense-M and Dense-L will be updated upon execution of `sprint_9_phase1_dense_capacity_scaling.ipynb` on Kaggle.

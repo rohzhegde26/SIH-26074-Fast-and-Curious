@@ -188,16 +188,25 @@ if Path("/kaggle/input").exists():
         print(f"[+] Found and staged Candidate 3 checkpoint: {dest}")
         break
 
-if candidate3_path and candidate3_path.exists():
-    raw_b = candidate3_path.read_bytes()
-    if not raw_b.startswith(b"version https://git-lfs.github.com"):
-        actual_sha = hashlib.sha256(raw_b).hexdigest()
-        assert actual_sha == EXPECTED_SHA, f"Candidate 3 SHA mismatch! Expected {EXPECTED_SHA}, got {actual_sha}"
-        print(f"[+] Checkpoint verified: SHA-256 matches frozen control: {actual_sha}")
-    else:
-        print("[!] Candidate 3 checkpoint is an unhydrated Git-LFS pointer.")
-else:
-    print("[!] Candidate 3 checkpoint not detected in inputs.")""")
+if not candidate3_path or not candidate3_path.exists():
+    raise FileNotFoundError(
+        "Candidate 3 checkpoint 'sprint6_candidate3_multitask_champion.pt' not found in /kaggle/input!\n"
+        "Attach 'rohitajitbharadwaj/sih26074-sprint6-checkpoints' to the Kaggle session."
+    )
+
+raw_b = candidate3_path.read_bytes()
+if raw_b.startswith(b"version https://git-lfs.github.com"):
+    raise RuntimeError(
+        "Candidate 3 checkpoint is an unhydrated Git-LFS pointer!\n"
+        "Ensure full binary weights are attached in Kaggle dataset."
+    )
+
+actual_sha = hashlib.sha256(raw_b).hexdigest()
+if actual_sha != EXPECTED_SHA:
+    raise AssertionError(
+        f"Candidate 3 SHA mismatch! Expected {EXPECTED_SHA}, got {actual_sha}."
+    )
+print(f"[+] Candidate 3 Checkpoint Verified: {actual_sha}")""")
 
     # -------------------------------------------------------------
     # CELL 5: Markdown - Dataset Streaming Class
@@ -751,13 +760,13 @@ Loads the verified Candidate 3 weights into `Dense-S` with `strict=True`.""")
     # CELL 12: Code - Candidate 3 Loading
     # -------------------------------------------------------------
     add_code("""# Cell 6: Load Candidate 3 into Dense-S
-if candidate3_path and candidate3_path.exists():
-    state_dict = torch.load(candidate3_path, map_location=device)
-    weights = state_dict.get("model_state_dict", state_dict)
-    models["dense_s"].load_state_dict(weights, strict=True)
-    print("[+] Successfully loaded Candidate 3 weights into Dense-S with strict=True.")
-else:
-    print("[!] Candidate 3 checkpoint not found. Ensure sih26074-sprint6-checkpoints is attached.")""")
+if candidate3_path is None or not candidate3_path.exists():
+    raise FileNotFoundError("Candidate 3 checkpoint is missing! Hard-fail enforced.")
+
+state_dict = torch.load(candidate3_path, map_location=device)
+weights = state_dict.get("model_state_dict", state_dict)
+models["dense_s"].load_state_dict(weights, strict=True)
+print("[+] Successfully loaded Candidate 3 weights into Dense-S with strict=True.")""")
 
     # -------------------------------------------------------------
     # CELL 13: Markdown - Training on Authentic Data
