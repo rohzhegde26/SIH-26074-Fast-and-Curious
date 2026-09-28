@@ -1,0 +1,56 @@
+{
+  "dense_s": {
+    "params": 15685478,
+    "active_params": 15685478,
+    "metrics": {
+      "wet_mae_mm": 62.77,
+      "csi15": 0.6087,
+      "csi30": 0.6499,
+      "precip_crps": 61.472,
+      "raw_ssr": 0.053,
+      "raw_cov90": 0.264,
+      "laplacian_retention": 0.035,
+      "avg_latency_s": 1.208
+    }
+  },
+  "dense_m": {
+    "params": 31198518,
+    "active_params": 31198518,
+    "metrics": {
+      "wet_mae_mm": 61.62,
+      "csi15": 0.6209,
+      "csi30": 0.6589,
+      "precip_crps": 56.67,
+      "raw_ssr": 0.053,
+      "raw_cov90": 0.195,
+      "laplacian_retention": 0.065
+    }
+  },
+  "dense_l": {
+    "params": 51997958,
+    "active_params": 51997958,
+    "metrics": {
+      "wet_mae_mm": 61.85,
+      "csi15": 0.6207,
+      "csi30": 0.6602,
+      "precip_crps": 56.02,
+      "raw_ssr": 0.068,
+      "raw_cov90": 0.223,
+      "laplacian_retention": 0.084
+    }
+  },
+  "moe_4": {
+    "params": 22773350,
+    "active_params": 15688550,
+    "metrics": {
+      "wet_mae_mm": 61.56,
+      "csi15": 0.6251,
+      "csi30": 0.6521,
+      "precip_crps": 59.712,
+      "raw_ssr": 0.067,
+      "raw_cov90": 0.278,
+      "laplacian_retention": 0.044,
+      "avg_latency_s": 1.374
+    }
+  }
+}

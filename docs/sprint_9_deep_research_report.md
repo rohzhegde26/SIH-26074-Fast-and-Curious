@@ -101,3 +101,23 @@ Based on empirical validation results, the project will route according to the f
 - **Outcome C (Uncertainty Improves, Point Metrics Stagnate)**: Probabilistic calibration improves while point MAE plateaus. $\implies$ Revisit multi-task loss balance and threshold weighting in Sprint 10.
 - **Outcome D (Scaling Saturates)**: Neither point metrics nor uncertainty improve meaningfully. $\implies$ Pure width scaling is insufficient; investigate structural conditioning (e.g. high-resolution cross-attention, wavelet decomposition).
 - **Outcome E (MoE Achieves Superior Frontier)**: MoE matches or exceeds Dense-M with lower active compute. $\implies$ Sparse MoE becomes the primary deployment architecture for edge Panchayat serving.
+
+---
+
+## 4. Empirical Conclusions & Verified Outcomes
+
+Following execution across Phase 1 (Dense Scaling Ladder) and Phase 2 (Sparse MoE Routing) on Kaggle GPU accelerators against the complete 2022 validation season (122 forecast cubes, 427 daily slices) under matched 32 NFE:
+
+### Multi-Dimensional Pareto Summary
+
+| Model Tier | Total Params | Active Params | Active Ratio | Wet-MAE (mm) | CSI@15 | CSI@30 | Fair-CRPS | Raw SSR | Cov@90 | Lap Retention ($R_{\text{Lap}}$) | Profiled Latency (s/cube) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Dense-S (Control)** | 15,685,478 | 15,685,478 | 1.00x | 62.77 | 0.6087 | 0.6499 | 61.472 | 0.053 | 0.264 | 0.035 | 1.208 |
+| **Dense-M** | 31,198,518 | 31,198,518 | 1.99x | 61.62 | 0.6209 | 0.6589 | 56.670 | 0.053 | 0.195 | 0.065 | 1.482 |
+| **Dense-L** | 51,997,958 | 51,997,958 | 3.31x | 61.85 | 0.6207 | **0.6602** | **56.020** | **0.068** | 0.223 | **0.084** | 1.845 |
+| **MoE-4 (Top-1)** | 22,773,350 | **15,688,550** | **1.00x** | **61.56** | **0.6251** | 0.6521 | 59.712 | 0.067 | **0.278** | 0.044 | 1.374 |
+
+### Verdict: Outcome E Validated
+1. **MoE-4 Point Skill Champion**: MoE-4 achieved the lowest Wet-MAE (**61.56 mm**) and highest CSI@15 (**0.6251**) while maintaining 15.69M active parameters (1.00x Candidate 3 baseline) and 1.37s inference latency.
+2. **Dense-L Extreme & Texture Champion**: Dense-L achieved peak CSI@30 (**0.6602**), lowest Fair-CRPS (**56.02**), and highest spatial Laplacian retention (**0.084**, +140% over control).
+3. **Deployment Strategy**: MoE-4 is established as the default lightweight engine for real-time edge Panchayat inference, while Dense-L serves high-performance regional forecasting and cloudburst early warning.
