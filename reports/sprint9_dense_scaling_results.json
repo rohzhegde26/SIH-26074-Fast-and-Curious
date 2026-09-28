@@ -1,99 +1,38 @@
 {
-  "audit_metadata": {
-    "sprint": 9,
-    "objective": "Model Capacity Scaling: Dense -> Larger Dense -> MoE",
-    "control_model": "Candidate 3 Multi-Task Group-Tail v-Prediction Champion",
-    "control_checkpoint": "models/checkpoints/sprint6_candidate3_multitask_champion.pt",
-    "control_sha256": "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92",
-    "evaluation_regimes_matched_32nfe": {
-      "point_mode": "K=8, S=4, eta=0.5 (32 NFE)",
-      "distribution_mode": "K=2, S=16, eta=0.0 (32 NFE)"
-    },
-    "provenance_policy": "Empirical results are strictly reported from authentic 2022 validation dataset. Un-trained capacity tiers are marked as PENDING_KAGGLE_EXECUTION with explicit hypothesis acceptance targets."
+  "dense_s": {
+    "params": 15685478,
+    "metrics": {
+      "wet_mae_mm": 62.63,
+      "csi15": 0.6087,
+      "csi30": 0.6499,
+      "precip_crps": 58.349,
+      "raw_ssr": 0.051,
+      "raw_cov90": 0.243,
+      "laplacian_retention": 0.057
+    }
   },
-  "capacity_ladder_specifications": {
-    "dense_s": {
-      "tier": "dense_s",
-      "role": "Frozen Candidate 3 Control",
-      "base_channels": 96,
-      "total_parameters": 15685478,
-      "trainable_parameters": 15685478,
-      "active_parameters": 15685478,
-      "parameter_ratio_vs_candidate3": 1.0,
-      "checkpoint_fp16_mb": 29.92,
-      "status": "VALIDATED_EMPIRICAL_BENCHMARK",
-      "metrics_source": "Sprint 8.5 Validated Evaluation on 2022 Validation Set (122 forecast cubes, 427 daily slices)",
-      "empirical_results": {
-        "point_mode_32nfe": {
-          "wet_mae_mm": 8.15,
-          "csi15": 0.7420,
-          "csi30": 0.5812,
-          "tmax_mae": 0.428,
-          "wind_rmse": 0.985,
-          "laplacian_retention_single_member": 0.215,
-          "laplacian_retention_ensemble_mean": 0.076,
-          "high_freq_psd_retention": 0.248
-        },
-        "probabilistic_mode_32nfe": {
-          "precip_crps_raw": 1.842,
-          "raw_ssr": 0.284,
-          "raw_coverage_90": 0.178,
-          "selected_alpha": 3.0,
-          "calibrated_ssr": 0.582,
-          "calibrated_coverage_90": 0.284,
-          "brier_p15": 0.0482,
-          "brier_p30": 0.0195
-        }
-      }
-    },
-    "dense_m": {
-      "tier": "dense_m",
-      "role": "Intermediate Width Scaled Denoiser",
-      "base_channels": 136,
-      "total_parameters": 31198518,
-      "trainable_parameters": 31198518,
-      "active_parameters": 31198518,
-      "parameter_ratio_vs_candidate3": 1.989,
-      "checkpoint_fp16_mb": 59.51,
-      "status": "PENDING_KAGGLE_EXECUTION",
-      "target_acceptance_hypotheses": {
-        "H1_point_accuracy": "Wet-MAE < 7.80 mm (-4.3% error reduction vs Dense-S)",
-        "H2_storm_tail": "CSI@30 > 0.6000 (+3.2% recall gain)",
-        "H3_uncertainty": "Raw SSR > 0.350, selected alpha* <= 2.0 (reduced calibration burden)",
-        "H4_spatial_texture": "Single-member Laplacian retention > 0.250 (+16.3% sharper convective cores)"
-      }
-    },
-    "dense_l": {
-      "tier": "dense_l",
-      "role": "Large Width Denoiser",
-      "base_channels": 176,
-      "total_parameters": 51997958,
-      "trainable_parameters": 51997958,
-      "active_parameters": 51997958,
-      "parameter_ratio_vs_candidate3": 3.315,
-      "checkpoint_fp16_mb": 99.18,
-      "status": "PENDING_KAGGLE_EXECUTION",
-      "target_acceptance_hypotheses": {
-        "H1_point_accuracy": "Wet-MAE < 7.40 mm (-9.2% error reduction vs Dense-S)",
-        "H2_storm_tail": "CSI@30 > 0.6250 (+7.5% recall gain)",
-        "H3_uncertainty": "Raw SSR > 0.450, selected alpha* <= 1.5",
-        "H4_spatial_texture": "Single-member Laplacian retention > 0.300 (+39.5% sharper convective cores)"
-      }
-    },
-    "moe_4": {
-      "tier": "moe_4",
-      "role": "Sparse Top-1 Routing over 4 Bottleneck Experts",
-      "base_channels": 96,
-      "total_parameters": 35765990,
-      "trainable_parameters": 35765990,
-      "active_parameters": 15685478,
-      "parameter_ratio_vs_candidate3": 2.280,
-      "active_parameter_ratio": 1.0,
-      "checkpoint_fp16_mb": 68.22,
-      "status": "PENDING_KAGGLE_EXECUTION",
-      "target_acceptance_hypotheses": {
-        "H6_moe_efficiency": "Match Dense-M Wet-MAE and CSI@30 within 2% while executing at Dense-S active parameter count (15.69M)"
-      }
+  "dense_m": {
+    "params": 31198518,
+    "metrics": {
+      "wet_mae_mm": 61.62,
+      "csi15": 0.6209,
+      "csi30": 0.6589,
+      "precip_crps": 56.67,
+      "raw_ssr": 0.053,
+      "raw_cov90": 0.195,
+      "laplacian_retention": 0.065
+    }
+  },
+  "dense_l": {
+    "params": 51997958,
+    "metrics": {
+      "wet_mae_mm": 61.85,
+      "csi15": 0.6207,
+      "csi30": 0.6602,
+      "precip_crps": 56.02,
+      "raw_ssr": 0.068,
+      "raw_cov90": 0.223,
+      "laplacian_retention": 0.084
     }
   }
 }
