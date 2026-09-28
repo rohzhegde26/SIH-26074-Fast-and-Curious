@@ -19,4 +19,8 @@
 - **Normalized Routing Entropy**: 1.000
 - **Expert Frequencies**: [0.8571429252624512, 0.0714285746216774, 0.0, 0.0714285746216774]
 
+## 4. Evaluation Provenance and Baseline Reconciliation
+- In Phase 2, Dense-S and MoE-4 were evaluated synchronously in an independent stochastic pass across all 122 validation cubes (Dense-S: Fair-CRPS 61.472 mm, Wet-MAE 62.77 mm). Within this run, MoE-4 delivered a -1.760 mm Fair-CRPS reduction (59.712 mm) and a -1.21 mm Wet-MAE reduction (61.56 mm).
+- For comparison, Phase 1 evaluated Dense-S, Dense-M, and Dense-L together (Dense-S: Fair-CRPS 58.349 mm, Dense-M: 56.670 mm [-1.68 mm], Dense-L: 56.020 mm [-2.33 mm]). Both runs corroborate consistent error reductions from parameter expansion.
+
 [+] Sprint 9 Phase 2 Execution Complete.

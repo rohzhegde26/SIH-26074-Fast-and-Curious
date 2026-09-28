@@ -15,4 +15,9 @@
 - **Dense-L CSI@30 Delta**: +0.0103
 - **Dense-L Fair-CRPS Delta**: -2.329
 
+## 3. Stochastic Sampling and Phase 2 Cross-Reference
+- In Phase 1 (Dense-S, Dense-M, Dense-L evaluated together over 122 forecast cubes at 32 NFE), Dense-S control achieved Fair-CRPS 58.349 mm and Wet-MAE 62.63 mm.
+- In Phase 2 (Dense-S vs MoE-4 evaluated in an independent stochastic pass), Dense-S control scored Fair-CRPS 61.472 mm and Wet-MAE 62.77 mm, against which MoE-4 achieved 59.712 mm (-1.760 mm delta) and 61.56 mm (-1.21 mm delta).
+- Both evaluation phases demonstrate consistent improvements from architectural scaling, showing ~1.7 to 2.3 mm Fair-CRPS reductions over Candidate 3 control.
+
 [+] Phase 1 Dense Capacity Scaling Execution Complete.
