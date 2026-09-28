@@ -27,12 +27,13 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from src.data.temporal_dataset import SpatiotemporalDownscalingDataset
 from src.models.residual_diffusion import compute_residual_target
 from src.models.scalable_residual_diffusion import (
     TIER_CHANNEL_CONFIGS,
@@ -42,32 +43,42 @@ from src.models.scalable_residual_diffusion import (
 EXPECTED_CANDIDATE3_SHA256 = "f3367f5fdd96b02a864d319fb94c43c1216de435eba89ac7f3d557c5da81df92"
 
 
-class SyntheticWeatherCubeDataset(Dataset):
-    """Fallback synthetic dataset for local CPU smoke testing and shape validation."""
-
-    def __init__(self, num_samples: int = 4, history_len: int = 14, leads: int = 7):
-        self.num_samples = num_samples
-        self.history_len = history_len
-        self.leads = leads
-
-    def __len__(self) -> int:
-        return self.num_samples
-
-    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
-        return {
-            "history": torch.randn(self.history_len, 6, 16, 16),
-            "forecast": torch.randn(self.leads, 6, 16, 16),
-            "terrain": torch.randn(5, 80, 80),
-            "target": torch.randn(self.leads, 6, 80, 80),
-        }
-
-
 def compute_sha256(file_path: Path) -> str:
     sha = hashlib.sha256()
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
             sha.update(chunk)
     return sha.hexdigest()
+
+
+def resolve_dataset_paths() -> Tuple[Optional[Path], Optional[Path], Optional[Path]]:
+    zarr_candidates = [
+        ROOT / "datasets" / "multitask_temporal_v2_h14.zarr",
+        Path("/kaggle/working/datasets/multitask_temporal_v2_h14.zarr"),
+        Path("/kaggle/input/sih26074-multitask-temporal-v2-h14/multitask_temporal_v2_h14.zarr"),
+    ]
+    zarr_path = next((cand for cand in zarr_candidates if cand.exists() and ((cand / ".zgroup").exists() or (cand / "dates").exists())), None)
+    if zarr_path is None and Path("/kaggle/input").exists():
+        for d in Path("/kaggle/input").rglob("*.zarr"):
+            if (d / ".zgroup").exists() or (d / "dates").exists():
+                zarr_path = d
+                break
+
+    index_candidates = [
+        ROOT / "data" / "sample_index_v2_h14.parquet",
+        Path("/kaggle/working/data/sample_index_v2_h14.parquet"),
+        Path("/kaggle/input/sih26074-multitask-temporal-v2-h14/sample_index_v2_h14.parquet"),
+    ]
+    index_path = next((p for p in index_candidates if p.exists()), None)
+
+    stats_candidates = [
+        ROOT / "data" / "normalization_stats_v2.yaml",
+        Path("/kaggle/working/data/normalization_stats_v2.yaml"),
+        Path("/kaggle/input/sih26074-multitask-temporal-v2-h14/normalization_stats_v2.yaml"),
+    ]
+    stats_path = next((p for p in stats_candidates if p.exists()), None)
+
+    return zarr_path, index_path, stats_path
 
 
 def train_epoch(
@@ -85,7 +96,7 @@ def train_epoch(
 
     for batch in dataloader:
         history = batch["history"].to(device)
-        future = batch["forecast"].to(device)
+        future = batch["future_forecast"].to(device)
         terrain = batch["terrain"].to(device)
         target = batch["target"].to(device)
 
@@ -124,18 +135,18 @@ def train_epoch(
 def main():
     parser = argparse.ArgumentParser(description="Sprint 9 Model Capacity Training Pipeline")
     parser.add_argument("--tier", type=str, default="dense_m", choices=list(TIER_CHANNEL_CONFIGS.keys()))
-    parser.add_argument("--epochs", type=int, default=5)
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
-    parser.add_argument("--smoke-test", action="store_true", help="Run 1-batch smoke verification")
+    parser.add_argument("--smoke-test", action="store_true", help="Run 1-batch synthetic shape validation")
     parser.add_argument("--save-dir", type=str, default="models/checkpoints")
     args, _ = parser.parse_known_args()
 
     device = torch.device(args.device)
     print(f"[*] Initializing Sprint 9 Capacity Training for tier: {args.tier.upper()} on {device}")
 
-    # Build model
+    # Build model with exact configured channels
     model = create_scalable_residual_diffusion(tier=args.tier).to(device)
     profile = model.profile_compute(device=device, batch_size=args.batch_size)
 
@@ -145,18 +156,45 @@ def main():
     print(f"[+] Ratio vs Candidate 3: {profile['parameter_ratio_vs_candidate3']:.2f}x")
     print(f"[+] Est. Peak VRAM:       {profile['estimated_vram_gb']:.2f} GB")
 
-    dataset = SyntheticWeatherCubeDataset(num_samples=4 if args.smoke_test else 16)
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
+    if args.smoke_test:
+        print("[*] Running 1-sample synthetic shape check...")
+        b = 1
+        h = torch.randn(b, 14, 6, 16, 16, device=device)
+        f = torch.randn(b, 7, 6, 16, 16, device=device)
+        terr = torch.randn(b, 5, 80, 80, device=device)
+        y = torch.randn(b, 7, 6, 80, 80, device=device)
+        r0 = compute_residual_target(y, f)
+        loss, pred, _ = model.compute_training_loss(r0, h, f, terr, target_norm=y)
+        loss.backward()
+        print(f"[+] Smoke test PASSED: Loss={loss.item():.4f}, Pred shape={pred.shape}")
+        return
+
+    zarr_path, index_path, stats_path = resolve_dataset_paths()
+    if zarr_path is None or index_path is None or stats_path is None:
+        raise FileNotFoundError(
+            "Authentic Zarr training dataset not found in local path or /kaggle/input!\n"
+            "Attach 'rohitajitbharadwaj/sih26074-multitask-temporal-v2-h14' to train on authentic data."
+        )
+
+    ds_train = SpatiotemporalDownscalingDataset(
+        zarr_path=zarr_path,
+        index_path=index_path,
+        stats_path=stats_path,
+        split="train",
+        history_len=14,
+        context_size=24,
+    )
+    dataloader = DataLoader(ds_train, batch_size=args.batch_size, shuffle=True, num_workers=0)
+    print(f"[+] Loaded authentic training dataset with {len(ds_train)} cubes (2015-2021).")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"))
 
-    epochs_to_run = 1 if args.smoke_test else args.epochs
     save_path = Path(args.save_dir)
     save_path.mkdir(parents=True, exist_ok=True)
 
     best_loss = float("inf")
-    for epoch in range(1, epochs_to_run + 1):
+    for epoch in range(1, args.epochs + 1):
         loss, throughput = train_epoch(
             model=model,
             dataloader=dataloader,
@@ -165,9 +203,9 @@ def main():
             device=device,
             use_amp=(device.type == "cuda"),
         )
-        print(f"[Epoch {epoch:02d}/{epochs_to_run:02d}] Loss: {loss:.4f} | Throughput: {throughput:.2f} samples/s")
+        print(f"[Epoch {epoch:02d}/{args.epochs:02d}] Loss: {loss:.4f} | Throughput: {throughput:.2f} samples/s")
 
-        if loss < best_loss and not args.smoke_test:
+        if loss < best_loss:
             best_loss = loss
             ckpt_file = save_path / f"sprint9_{args.tier}_best.pt"
             torch.save({
