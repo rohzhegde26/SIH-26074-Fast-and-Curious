@@ -11,7 +11,7 @@
    - Local execution is strictly reserved for quick sanity checks (e.g. 1 batch shape validation, unit tests, data ingestion validation).
 2. **Kaggle Infrastructure**:
    - **Username**: `rohitajitbharadwaj` (authenticated via API token in `~/.kaggle`).
-   - **GPU Quota**: 6.0 hours / week (2× Tesla T4 16GB or 1× Tesla P100 16GB).
+   - **GPU Quota**: 30.0 hours (per Kaggle quota panel, verified 2026-09-29) (2× Tesla T4 16GB or 1× Tesla P100 16GB).
    - **TPU Quota**: 20.0 hours / week (TPU VM v3-8, 8 cores, 128GB TPU HBM, 330GB RAM).
 3. **Dispatch Workflow**:
    - Use `scripts/kaggle/dispatch_kaggle.py` to package code, push kernels to Kaggle, track training execution, and retrieve checkpoints/output artifacts into `output/kaggle/`.

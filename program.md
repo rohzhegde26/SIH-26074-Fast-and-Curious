@@ -1,23 +1,12 @@
-## Active Compute Budget & Live Kaggle GPU Quota
-> **LIVE STATUS (Updated 2026-09-27 22:41:50):**
-> - **Total GPU Allowance:** 6.0 hours (21600 s)
-> - **GPU Time Consumed:** 2.84 hours (10212 s)
-> - **GPU TIME REMAINING:** **3.16 hours (189.8 minutes)**
-> - **Quota Refreshes At:** 2026-10-03T00:00:00.000Z
->
-> ⚠️ **HARD CONSTRAINT FOR AGENTS:**
-> You have AT MOST **3.16 hours** of GPU time remaining for this cycle.
-> Every training run depletes this quota. Budget your experiments carefully. If you run 5-minute runs,
-> you have at most ~37 candidate iterations left before quota exhaustion!
 ## Active Compute Budget & Live Kaggle Accelerator Quota
-> **LIVE STATUS (Verified 2026-09-22):**
-> - **Kaggle GPU Quota:** 6.0 hours (21,600 s) allowed | 0.0 s consumed | **6.0 hours remaining (100%)**
-> - **Kaggle TPU Quota:** 20.0 hours (72,000 s) allowed | 0.0 s consumed | **20.0 hours remaining (100%)**
-> - **Quota Refresh Date:** 2026-09-26T00:00:00.000Z
+> **LIVE STATUS (Verified by user from Kaggle UI, 2026-09-29):**
+> - **Kaggle GPU Quota:** 30.0 hours allowed | ~7.1 hours consumed | **22.9 hours (22h 55m) remaining**
+> - TPU quota: not shown in current Kaggle quota panel; verify before planning TPU runs.
 >
 > ⚠️ **MANDATORY HARD CONSTRAINT FOR ALL AGENTS:**
 > All model training workloads MUST run on Kaggle (GPU or TPU accelerators via Kaggle API / CLI dispatch).
 > Do NOT execute heavy model training loops on the local CPU or machine.
+> Budget experiments against the remaining GPU hours above.
 
 ## 1. Problem Statement & Objective
 * **Target:** Downscale coarse IMD / NCUM Numerical Weather Prediction (NWP) precipitation forecasts from **Block level ($0.25^\circ \approx 27\text{ km}$, $16\times 16$ grid)** to **Panchayat level ($0.05^\circ \approx 5.5\text{ km}$, $80\times 80$ grid)**.

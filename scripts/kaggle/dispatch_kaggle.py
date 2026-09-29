@@ -81,11 +81,6 @@ def query_kaggle_gpu_quota() -> dict:
     except Exception as e:
         print(f"[!] Warning: Could not query Kaggle quota: {e}")
         return {
-            "total_hours": 6.0,
-            "used_hours": 0.0,
-            "remaining_hours": 6.0,
-            "remaining_minutes": 360.0,
-            "refresh_time": "Unknown",
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "error": str(e),
         }
@@ -96,6 +91,11 @@ def update_agent_compute_context(quota: dict):
     Saves quota status to data/cache/kaggle_quota.json and updates program.md
     so the autonomous agents are explicitly aware of their remaining GPU time.
     """
+    if "error" in quota:
+        # Never overwrite the recorded budget with made-up numbers.
+        print("[!] Quota unknown; leaving program.md and quota cache untouched.")
+        return
+
     # 1. Save JSON cache
     cache_dir = Path("data/cache")
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -109,7 +109,7 @@ def update_agent_compute_context(quota: dict):
         return
 
     content = program_path.read_text(encoding="utf-8")
-    section_header = "## Active Compute Budget & Live Kaggle GPU Quota"
+    section_header = "## Active Compute Budget & Live Kaggle Accelerator Quota"
     
     budget_text = f"""{section_header}
 > **LIVE STATUS (Updated {quota['timestamp']}):**
@@ -185,13 +185,16 @@ def run_kaggle_job(
     quota_pre = query_kaggle_gpu_quota()
     print("=" * 65)
     print(f"[*] PRE-DISPATCH KAGGLE GPU QUOTA:")
-    print(f"    Remaining: {quota_pre['remaining_hours']} hrs ({quota_pre['remaining_minutes']} mins)")
-    print(f"    Used:      {quota_pre['used_hours']} hrs")
-    print(f"    Refresh:   {quota_pre['refresh_time']}")
+    if "error" in quota_pre:
+        print("    Unknown (quota query failed); check kaggle.com/me/account")
+    else:
+        print(f"    Remaining: {quota_pre['remaining_hours']} hrs ({quota_pre['remaining_minutes']} mins)")
+        print(f"    Used:      {quota_pre['used_hours']} hrs")
+        print(f"    Refresh:   {quota_pre['refresh_time']}")
     print("=" * 65)
     update_agent_compute_context(quota_pre)
 
-    if quota_pre["remaining_minutes"] < 5.0:
+    if quota_pre.get("remaining_minutes", float("inf")) < 5.0:
         print("[-] ERROR: Less than 5 minutes of Kaggle GPU quota remaining! Aborting dispatch.")
         return False
 
@@ -246,9 +249,12 @@ def run_kaggle_job(
     quota_post = query_kaggle_gpu_quota()
     print("=" * 65)
     print(f"[*] POST-DISPATCH KAGGLE GPU QUOTA:")
-    print(f"    Remaining: {quota_post['remaining_hours']} hrs ({quota_post['remaining_minutes']} mins)")
-    print(f"    Used:      {quota_post['used_hours']} hrs")
-    print(f"    Refresh:   {quota_post['refresh_time']}")
+    if "error" in quota_post:
+        print("    Unknown (quota query failed); check kaggle.com/me/account")
+    else:
+        print(f"    Remaining: {quota_post['remaining_hours']} hrs ({quota_post['remaining_minutes']} mins)")
+        print(f"    Used:      {quota_post['used_hours']} hrs")
+        print(f"    Refresh:   {quota_post['refresh_time']}")
     print("=" * 65)
     update_agent_compute_context(quota_post)
 
