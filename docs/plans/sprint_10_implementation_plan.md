@@ -47,13 +47,13 @@ Sprint 10 represents the synthesis and culmination of the 10-sprint research roa
        |
        v
 [Sprint 10: Integrated Mature System & Final Scaling Study]
-  Synthesis of optimal configurations into 4 operational deployment modes (FAST, BALANCED, ACCURATE, ENSEMBLE).
+  Synthesis of champion configurations into 2 operational deployment modes (ACCURATE, ENSEMBLE).
   Canonical physical-repair cross-evaluation, 2023 El Nino holdout unquarantining, and jury deployment package.
 ```
 
 ### 1.2 Core Scientific Objectives of Sprint 10
 Sprint 10 directly addresses four critical operational and scientific goals:
-1. **Unify the Operational Deployment Modes**: Map the empirical Pareto frontier into four discrete, production-ready operating configurations (`FAST`, `BALANCED`, `ACCURATE`, `ENSEMBLE`), tailored to specific Ministry of Earth Sciences (MoES) and IMD operational deployment tiers.
+1. **Unify the Operational Deployment Modes**: Map the empirical Pareto frontier into two discrete, production-ready operating configurations (`ACCURATE`, `ENSEMBLE`), tailored to specific Ministry of Earth Sciences (MoES) and IMD operational deployment tiers.
 2. **Canonical Physical-Repair Cross-Evaluation**: Bridge the Sprint 9 exploratory notebook numbers by running the full 4-tier capacity ladder (Dense-S, Dense-M, Dense-L, MoE-4) through the canonical `sprint8_physical` evaluation pipeline (`invert_normalization`, member-wise physical bounds repair, standard $p_{\text{target}} > 2.5\text{ mm/day}$ wet threshold).
 3. **Unquarantine the 2023 El Nino Holdout Year**: For the first time across the entire research program, evaluate the champion architectures against the strictly quarantined 2023 holdout test set (365 daily forecast cycles during an active El Nino phase) to measure out-of-distribution generalization.
 4. **Multivariate Physical Consistency & Reliability Audit**: Audit the joint physical relationships across predicted variables (Precipitation vs RH, Orographic Precipitation vs Wind Divergence, $T_{\max} \ge T_{\min}$ thermal diurnal bounds) to certify meteorological plausibility.
@@ -63,7 +63,7 @@ Sprint 10 directly addresses four critical operational and scientific goals:
 
 ## 2. Operating Modes & Deployment Architecture
 
-To translate our scientific findings into practical meteorological service, Sprint 10 organizes the model capacity and test-time compute configurations into four distinct operational profiles:
+To translate our scientific findings into practical meteorological service, Sprint 10 organizes model capacity and test-time compute into two distinct operational profiles powered by the Dense-L champion denoiser:
 
 ```
 +==================================================================================================+
@@ -71,40 +71,24 @@ To translate our scientific findings into practical meteorological service, Spri
 +==================================================================================================+
 | Profile   | Target Model | NFE Budget | Sampler (K, S, eta) | Target Latency | Deployment Tier   |
 +-----------+--------------+------------+---------------------+----------------+-------------------+
-| FAST      | MoE-4        | 4 NFE      | K=1, S=4, eta=0.0   | < 250 ms/cube  | Panchayat Edge /  |
-|           | (15.7M act)  |            |                     |                | Mobile Web API    |
-+-----------+--------------+------------+---------------------+----------------+-------------------+
-| BALANCED  | MoE-4        | 16 NFE     | K=2, S=8, eta=0.25  | ~ 700 ms/cube  | District Advisory |
-|           | (15.7M act)  |            |                     |                | Workstations      |
-+-----------+--------------+------------+---------------------+----------------+-------------------+
 | ACCURATE  | Dense-L      | 32 NFE     | K=2, S=16, eta=0.50 | ~ 1.85 s/cube  | Severe Storm /    |
 |           | (52.0M dens) |            |                     |                | Cloudburst Radar  |
 +-----------+--------------+------------+---------------------+----------------+-------------------+
-| ENSEMBLE  | Dense-L /    | 64 NFE     | K=8, S=8, eta=0.50  | ~ 3.50 s/cube  | State HPC / Flood |
-|           | Dense-M      |            | (or K=16, S=4)      |                | Risk Management   |
+| ENSEMBLE  | Dense-L      | 64 NFE     | K=8, S=8, eta=0.50  | ~ 3.50 s/cube  | State HPC / Flood |
+|           | (52.0M dens) |            |                     |                | Risk Management   |
 +==================================================================================================+
 ```
 
 ### 2.1 Profile Specifications
-1. **FAST (Edge / Real-Time Panchayat Tier)**:
-   - **Target Environment**: Local edge devices, block-level servers, public web APIs (`/api/v1/forecast/fast`).
-   - **Architecture**: MoE-4 denoiser (22.77M total, 15.69M active parameters).
-   - **Inference Setup**: Single-member deterministic traversal ($K=1, S=4, \eta=0.0$).
-   - **Primary Objective**: Lowest possible wall-clock latency ($< 250\text{ ms}$ on GPU, $< 2.5\text{ s}$ on 4-core CPU) while delivering state-of-the-art point Wet-MAE.
-2. **BALANCED (District Operational Advisory Tier)**:
-   - **Target Environment**: District Agromet Units (DAMUs) and regional advisory centers.
-   - **Architecture**: MoE-4 denoiser.
-   - **Inference Setup**: 2 stochastic members with 8 DDIM steps ($K=2, S=8, \eta=0.25$).
-   - **Primary Objective**: Optimal tradeoff between point error, moderate convective recall (CSI@15), and baseline uncertainty bounds within a sub-second response window.
-3. **ACCURATE (Severe Convective Storm & Cloudburst Tier)**:
+1. **ACCURATE (Severe Convective Storm & Cloudburst Tier)**:
    - **Target Environment**: State disaster management centers, Doppler weather radar integration nodes.
    - **Architecture**: Dense-L denoiser (51,997,958 parameters, 176 base channels).
-   - **Inference Setup**: $K=2, S=16, \eta=0.50$ (or $K=4, S=8$).
+   - **Inference Setup**: $K=2, S=16, \eta=0.50$.
    - **Primary Objective**: Maximum high-frequency spatial Laplacian sharpness ($R_{\text{Lap}} \ge 0.084$), crisp ridgeline gradient preservation, and peak extreme storm recall (CSI@30 $\ge 0.660$).
-4. **ENSEMBLE (State HPC / Probabilistic Flood Risk Management Tier)**:
-   - **Target Environment**: Central IMD / NCMRWF High-Performance Computing clusters.
-   - **Architecture**: Dense-L or Dense-M.
-   - **Inference Setup**: Multi-member stochastic ensemble ($K=8\text{ or }16, S=4\text{ to }8, \eta=0.50$).
+2. **ENSEMBLE (State HPC / Probabilistic Flood Risk Management Tier)**:
+   - **Target Environment**: Central IMD / NCMRWF High-Performance Computing clusters and State Emergency Operation Centers.
+   - **Architecture**: Dense-L denoiser (51,997,958 parameters, 176 base channels).
+   - **Inference Setup**: Multi-member stochastic ensemble ($K=8, S=8, \eta=0.50$, 64 total NFE).
    - **Primary Objective**: Full probabilistic distribution capture, lowest Fair-CRPS, calibrated spread-skill ratio (SSR), and reliable threshold exceedance curves for reservoir control and flood warning.
 
 ---
@@ -115,7 +99,7 @@ To translate our scientific findings into practical meteorological service, Spri
 | :--- | :--- | :--- |
 | **H1: Canonical Physical Convergence** | Under full non-linear physical inversion and bounds repair, capacity gains from Sprint 9 persist. | Dense-L and MoE-4 achieve lower Wet-MAE and higher CSI@30 than Candidate 3's 6.51 mm baseline on the 2022 validation set. |
 | **H2: Out-of-Distribution Generalization** | The mature architectures generalize to the quarantined 2023 El Nino holdout year without representation collapse. | Holdout 2023 Wet-MAE degradation is $< 15\%$ relative to 2022 validation, outperforming bilinear and coarse reanalysis baselines. |
-| **H3: Multidimensional Operating Separation** | The 4 operational profiles form a non-dominated Pareto frontier across latency, point MAE, storm CSI, and Fair-CRPS. | No single profile dominates all others; each profile is strictly optimal for its designated compute/latency constraint. |
+| **H3: Multidimensional Operating Separation** | The 2 operational profiles (ACCURATE and ENSEMBLE) form a non-dominated Pareto frontier across latency, storm CSI, and Fair-CRPS. | No single profile dominates the other; ACCURATE optimizes single-pass extreme recall and texture while ENSEMBLE optimizes probabilistic calibration and Fair-CRPS. |
 | **H4: Multivariate Thermodynamic Plausibility** | Spatiotemporal diffusion maintains coupled atmospheric balances across variables without post-hoc physical distortion. | Zero violations of $T_{\max} \ge T_{\min}$; negative precipitation mass shift under physical bounds repair is $< 1.0\%$; RH remains bounded in $[0, 100]\%$. |
 | **H5: Calibrated Extreme Exceedance** | Combining capacity scaling with ensemble sampling ($K=8$) improves decision-relevant threshold probabilities. | Brier Skill Score (BSS) for precipitation $> 15\text{ mm}$ and $> 30\text{ mm}$ improves by $> 10\%$ over Candidate 3 baseline. |
 
@@ -131,7 +115,7 @@ Sprint 10 is structured into five cohesive execution workstreams:
        |
        v
 [Workstream 2: Operational Profile Configurations & Benchmarking Engine]
-  Implement configs/final/{fast, balanced, accurate, ensemble}.yaml and scripts/benchmark_final_system.py.
+  Implement configs/final/{accurate, ensemble}.yaml and scripts/benchmark_final_system.py.
        |
        v
 [Workstream 3: Quarantined 2023 El Nino Holdout Generalization Study]
@@ -174,52 +158,40 @@ Run all four model checkpoints (Dense-S, Dense-M, Dense-L, MoE-4) through the ex
 ### Workstream 2: Operational Profile Configurations & Benchmarking Engine
 
 #### 2.1 Objective
-Formalize the 4 operational profiles into versioned configuration files and build an automated latency/throughput profiling suite.
+Formalize the 2 operational profiles (`ACCURATE` and `ENSEMBLE`) into versioned configuration files and build an automated latency/throughput profiling suite.
 
 #### 2.2 Configuration Architecture
-Create four production configuration YAMLs under `configs/final/`:
-1. `configs/final/profile_fast.yaml`:
-   ```yaml
-   profile_name: FAST
-   model_tier: moe_4
-   checkpoint: models/checkpoints/sprint9_moe4_weights.pt
-   num_members: 1
-   denoising_steps: 4
-   eta: 0.0
-   target_latency_ms: 250
-   description: "Panchayat Edge / Web API real-time inference"
-   ```
-2. `configs/final/profile_balanced.yaml`:
-   ```yaml
-   profile_name: BALANCED
-   model_tier: moe_4
-   checkpoint: models/checkpoints/sprint9_moe4_weights.pt
-   num_members: 2
-   denoising_steps: 8
-   eta: 0.25
-   target_latency_ms: 750
-   description: "District Agromet Advisory operational workstation"
-   ```
-3. `configs/final/profile_accurate.yaml`:
+Maintain two production configuration YAMLs under `configs/final/`:
+1. `configs/final/profile_accurate.yaml`:
    ```yaml
    profile_name: ACCURATE
    model_tier: dense_l
-   checkpoint: models/checkpoints/sprint9_dense_l_weights.pt
+   checkpoint_path: models/checkpoints/sprint9_dense_l_weights.pt
    num_members: 2
    denoising_steps: 16
    eta: 0.50
+   sampler: ddim
    target_latency_ms: 1850
+   target_nfe: 32
+   base_channels: 176
+   active_parameters: 51997958
+   total_parameters: 51997958
    description: "Severe convective storm and cloudburst warning"
    ```
-4. `configs/final/profile_ensemble.yaml`:
+2. `configs/final/profile_ensemble.yaml`:
    ```yaml
    profile_name: ENSEMBLE
    model_tier: dense_l
-   checkpoint: models/checkpoints/sprint9_dense_l_weights.pt
+   checkpoint_path: models/checkpoints/sprint9_dense_l_weights.pt
    num_members: 8
    denoising_steps: 8
    eta: 0.50
+   sampler: ddim
    target_latency_ms: 3500
+   target_nfe: 64
+   base_channels: 176
+   active_parameters: 51997958
+   total_parameters: 51997958
    description: "State HPC flood risk management and calibrated probabilistic bounds"
    ```
 
@@ -283,10 +255,8 @@ Synthesize all empirical findings into a comprehensive research report, update u
    - `scripts/evaluate_final_canonical_benchmarks.py`: Full physical-repair evaluation runner.
    - `scripts/benchmark_final_system.py`: Multi-profile latency and memory profiler.
    - `src/eval/multivariate_diagnostics.py`: Joint physical consistency validator.
-   - `src/api/forecast_service.py`: Multi-profile serving endpoint supporting `?profile={fast,balanced,accurate,ensemble}`.
+   - `src/api/forecast_service.py`: Multi-profile serving endpoint supporting `?profile={accurate,ensemble}`.
 2. **Configuration Profiles**:
-   - `configs/final/profile_fast.yaml`
-   - `configs/final/profile_balanced.yaml`
    - `configs/final/profile_accurate.yaml`
    - `configs/final/profile_ensemble.yaml`
 3. **Reports & Research Documentation**:
@@ -308,8 +278,8 @@ In accordance with agent directives, all heavy validation passes and full-year h
 - **Hardware Target**: Kaggle Dual Tesla T4 GPU accelerators (16 GB VRAM each).
 - **Execution Workflow**:
   1. Build and locally validate modular components (`pytest tests/ -q` on CPU for unit contracts).
-  2. Assemble standalone evaluation notebook `notebooks/sprint_10_final_integrated_scaling.ipynb` configured with all 4 profiles, 2022 validation split, and 2023 holdout split.
-  3. Execute remotely on Kaggle to evaluate all profiles and unquarantine the 2023 holdout.
+  2. Assemble standalone evaluation notebook `notebooks/sprint_10_final_integrated_scaling.ipynb` configured with both profiles (`ACCURATE` and `ENSEMBLE`), 2022 validation split, and 2023 holdout split.
+  3. Execute remotely on Kaggle to evaluate both profiles and unquarantine the 2023 holdout.
   4. Download output metric JSONs and diagnostic logs into `reports/` and `data/cache/`.
   5. Commit and push versioned artifacts to GitHub.
 
@@ -321,7 +291,7 @@ Sprint 10 will conclude when all of the following criteria are strictly met:
 
 ```text
 [ ] Workstream 1: All 4 models evaluated under canonical sprint8_physical protocol on 2022 validation data.
-[ ] Workstream 2: 4 operational profile YAMLs committed under configs/final/ and verified via pytest.
+[ ] Workstream 2: 2 operational profile YAMLs committed under configs/final/ and verified via pytest.
 [ ] Workstream 3: Quarantined 2023 El Nino holdout year evaluated; generalization gap reported.
 [ ] Workstream 4: Multivariate physical consistency verified (zero Tmax < Tmin violations, P mass shift < 1%).
 [ ] Workstream 5: Comprehensive master scaling monograph reports/sprint10_final_system_scaling_report.md authored.
