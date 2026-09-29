@@ -639,7 +639,7 @@ function broadcastToWhatsApp(record) {
       `🌾 *Gram Panchayat: ${record.panchayat_name}* (Mandya District)\n` +
       `📅 Date: ${dateStr}${dayTag}\n\n` +
       `🌧️ *Rainfall Forecast:* ${intensity.label} (${exp.toFixed(1)} mm)\n` +
-      `📊 *CQR 90% Likely Range:* ${lMin.toFixed(1)} mm - ${lMax.toFixed(1)} mm\n` +
+      `📊 *Calibrated Likely Range:* ${lMin.toFixed(1)} mm - ${lMax.toFixed(1)} mm\n` +
       `${alertLine}\n\n` +
       `🌱 *Ragi Advisory:* ${record.advisory?.ragi?.action_en || ""}\n` +
       `🌾 *Paddy Advisory:* ${record.advisory?.paddy?.action_en || ""}\n` +
@@ -1579,11 +1579,11 @@ async function loadVirtualArgPayload() {
       uncertainty_range_90pct: {
         lower_bound_mm: rec?.rainfall_mm?.likely_min ?? rec?.likely_min_mm ?? 0.0,
         upper_bound_mm: rec?.rainfall_mm?.likely_max ?? rec?.likely_max_mm ?? 4.6,
-        confidence: "90% CQR empirical"
+        confidence: "calibrated empirical interval"
       },
       qc_status: "VALIDATED_MASS_CONSERVED",
       data_type: "SYNTHETIC_DOWNSCALED_FEATURE_STREAM",
-      provenance: "SIH26074_vARG_Unet5x_Terrain"
+      provenance: "SIH26074_vARG_DenseL_Diffusion"
     };
     if (codeBlock) codeBlock.textContent = JSON.stringify(fallback, null, 2);
   }

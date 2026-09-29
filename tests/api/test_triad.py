@@ -32,7 +32,7 @@ def test_virtual_arg_endpoint():
 
     # Mandatory Guardrail: Never present synthetic data as physical hardware
     assert data["data_type"] == "SYNTHETIC_DOWNSCALED_FEATURE_STREAM"
-    assert data["provenance"] == "SIH26074_vARG_Unet5x_Terrain"
+    assert data["provenance"] == "SIH26074_vARG_DenseL_Diffusion"
 
 
 def test_virtual_arg_bulk():

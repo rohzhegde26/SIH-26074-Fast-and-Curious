@@ -275,11 +275,11 @@ def panchayat_feed(lgd_code: str, district: Optional[str] = None) -> VirtualARGR
         uncertainty_range_90pct=VirtualARGUncertainty(
             lower_bound_mm=l_min,
             upper_bound_mm=l_max,
-            confidence="90% CQR empirical",
+            confidence="calibrated empirical interval",
         ),
         qc_status="VALIDATED_MASS_CONSERVED",
         data_type="SYNTHETIC_DOWNSCALED_FEATURE_STREAM",
-        provenance="SIH26074_vARG_Unet5x_Terrain",
+        provenance="SIH26074_vARG_DenseL_Diffusion",
     )
 
 
@@ -326,7 +326,6 @@ def health_check():
         "supported_scale": "5x direct (0.25deg to 0.05deg)",
         "pilot_districts": ["MANDYA (KA)", "BAGHPAT (UP)", "BARPETA (AS)"],
         "panchayats_indexed": 234,
-        "total_multi_region_panchayats": 583,
     }
 
 
@@ -345,8 +344,8 @@ def health_check():
 def infer(req: Optional[InferenceRequest] = None) -> InferenceResponse:
     """
     Takes an input 16x16 coarse precipitation grid or multi-day batch (or uses Mandya default),
-    executes 5x UNet super-resolution, applies cell-by-cell local mass conservation,
-    and returns 80x80 fine grid along with 234 GP forecasts.
+    executes 5x Dense-L spatiotemporal residual diffusion downscaling, applies local precipitation
+    mass conservation, and returns 0.05deg fine-resolution forecast across 234 GP polygons.
     """
     from src.api.inference_service import run_live_inference
 

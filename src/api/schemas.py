@@ -7,7 +7,7 @@ class Rainfall(BaseModel):
     expected: float = Field(ge=0)
     likely_min: float = Field(ge=0)
     likely_max: float = Field(ge=0)
-    empirical_coverage: str = "90% calibrated (test 2023)"
+    empirical_coverage: str = "calibrated empirical interval"
 
 
 class FinancialRiskSchema(BaseModel):
@@ -130,7 +130,7 @@ class IntegrationMockResponse(BaseModel):
 class VirtualARGUncertainty(BaseModel):
     lower_bound_mm: float
     upper_bound_mm: float
-    confidence: str = "90% CQR empirical"
+    confidence: str = "calibrated empirical interval"
 
 
 class VirtualARGResponse(BaseModel):
@@ -148,7 +148,7 @@ class VirtualARGResponse(BaseModel):
     uncertainty_range_90pct: VirtualARGUncertainty
     qc_status: str = "VALIDATED_MASS_CONSERVED"
     data_type: str = "SYNTHETIC_DOWNSCALED_FEATURE_STREAM"
-    provenance: str = "SIH26074_vARG_Unet5x_Terrain"
+    provenance: str = "SIH26074_vARG_DenseL_Diffusion"
 
 
 class NandiniValidationRequest(BaseModel):
