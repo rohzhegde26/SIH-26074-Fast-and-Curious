@@ -1,0 +1,38 @@
+{
+  "accurate": {
+    "profile_name": "ACCURATE",
+    "model_tier": "dense_l",
+    "device": "cuda:0 (Tesla T4 16GB)",
+    "total_parameters": 51997958,
+    "active_parameters": 51997958,
+    "num_members": 2,
+    "denoising_steps": 16,
+    "total_nfe": 32,
+    "cold_start_load_sec": 1.142,
+    "peak_vram_gb": 2.85,
+    "mean_latency_sec": 0.926,
+    "std_latency_sec": 0.018,
+    "mean_latency_ms": 926.3,
+    "target_latency_ms": 1500.0,
+    "latency_per_lead_day_ms": 132.3,
+    "throughput_cubes_per_sec": 1.08
+  },
+  "ensemble": {
+    "profile_name": "ENSEMBLE",
+    "model_tier": "dense_l",
+    "device": "cuda:0 (Tesla T4 16GB)",
+    "total_parameters": 51997958,
+    "active_parameters": 51997958,
+    "num_members": 8,
+    "denoising_steps": 8,
+    "total_nfe": 64,
+    "cold_start_load_sec": 1.145,
+    "peak_vram_gb": 3.42,
+    "mean_latency_sec": 1.675,
+    "std_latency_sec": 0.034,
+    "mean_latency_ms": 1675.5,
+    "target_latency_ms": 3000.0,
+    "latency_per_lead_day_ms": 239.4,
+    "throughput_cubes_per_sec": 0.60
+  }
+}

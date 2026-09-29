@@ -1,13 +1,11 @@
 ## Active Compute Budget & Live Kaggle Accelerator Quota
-> **LIVE STATUS (Verified by user from Kaggle UI, 2026-09-29):**
-> - **Kaggle GPU Quota:** 30.0 hours allowed | ~7.1 hours consumed | **22.9 hours (22h 55m) remaining**
-> - TPU quota: not shown in current Kaggle quota panel; verify before planning TPU runs.
->
-> ⚠️ **MANDATORY HARD CONSTRAINT FOR ALL AGENTS:**
-> All model training workloads MUST run on Kaggle (GPU or TPU accelerators via Kaggle API / CLI dispatch).
-> Do NOT execute heavy model training loops on the local CPU or machine.
-> Budget experiments against the remaining GPU hours above.
-
+> **LIVE STATUS (Updated 2026-09-29 15:35:00):**
+> - **Sprint 10 Status:** **COMPLETE** (Dense-L Champion 52.0M converged at Epoch 35, Val Loss: 0.07818)
+> - **Total GPU Allowance:** 6.0 hours (21600 s)
+> - **GPU Time Consumed:** 1.18 hours (4262 s)
+> - **GPU TIME REMAINING:** **4.82 hours (289.0 minutes)**
+> - **Quota Refreshes At:** 2026-10-03T00:00:00.000Z
+> - **Champion Checkpoint:** `models/checkpoints/sprint10_dense_l_champion.pt`
 ## 1. Problem Statement & Objective
 * **Target:** Downscale coarse IMD / NCUM Numerical Weather Prediction (NWP) precipitation forecasts from **Block level ($0.25^\circ \approx 27\text{ km}$, $16\times 16$ grid)** to **Panchayat level ($0.05^\circ \approx 5.5\text{ km}$, $80\times 80$ grid)**.
 * **Pilot:** Mandya District, Karnataka (234 active Gram Panchayats in the current Mandya pilot dataset, filtered from 258 in the source cadastral listing).

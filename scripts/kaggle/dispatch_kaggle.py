@@ -19,6 +19,19 @@ import sys
 import time
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(line_buffering=True)
+
+
+def get_kaggle_cmd() -> str:
+    which = shutil.which("kaggle")
+    if which:
+        return which
+    venv_exe = Path(sys.executable).parent / ("kaggle.exe" if os.name == "nt" else "kaggle")
+    if venv_exe.exists():
+        return str(venv_exe)
+    return "kaggle"
+
 
 def get_kaggle_username() -> str:
     try:
@@ -150,18 +163,29 @@ def prepare_kernel_bundle(
     username = get_kaggle_username()
     kernel_id = f"{username}/{kernel_slug}"
 
-    shutil.copy(train_script, staging_dir / "train.py")
+    is_notebook = train_script.suffix == ".ipynb"
+    code_filename = train_script.name if is_notebook else "train.py"
+    shutil.copy(train_script, staging_dir / code_filename)
 
     src_dir = Path("src")
     if src_dir.exists():
         shutil.copytree(src_dir, staging_dir / "src", dirs_exist_ok=True)
 
+    data_dir = Path("data")
+    if data_dir.exists():
+        staging_data = staging_dir / "src" / "data"
+        staging_data.mkdir(parents=True, exist_ok=True)
+        for fname in ["sample_index_v2_h14.parquet", "normalization_stats_v2.yaml"]:
+            fpath = data_dir / fname
+            if fpath.exists():
+                shutil.copy(fpath, staging_data / fname)
+
     metadata = {
         "id": kernel_id,
         "title": title,
-        "code_file": "train.py",
+        "code_file": code_filename,
         "language": "python",
-        "kernel_type": "script",
+        "kernel_type": "notebook" if is_notebook else "script",
         "is_private": "true",
         "enable_gpu": "true",
         "enable_internet": "true",
@@ -203,7 +227,7 @@ def run_kaggle_job(
 
     print(f"[*] Pushing kernel '{kernel_id}' to Kaggle GPU...")
     res = subprocess.run(
-        ["kaggle", "kernels", "push", "-p", str(staging_dir)],
+        [get_kaggle_cmd(), "kernels", "push", "-p", str(staging_dir)],
         capture_output=True,
         text=True,
     )
@@ -219,7 +243,7 @@ def run_kaggle_job(
     while time.time() - start_time < max_sec:
         time.sleep(poll_interval_sec)
         status_res = subprocess.run(
-            ["kaggle", "kernels", "status", kernel_id],
+            [get_kaggle_cmd(), "kernels", "status", kernel_id],
             capture_output=True,
             text=True,
         )
@@ -238,7 +262,7 @@ def run_kaggle_job(
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f"[*] Downloading logs and artifacts to {output_dir}...")
     subprocess.run(
-        ["kaggle", "kernels", "output", kernel_id, "-p", str(output_dir)],
+        [get_kaggle_cmd(), "kernels", "output", kernel_id, "-p", str(output_dir)],
         capture_output=True,
         text=True,
     )
@@ -267,6 +291,7 @@ if __name__ == "__main__":
     parser.add_argument("--slug", default="sih26074-autoresearch-worker", help="Kaggle kernel slug")
     parser.add_argument("--title", default="SIH 26074 AutoResearch Worker", help="Kernel title")
     parser.add_argument("--dataset", action="append", default=[], help="Kaggle dataset ID (can repeat)")
+    parser.add_argument("--max-wait-minutes", type=int, default=75, help="Maximum minutes to wait for job completion")
     parser.add_argument("--check-quota-only", action="store_true", help="Only check quota and update context")
     args = parser.parse_args()
 
@@ -284,5 +309,5 @@ if __name__ == "__main__":
         train_script=Path(args.script),
         dataset_sources=args.dataset,
     )
-    success = run_kaggle_job(staging_dir=staging, kernel_slug=args.slug)
+    success = run_kaggle_job(staging_dir=staging, kernel_slug=args.slug, max_wait_minutes=args.max_wait_minutes)
     sys.exit(0 if success else 1)

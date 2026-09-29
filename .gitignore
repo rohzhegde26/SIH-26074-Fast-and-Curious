@@ -155,6 +155,7 @@ models/checkpoints/*
 !models/checkpoints/sprint9_dense_m_weights.pt
 !models/checkpoints/sprint9_dense_l_weights.pt
 !models/checkpoints/sprint9_moe4_weights.pt
+!models/checkpoints/sprint10_dense_l_champion.pt
 *.pt
 !models/checkpoints/multitask_5x_champion.pt
 !models/checkpoints/sprint6_candidate2_vpred_champion.pt
@@ -162,6 +163,7 @@ models/checkpoints/*
 !models/checkpoints/sprint9_dense_m_weights.pt
 !models/checkpoints/sprint9_dense_l_weights.pt
 !models/checkpoints/sprint9_moe4_weights.pt
+!models/checkpoints/sprint10_dense_l_champion.pt
 *.pth
 *.ckpt
 *.h5

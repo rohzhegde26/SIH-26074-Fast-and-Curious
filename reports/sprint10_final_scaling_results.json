@@ -1,0 +1,50 @@
+{
+  "model": "Dense-L Champion (51,997,958 parameters)",
+  "eval_protocol": "sprint8_physical",
+  "base_channels": 176,
+  "training_convergence": {
+    "start_epoch": 30,
+    "initial_val_loss": 0.41065,
+    "best_epoch": 35,
+    "best_val_loss": 0.07818,
+    "final_epoch": 40,
+    "early_stopping_triggered": true,
+    "convergence_status": "Converged without overfitting"
+  },
+  "val_2022": {
+    "cubes": 122,
+    "wet_mae_mm": 6.18,
+    "csi15": 0.5434,
+    "csi30": 0.5526,
+    "csi50": 0.5559,
+    "fair_crps_mm": 0.578,
+    "ssr": 0.412,
+    "laplacian_retention": 0.884,
+    "tmax_mae": 0.307,
+    "rh_mae": 0.601,
+    "p_rh_corr": 0.742,
+    "thermo_violation_rate": 0.00000
+  },
+  "test_2023_holdout": {
+    "cubes": 122,
+    "wet_mae_mm": 7.42,
+    "csi15": 0.4467,
+    "csi30": 0.4665,
+    "csi50": 0.4765,
+    "fair_crps_mm": 0.648,
+    "ssr": 0.395,
+    "laplacian_retention": 0.862,
+    "tmax_mae": 0.379,
+    "rh_mae": 0.663,
+    "p_rh_corr": 0.718,
+    "thermo_violation_rate": 0.00000
+  },
+  "generalization_gap": {
+    "wet_mae_delta_mm": 1.24,
+    "csi30_delta": -0.0861,
+    "fair_crps_delta_mm": 0.070,
+    "tmax_mae_delta": 0.072,
+    "rh_mae_delta": 0.062,
+    "interpretation": "Strong out-of-distribution generalization during 2023 El Nino regime with no catastrophic distribution shift"
+  }
+}

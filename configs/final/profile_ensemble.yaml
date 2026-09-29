@@ -1,0 +1,13 @@
+profile_name: ENSEMBLE
+model_tier: dense_l
+checkpoint_path: models/checkpoints/sprint10_dense_l_champion.pt
+num_members: 8
+denoising_steps: 8
+eta: 0.50
+sampler: ddim
+target_latency_ms: 3500
+target_nfe: 64
+base_channels: 176
+active_parameters: 51997958
+total_parameters: 51997958
+description: "State HPC flood risk management and calibrated probabilistic bounds"

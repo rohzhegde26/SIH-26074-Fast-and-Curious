@@ -5,3 +5,4 @@ models/checkpoints/sprint6_candidate3_multitask_champion.pt filter=lfs diff=lfs 
 models/checkpoints/sprint9_dense_m_weights.pt filter=lfs diff=lfs merge=lfs -text
 models/checkpoints/sprint9_dense_l_weights.pt filter=lfs diff=lfs merge=lfs -text
 models/checkpoints/sprint9_moe4_weights.pt filter=lfs diff=lfs merge=lfs -text
+models/checkpoints/sprint10_dense_l_champion.pt filter=lfs diff=lfs merge=lfs -text
