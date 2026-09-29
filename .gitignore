@@ -47,12 +47,15 @@ data/processed/
 *.zarr
 
 # -- Model Checkpoints (large binary files) ------------------------------------
-models/checkpoints/
+models/checkpoints/*
 *.pt
 *.pth
 *.ckpt
 *.h5
 *.safetensors
+!models/checkpoints/*best_5x_model.pt
+!models/checkpoints/*best_5x_model_v3_1.pt
+!models/checkpoints/*sprint9_dense_l_weights.pt
 
 # -- Logs ----------------------------------------------------------------------
 *.log
@@ -112,6 +115,7 @@ data/raw/*
 !data/raw/dem/
 data/raw/dem/*
 !data/raw/dem/provenance.json
+!data/raw/dem/glo30_mandya_terrain.nc
 !data/raw/forecast/
 !data/raw/forecast/multiday_coarse_*.json
 data/raw/geodata/*.parquet
@@ -120,12 +124,15 @@ data/processed/
 *.zarr
 
 # -- Model Checkpoints (large binary files) ------------------------------------
-models/checkpoints/
+models/checkpoints/*
 *.pt
 *.pth
 *.ckpt
 *.h5
 *.safetensors
+!models/checkpoints/*best_5x_model.pt
+!models/checkpoints/*best_5x_model_v3_1.pt
+!models/checkpoints/*sprint9_dense_l_weights.pt
 
 # -- Logs ----------------------------------------------------------------------
 *.log

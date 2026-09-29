@@ -188,7 +188,11 @@ class InferenceRequest(BaseModel):
         default=None,
         description="Optional list of 16x16 2D arrays for multi-day NWP lead times (Days 1 to 5).",
     )
-    lead_days: int = Field(default=1, ge=1, le=5, description="Number of lead days to forecast (1 to 5).")
+    lead_days: int = Field(default=1, ge=1, le=7, description="Number of lead days to forecast (1 to 7).")
+    model_tier: str | None = Field(
+        default=None,
+        description="Optional model tier: 'dense_l' (52M Spatiotemporal Diffusion) or 'unet_5x'.",
+    )
     coarse_tmax_grid: list[list[float]] | None = Field(
         default=None,
         description="Optional 16x16 2D array of coarse maximum temperature (°C).",

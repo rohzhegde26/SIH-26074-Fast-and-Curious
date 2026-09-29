@@ -10,13 +10,13 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
     <link rel="stylesheet" href="/leaflet/leaflet.css">
     <link rel="stylesheet" href="/styles.css?v=26">
-    <title>National Agro-Weather — MoES Agrometeorological Command Center (SIH 26074)</title>
+    <title>National Agro-Weather - MoES Agrometeorological Command Center (SIH 26074)</title>
   </head>
   <body data-view="mission-control">
     <!-- Top Offline Warning Banner (Sticky) -->
     <div id="offline-banner" class="banner hidden" role="alert" aria-live="assertive">
       <span class="banner-icon">⚠️</span>
-      <span id="offline-banner-text">No network — operating on cached 06:00 IST advisory. Chalkboard & dispatch queue active.</span>
+      <span id="offline-banner-text">No network - operating on cached 06:00 IST advisory. Chalkboard & dispatch queue active.</span>
     </div>
 
     <!-- Unified Master Navigation Header -->
@@ -136,17 +136,17 @@
                 </div>
                 <div class="stat-card">
                   <span class="stat-label">District Avg</span>
-                  <span class="stat-val" id="stat-avg">—</span>
+                  <span class="stat-val" id="stat-avg">-</span>
                   <span class="stat-foot">Parent-Cell Consistent</span>
                 </div>
                 <div class="stat-card">
                   <span class="stat-label">Max Rain</span>
-                  <span class="stat-val" id="stat-max">—</span>
+                  <span class="stat-val" id="stat-max">-</span>
                   <span class="stat-foot">Nalligere Convective Peak</span>
                 </div>
                 <div class="stat-card">
                   <span class="stat-label">Rain Status</span>
-                  <span class="stat-val" id="stat-wet">—</span>
+                  <span class="stat-val" id="stat-wet">-</span>
                   <span class="stat-foot">&gt; 2.5 mm Active</span>
                 </div>
               </div>
@@ -228,11 +228,11 @@
                     </div>
 
                     <div class="proof-connector">
-                      <div class="connector-badge">5× U-Net</div>
+                      <div class="connector-badge">5× Dense-L</div>
                       <div class="connector-arrow">➡️</div>
                       <div class="connector-metric">0.000% Parent-Cell Volume Conserved</div>
                       <button type="button" id="btn-run-live-infer" class="btn-run-infer">⚡ Run Live Inference</button>
-                      <div id="infer-live-status" class="infer-status-text">Model Ready</div>
+                      <div id="infer-live-status" class="infer-status-text">Dense-L Accurate Ready</div>
                     </div>
 
                     <div class="proof-card">
@@ -250,8 +250,8 @@
                 <div class="choropleth-legend" id="map-legend" aria-label="Rainfall intensity legend">
                   <span class="legend-title">Precipitation:</span>
                   <div class="legend-item"><span class="legend-swatch band-dry"></span> &lt; 2.5 mm (Dry)</div>
-                  <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5–15.5 mm (Light)</div>
-                  <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5–64.4 mm (Moderate)</div>
+                  <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5-15.5 mm (Light)</div>
+                  <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5-64.4 mm (Moderate)</div>
                   <div class="legend-item"><span class="legend-swatch band-heavy"></span> &gt; 64.5 mm (Heavy)</div>
                 </div>
 
@@ -286,7 +286,7 @@
                   <div class="dual-modal-title-wrap">
                     <span class="dual-modal-pill">🔬 SPATIAL BENCHMARK AUDIT</span>
                     <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#0f172a;">Coarse Block vs 5x AI Downscaling - Spatial Resolution Proof</h3>
-                    <span id="dual-prov-chip" class="dual-modal-pill" style="background:#e0f2fe; color:#0369a1; font-weight:600;">—</span>
+                    <span id="dual-prov-chip" class="dual-modal-pill" style="background:#e0f2fe; color:#0369a1; font-weight:600;">-</span>
                   </div>
                   <button type="button" id="dual-modal-close" class="dual-modal-close" aria-label="Close Dual Map Modal">✕ Close</button>
                 </div>
@@ -296,25 +296,25 @@
                   <div class="hud-stat-box">
                     <span class="hud-stat-label">SPATIAL GRANULARITY</span>
                     <div class="hud-stat-compare">
-                      <span class="hud-val-imd" id="hud-imd-gran">—</span>
+                      <span class="hud-val-imd" id="hud-imd-gran">-</span>
                       <span class="hud-arrow">➔</span>
-                      <span class="hud-val-ai" id="hud-ai-gran">—</span>
+                      <span class="hud-val-ai" id="hud-ai-gran">-</span>
                     </div>
                   </div>
                   <div class="hud-stat-box">
                     <span class="hud-stat-label">PEAK CONVECTIVE CAPTURE</span>
                     <div class="hud-stat-compare">
-                      <span class="hud-val-imd" id="hud-imd-peak">—</span>
+                      <span class="hud-val-imd" id="hud-imd-peak">-</span>
                       <span class="hud-arrow">➔</span>
-                      <span class="hud-val-ai" id="hud-ai-peak">—</span>
+                      <span class="hud-val-ai" id="hud-ai-peak">-</span>
                     </div>
                   </div>
                   <div class="hud-stat-box">
                     <span class="hud-stat-label">ACTIONABLE MICRO-CLIMATES</span>
                     <div class="hud-stat-compare">
-                      <span class="hud-val-imd" id="hud-imd-zones">—</span>
+                      <span class="hud-val-imd" id="hud-imd-zones">-</span>
                       <span class="hud-arrow">➔</span>
-                      <span class="hud-val-ai" id="hud-ai-zones">—</span>
+                      <span class="hud-val-ai" id="hud-ai-zones">-</span>
                     </div>
                   </div>
                 </div>
@@ -323,14 +323,14 @@
                   <div class="dual-map-pane">
                     <div class="dual-map-label">
                       <span class="badge imd">Coarse parent forecast • 0.25° • 28 km • 1 block-mean value</span>
-                      <span class="label-desc" id="dual-imd-sub">—</span>
+                      <span class="label-desc" id="dual-imd-sub">-</span>
                     </div>
                     <div id="map-imd" class="dual-leaflet-map"></div>
                   </div>
                   <div class="dual-map-pane">
                     <div class="dual-map-label">
                       <span class="badge ours">Fast & Curious 5× • 0.05° • 5.5 km • 234 Values</span>
-                      <span class="label-desc" id="dual-ai-sub">—</span>
+                      <span class="label-desc" id="dual-ai-sub">-</span>
                     </div>
                     <div id="map-our" class="dual-leaflet-map"></div>
                   </div>
@@ -339,13 +339,13 @@
                   <div class="legend-scale">
                     <strong>Official IMD 24h Warning Scale: </strong>
                     <span class="legend-swatch-mini" style="background:#f8fafc; color:#0f172a; border-color:#94a3b8;">&lt;2.5 mm Dry</span>
-                    <span class="legend-swatch-mini" style="background:#fde047; color:#713f12; border-color:#eab308;">2.5–15.5 mm Light</span>
-                    <span class="legend-swatch-mini" style="background:#059669; color:#ffffff; border-color:#047857;">15.6–64.4 mm Moderate</span>
-                    <span class="legend-swatch-mini" style="background:#f97316; color:#ffffff; border-color:#ea580c;">64.5–115.5 mm Heavy</span>
+                    <span class="legend-swatch-mini" style="background:#fde047; color:#713f12; border-color:#eab308;">2.5-15.5 mm Light</span>
+                    <span class="legend-swatch-mini" style="background:#059669; color:#ffffff; border-color:#047857;">15.6-64.4 mm Moderate</span>
+                    <span class="legend-swatch-mini" style="background:#f97316; color:#ffffff; border-color:#ea580c;">64.5-115.5 mm Heavy</span>
                     <span class="legend-swatch-mini" style="background:#dc2626; color:#ffffff; border-color:#b91c1c;">&gt;115.5 mm Extreme</span>
                   </div>
                   <div class="legend-physics">
-                    <span id="dual-mass-footer">—</span>
+                    <span id="dual-mass-footer">-</span>
                   </div>
                 </div>
               </div>
@@ -479,7 +479,7 @@
                   <div class="pillar-title-wrap">
                     <span class="pillar-num">4</span>
                     <div>
-                      <h4 class="pillar-title">Thermodynamic Lapse Rates & 5-Day NWP Engine</h4>
+                      <h4 class="pillar-title">Thermodynamic Lapse Rates & 7-Day NWP Engine</h4>
                       <span class="pillar-badge badge-physics">Γ = -6.5°C/km Troposphere</span>
                     </div>
                   </div>
@@ -497,7 +497,7 @@
                     <span class="cqr-stat-label">C¹ Hann Seam Step Jump</span>
                   </div>
                   <div class="cqr-stat-box">
-                    <span class="cqr-stat-val" style="color:#f59e0b;">1–5 Days</span>
+                    <span class="cqr-stat-val" style="color:#f59e0b;">1-7 Days</span>
                     <span class="cqr-stat-label">NWP Batch Lead Times</span>
                   </div>
                 </div>

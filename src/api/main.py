@@ -354,6 +354,7 @@ def infer(req: Optional[InferenceRequest] = None) -> InferenceResponse:
             coarse_tmin_grids=req.coarse_tmin_grids if req else None,
             coarse_rh_grids=req.coarse_rh_grids if req else None,
             coarse_wind_grids=req.coarse_wind_grids if req else None,
+            model_tier=req.model_tier if req else None,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

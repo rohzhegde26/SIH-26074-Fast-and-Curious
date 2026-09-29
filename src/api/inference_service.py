@@ -34,6 +34,8 @@ from src.data.forecast_loader import (
 ROOT = Path(__file__).resolve().parents[2]
 CKPT_V3_1 = ROOT / "models" / "checkpoints" / "best_5x_model_v3_1.pt"
 CHECKPOINT_PATH = CKPT_V3_1 if CKPT_V3_1.exists() else (ROOT / "models" / "checkpoints" / "best_5x_model.pt")
+DENSE_L_PATH = ROOT / "models" / "checkpoints" / "sprint9_dense_l_weights.pt"
+STATS_V2_PATH = ROOT / "data" / "normalization_stats_v2.yaml"
 CENTROIDS_PATH = ROOT / "data" / "serving" / "mandya_centroids.json"
 FORECASTS_PATH = ROOT / "data" / "serving" / "mandya_forecasts.json"
 QUANTILE_PARAMS_PATH = ROOT / "data" / "static" / "quantile_mapping_params.json"
@@ -50,8 +52,10 @@ def get_quantile_mapper() -> QuantileMapper:
 
 @lru_cache(maxsize=1)
 def get_terrain_tensor(device_name: str = "cpu") -> Optional[torch.Tensor]:
-    """Loads and caches Mandya terrain-conditioned downscaling 5-channel features if present."""
-    dem_path = ROOT / "data" / "raw" / "dem" / "synthetic_terrain.nc"
+    """Loads and caches Mandya terrain-conditioned downscaling 5-channel features."""
+    real_dem_path = ROOT / "data" / "raw" / "dem" / "glo30_mandya_terrain.nc"
+    synth_dem_path = ROOT / "data" / "raw" / "dem" / "synthetic_terrain.nc"
+    dem_path = real_dem_path if real_dem_path.exists() else synth_dem_path
     if not dem_path.exists():
         return None
     try:
@@ -65,6 +69,25 @@ def get_terrain_tensor(device_name: str = "cpu") -> Optional[torch.Tensor]:
         return t_5ch.unsqueeze(0).to(torch.device(device_name))
     except Exception:
         return None
+
+
+@lru_cache(maxsize=1)
+def load_dense_l_model() -> Tuple[Optional[Any], torch.device]:
+    """Loads and caches 52M-parameter Dense-L Spatiotemporal Residual Diffusion model."""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if not DENSE_L_PATH.exists():
+        return None, device
+    try:
+        from src.models.scalable_residual_diffusion import create_scalable_residual_diffusion
+        model = create_scalable_residual_diffusion("dense_l")
+        ckpt = torch.load(DENSE_L_PATH, map_location=device, weights_only=False)
+        state = ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt
+        model.load_state_dict(state, strict=True)
+        model.to(device)
+        model.eval()
+        return model, device
+    except Exception:
+        return None, device
 
 
 @lru_cache(maxsize=1)
@@ -292,6 +315,7 @@ def run_live_inference(
     coarse_tmin_grids: Optional[List[List[List[float]]]] = None,
     coarse_rh_grids: Optional[List[List[List[float]]]] = None,
     coarse_wind_grids: Optional[List[List[List[float]]]] = None,
+    model_tier: Optional[str] = None,
 ) -> InferenceResponse:
     """
     Executes end-to-end on-demand 5x downscaling with multi-day NWP batch support
@@ -352,40 +376,102 @@ def run_live_inference(
     if terrain_tensor is not None and terrain_tensor.shape[0] != coarse_log.shape[0]:
         terrain_tensor = terrain_tensor.expand(coarse_log.shape[0], -1, -1, -1)
 
-    with torch.no_grad():
-        pred_log = model(coarse_log, terrain_hr=terrain_tensor)
-        pred_phys = torch.clamp(torch.expm1(pred_log), min=0.0)
+    use_dense_l = (model_tier == "dense_l")
+    dense_l_model, dense_l_device = (None, None)
+    if use_dense_l:
+        dense_l_model, dense_l_device = load_dense_l_model()
+        if dense_l_model is None:
+            use_dense_l = False
 
-        # 1. Apply per-0.25°-cell quantile mapping strictly to precipitation channel before conservation
-        if APPLY_QUANTILE_MAPPING:
-            mapper = get_quantile_mapper()
-            pred_qm = mapper.transform(pred_phys)
-        else:
-            pred_qm = pred_phys
+    if use_dense_l:
+        import yaml
+        from src.data.tensor_builder import invert_normalization
 
-        # 2. Enforce local 5x5 block mass conservation on the post-QM precipitation tensor
-        pred_conserved = conservative_renorm_local(pred_qm, coarse_t)
+        with open(STATS_V2_PATH, "r", encoding="utf-8") as f:
+            stats_raw = yaml.safe_load(f)["channels"]
 
-    # Delivered final precipitation tensor (post-QM, post-conservation)
-    pred_hr_np = pred_conserved.squeeze(1).cpu().numpy()  # [T, 80, 80]
+        channel_order = ["precipitation", "tmax", "tmin", "rh", "wind_u", "wind_v"]
+        future_np = np.zeros((1, 7, 6, 16, 16), dtype=np.float32)
+        for d in range(7):
+            idx = min(d, coarse_np.shape[0] - 1)
+            future_np[0, d, 0] = coarse_np[idx]
+            future_np[0, d, 1] = tmax_lr[idx, 0].cpu().numpy() if tmax_lr is not None else 31.5
+            future_np[0, d, 2] = tmin_lr[idx, 0].cpu().numpy() if tmin_lr is not None else 21.0
+            future_np[0, d, 3] = rh_lr[idx, 0].cpu().numpy() if rh_lr is not None else 68.0
+            w_val = wind_lr[idx, 0].cpu().numpy() if wind_lr is not None else 8.5
+            future_np[0, d, 4] = (w_val / 3.6) * 0.8
+            future_np[0, d, 5] = (w_val / 3.6) * 0.6
+
+        future_norm = np.zeros_like(future_np)
+        for c_idx, ch_name in enumerate(channel_order):
+            st = stats_raw[ch_name]
+            mean, std = st["mean"], st["std"]
+            if ch_name == "precipitation":
+                future_norm[0, :, c_idx] = (np.log1p(np.maximum(0.0, future_np[0, :, c_idx])) - 1.2) / 1.5
+            else:
+                future_norm[0, :, c_idx] = (future_np[0, :, c_idx] - mean) / std
+
+        future_t = torch.from_numpy(future_norm).to(dense_l_device)
+        history_t = future_t[:, 0:1].expand(-1, 14, -1, -1, -1).clone()
+
+        infer_steps = 4 if dense_l_device.type == "cpu" else 16
+        with torch.no_grad():
+            pred_norm = dense_l_model.sample(history_t, future_t, terrain_tensor[0:1], num_steps=infer_steps, eta=0.50, seed=42)
+
+        pred_phys = invert_normalization(pred_norm[0].cpu().numpy(), stats_raw, channel_names=channel_order)
+        pred_rain_raw = np.maximum(0.0, pred_phys[:lead_days, 0])
+
+        pred_rain_t = torch.from_numpy(pred_rain_raw).unsqueeze(1).to(dense_l_device)
+        pred_conserved = conservative_renorm_local(pred_rain_t, coarse_t)
+        pred_hr_np = pred_conserved.squeeze(1).cpu().numpy()
+
+        tmax_hr_np = np.maximum(pred_phys[0, 1], pred_phys[0, 2] + 0.5)
+        tmin_hr_np = pred_phys[0, 2]
+        rh_hr_np = np.clip(pred_phys[0, 3], 10.0, 100.0)
+        wind_hr_np = np.hypot(pred_phys[0, 4], pred_phys[0, 5]) * 3.6
+        model_name = "Dense-L Accurate (Spatiotemporal Residual Diffusion)"
+        in_shape = [lead_days, 6, 16, 16]
+        out_shape = [lead_days, 6, 80, 80]
+        multi_res = {"provenance": "DENSE_L_ACCURATE_SPATIOTEMPORAL_DIFFUSION"}
+    else:
+        with torch.no_grad():
+            pred_log = model(coarse_log, terrain_hr=terrain_tensor)
+            pred_phys = torch.clamp(torch.expm1(pred_log), min=0.0)
+
+            # 1. Apply per-0.25°-cell quantile mapping strictly to precipitation channel before conservation
+            if APPLY_QUANTILE_MAPPING:
+                mapper = get_quantile_mapper()
+                pred_qm = mapper.transform(pred_phys)
+            else:
+                pred_qm = pred_phys
+
+            # 2. Enforce local 5x5 block mass conservation on the post-QM precipitation tensor
+            pred_conserved = conservative_renorm_local(pred_qm, coarse_t)
+
+        # Delivered final precipitation tensor (post-QM, post-conservation)
+        pred_hr_np = pred_conserved.squeeze(1).cpu().numpy()  # [T, 80, 80]
+
+        # Downscale thermodynamic fields via MultivariatePhysicalDownscaler using real coarse NWP context
+        terrain_single = terrain_tensor[0:1] if terrain_tensor is not None else None
+        multi_downscaler = MultivariatePhysicalDownscaler()
+        multi_res = multi_downscaler(
+            tmax_lr=tmax_lr,
+            tmin_lr=tmin_lr,
+            rh_lr=rh_lr,
+            wind_lr=wind_lr,
+            terrain_5ch=terrain_single,
+            target_size=(80, 80),
+        )
+        tmax_hr_np = multi_res["tmax_hr"][0, 0].cpu().numpy()
+        tmin_hr_np = multi_res["tmin_hr"][0, 0].cpu().numpy()
+        rh_hr_np = multi_res["rh_hr"][0, 0].cpu().numpy()
+        wind_hr_np = multi_res["wind_hr"][0, 0].cpu().numpy()
+        model_name = "UNet5x-SuperRes-Terrain"
+        in_shape = [lead_days, 1, 16, 16]
+        out_shape = [lead_days, 1, 80, 80]
+
     downscaled_mean = float(np.mean(pred_hr_np))
     mass_err = abs(downscaled_mean - coarse_mean) / (coarse_mean + 1e-8) * 100.0
-
-    # Downscale thermodynamic fields via MultivariatePhysicalDownscaler using real coarse NWP context
-    terrain_single = terrain_tensor[0:1] if terrain_tensor is not None else None
-    multi_downscaler = MultivariatePhysicalDownscaler()
-    multi_res = multi_downscaler(
-        tmax_lr=tmax_lr,
-        tmin_lr=tmin_lr,
-        rh_lr=rh_lr,
-        wind_lr=wind_lr,
-        terrain_5ch=terrain_single,
-        target_size=(80, 80),
-    )
-    tmax_hr_np = multi_res["tmax_hr"][0, 0].cpu().numpy()
-    tmin_hr_np = multi_res["tmin_hr"][0, 0].cpu().numpy()
-    rh_hr_np = multi_res["rh_hr"][0, 0].cpu().numpy()
-    wind_hr_np = multi_res["wind_hr"][0, 0].cpu().numpy()
 
     # Load Mandya metadata to map 80x80 grid to 234 GPs
     with open(FORECASTS_PATH, encoding="utf-8") as f:
@@ -481,10 +567,10 @@ def run_live_inference(
 
     return InferenceResponse(
         status="success",
-        model_name="UNet5x-SuperRes-Terrain",
+        model_name=model_name,
         lead_days=lead_days,
-        input_shape=[lead_days, 1, 16, 16],
-        output_shape=[lead_days, 1, 80, 80],
+        input_shape=in_shape,
+        output_shape=out_shape,
         coarse_mean_mm=round(coarse_mean, 2),
         downscaled_mean_mm=round(downscaled_mean, 2),
         mass_conservation_error_pct=round(mass_err, 4),

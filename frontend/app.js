@@ -1,6 +1,6 @@
 /**
  * frontend/app.js
- * Mandya Weather Advisory PWA — Interactive Downscaling Engine (SIH PS 26074)
+ * Mandya Weather Advisory PWA - Interactive Downscaling Engine (SIH PS 26074)
  * Modes: Interactive Downscaled Map & Spatial Benchmark Audit
  */
 
@@ -295,7 +295,7 @@ function getFinancialRisk(stage, exp, lMax, lang) {
         level: "risk-high",
         icon: "🚨",
         title: lang === "kn" ? "ಧಾನ್ಯ ಕೊಳೆಯುವಿಕೆ ಮತ್ತು ಬೆಳೆ ನಷ್ಟದ ಗಂಭೀರ ಅಪಾಯ" : "Crop Spoilage & Grain Rot Alert",
-        cost: lang === "kn" ? "ಎಕರೆಗೆ ₹5,000–₹8,000 ನಷ್ಟ" : "₹5,000–₹8,000 / acre at risk",
+        cost: lang === "kn" ? "ಎಕರೆಗೆ ₹5,000-₹8,000 ನಷ್ಟ" : "₹5,000-₹8,000 / acre at risk",
         desc: lang === "kn" ? "ತೆನೆ ಮೊಳಕೆಯೊಡೆಯುವ ಮತ್ತು ಧಾನ್ಯ ಕೊಳೆಯುವ ತೀವ್ರ ಅಪಾಯವಿದೆ. ಇಂದೇ ಕೊಯ್ಲು ಮುಗಿಸಿ ಒಣ ಜಾಗದಲ್ಲಿ ಭದ್ರಪಡಿಸಿ ಅಥವಾ ತಾಡಪಾಲಿನಿಂದ ಮುಚ್ಚಿ." : "Severe risk of earhead sprouting and grain rotting. Expedite harvesting or cover cut crop immediately.",
       };
     }
@@ -314,8 +314,8 @@ function getFinancialRisk(stage, exp, lMax, lang) {
         level: "risk-moderate",
         icon: "⚠️",
         title: lang === "kn" ? "ರಸಗೊಬ್ಬರ ಕೊಚ್ಚಿಹೋಗುವ ಅಪಾಯ (Urea Leaching)" : "Fertilizer Leaching & Runoff Risk",
-        cost: lang === "kn" ? "ಎಕರೆಗೆ ₹1,500–₹2,000 ನಷ್ಟ" : "₹1,500–₹2,000 / acre at risk",
-        desc: lang === "kn" ? "ಯೂರಿಯಾ ಮತ್ತು ಮೇಲುಗೊಬ್ಬರ ಮಳೆ ನೀರಿನಲ್ಲಿ ಕೊಚ್ಚಿಹೋಗುವ ಸಾಧ್ಯತೆ (೧-೨ ಚೀಲ ರಸಗೊಬ್ಬರ ವ್ಯರ್ಥ). ಮಳೆ ನಿಲ್ಲುವವರೆಗೆ ಗೊಬ್ಬರ ಹಾಕಬೇಡಿ." : "Urea top-dressing will leach into runoff (equivalent to 1–2 bags fertilizer waste). Withhold application until rainfall ceases.",
+        cost: lang === "kn" ? "ಎಕರೆಗೆ ₹1,500-₹2,000 ನಷ್ಟ" : "₹1,500-₹2,000 / acre at risk",
+        desc: lang === "kn" ? "ಯೂರಿಯಾ ಮತ್ತು ಮೇಲುಗೊಬ್ಬರ ಮಳೆ ನೀರಿನಲ್ಲಿ ಕೊಚ್ಚಿಹೋಗುವ ಸಾಧ್ಯತೆ (೧-೨ ಚೀಲ ರಸಗೊಬ್ಬರ ವ್ಯರ್ಥ). ಮಳೆ ನಿಲ್ಲುವವರೆಗೆ ಗೊಬ್ಬರ ಹಾಕಬೇಡಿ." : "Urea top-dressing will leach into runoff (equivalent to 1-2 bags fertilizer waste). Withhold application until rainfall ceases.",
       };
     }
     return {
@@ -333,8 +333,8 @@ function getFinancialRisk(stage, exp, lMax, lang) {
         level: "risk-moderate",
         icon: "⚠️",
         title: lang === "kn" ? "ಕೀಟನಾಶಕ ಕೊಚ್ಚಿಹೋಗುವಿಕೆ ಮತ್ತು ಪರಾಗ ನಷ್ಟ" : "Pesticide Wash-off & Pollen Disruption",
-        cost: lang === "kn" ? "ಎಕರೆಗೆ ₹1,200–₹1,500 ನಷ್ಟ" : "₹1,200–₹1,500 / acre at risk",
-        desc: lang === "kn" ? "ಸಿಂಪಡಿಸಿದ ಕೀಟನಾಶಕ ತೊಳೆದುಹೋಗುವ ಮತ್ತು ಹೂವಿನ ಪರಾಗಸ್ಪರ್ಶಕ್ಕೆ ಅಡ್ಡಿಯಾಗುವ ಅಪಾಯ. ಸಿಂಪಡಣೆ ಮುಂದೂಡಿ." : "Foliar spray wash-off (~₹1,200–₹1,500/acre chemical waste) and pollen damage. Delay pesticide/fungicide spraying.",
+        cost: lang === "kn" ? "ಎಕರೆಗೆ ₹1,200-₹1,500 ನಷ್ಟ" : "₹1,200-₹1,500 / acre at risk",
+        desc: lang === "kn" ? "ಸಿಂಪಡಿಸಿದ ಕೀಟನಾಶಕ ತೊಳೆದುಹೋಗುವ ಮತ್ತು ಹೂವಿನ ಪರಾಗಸ್ಪರ್ಶಕ್ಕೆ ಅಡ್ಡಿಯಾಗುವ ಅಪಾಯ. ಸಿಂಪಡಣೆ ಮುಂದೂಡಿ." : "Foliar spray wash-off (~₹1,200-₹1,500/acre chemical waste) and pollen damage. Delay pesticide/fungicide spraying.",
       };
     }
     return {
@@ -621,7 +621,7 @@ function broadcastToWhatsApp(record) {
       `🌾 *ಗ್ರಾಮ ಪಂಚಾಯತ್: ${record.panchayat_name}* (ಮಂಡ್ಯ ಜಿಲ್ಲೆ)\n` +
       `📅 ದಿನಾಂಕ: ${dateStr}${dayTag}\n\n` +
       `🌧️ *ಮಳೆ ಮುನ್ಸೂಚನೆ:* ${intensity.label} (${exp.toFixed(1)} mm)\n` +
-      `📊 *ಸಂಭಾವ್ಯ ವ್ಯಾಪ್ತಿ:* ${lMin.toFixed(1)} mm – ${lMax.toFixed(1)} mm\n` +
+      `📊 *ಸಂಭಾವ್ಯ ವ್ಯಾಪ್ತಿ:* ${lMin.toFixed(1)} mm - ${lMax.toFixed(1)} mm\n` +
       `${alertLine}\n\n` +
       `🌱 *ರಾಗಿ ಬೆಳೆ ಸಲಹೆ:* ${record.advisory?.ragi?.action_kn || ""}\n` +
       `🌾 *ಭತ್ತದ ಬೆಳೆ ಸಲಹೆ:* ${record.advisory?.paddy?.action_kn || ""}\n` +
@@ -639,7 +639,7 @@ function broadcastToWhatsApp(record) {
       `🌾 *Gram Panchayat: ${record.panchayat_name}* (Mandya District)\n` +
       `📅 Date: ${dateStr}${dayTag}\n\n` +
       `🌧️ *Rainfall Forecast:* ${intensity.label} (${exp.toFixed(1)} mm)\n` +
-      `📊 *CQR 90% Likely Range:* ${lMin.toFixed(1)} mm – ${lMax.toFixed(1)} mm\n` +
+      `📊 *CQR 90% Likely Range:* ${lMin.toFixed(1)} mm - ${lMax.toFixed(1)} mm\n` +
       `${alertLine}\n\n` +
       `🌱 *Ragi Advisory:* ${record.advisory?.ragi?.action_en || ""}\n` +
       `🌾 *Paddy Advisory:* ${record.advisory?.paddy?.action_en || ""}\n` +
@@ -663,8 +663,8 @@ function broadcastToWhatsApp(record) {
 
     showToast(
       currentLanguage === "kn"
-        ? "ಸೇರಿಸಲಾಗಿದೆ — ನೆಟ್ವರ್ಕ್ ಬಂದ ಕೂಡಲೇ ಕಳುಹಿಸಲಾಗುವುದು (Queued in IndexedDB)"
-        : "Queued for dispatch — will automatically send when network returns"
+        ? "ಸೇರಿಸಲಾಗಿದೆ - ನೆಟ್ವರ್ಕ್ ಬಂದ ಕೂಡಲೇ ಕಳುಹಿಸಲಾಗುವುದು (Queued in IndexedDB)"
+        : "Queued for dispatch - will automatically send when network returns"
     );
     return;
   }
@@ -860,7 +860,7 @@ function formatTooltipContent(record, feature) {
   if (currentMapLayer === "imd") {
     const blockVal = getDistrictAvgRain(currentSelectedDayIndex);
     const aiVal = exp.toFixed(1);
-    const delta = blockVal !== null ? (exp - blockVal).toFixed(1) : "—";
+    const delta = blockVal !== null ? (exp - blockVal).toFixed(1) : "-";
     const deltaSign = (blockVal !== null && (exp - blockVal) > 0) ? "+" : "";
     const anomalyBadge = exp >= 15.0
       ? `<span style="color:#ef4444; font-weight:700;">🚨 Convective peak hidden by IMD</span>`
@@ -874,7 +874,7 @@ function formatTooltipContent(record, feature) {
       <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • LGD ${record?.lgd_code || feature.id}</div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
         <span style="font-size:0.8rem; color:#cbd5e1;">IMD Block Prediction:</span>
-        <strong style="font-size:0.88rem; color:#93c5fd;">${blockVal !== null ? blockVal.toFixed(1) + ' mm (Flat)' : '—'}</strong>
+        <strong style="font-size:0.88rem; color:#93c5fd;">${blockVal !== null ? blockVal.toFixed(1) + ' mm (Flat)' : '-'}</strong>
       </div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
         <span style="font-size:0.8rem; color:#cbd5e1;">Our 5× Downscaled:</span>
@@ -949,7 +949,7 @@ function formatTooltipContent(record, feature) {
       </div>
       <div style="font-size:0.76rem; color:#94a3b8; margin-bottom:4px;">${taluk} Taluk • ${badge}</div>
       <div style="font-size:0.84rem; color:#f8fafc;">Spread: <strong style="color:#f59e0b;">±${spread.toFixed(1)} mm</strong></div>
-      <div style="font-size:0.76rem; color:#94a3b8;">Range: ${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm</div>
+      <div style="font-size:0.76rem; color:#94a3b8;">Range: ${lMin.toFixed(1)} - ${lMax.toFixed(1)} mm</div>
     `;
   }
   // Rainfall default
@@ -964,7 +964,7 @@ function formatTooltipContent(record, feature) {
       <span style="font-size:0.82rem; color:#cbd5e1;">Expected Rain:</span>
       <span style="font-size:0.92rem; font-weight:800; color:${isRain ? '#38bdf8' : '#34d399'};">${exp.toFixed(1)} mm</span>
     </div>
-    <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Likely: ${lMin.toFixed(1)} – ${lMax.toFixed(1)} mm</div>
+    <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Likely: ${lMin.toFixed(1)} - ${lMax.toFixed(1)} mm</div>
   `;
 }
 
@@ -976,8 +976,8 @@ function updateMapLegend(layerType) {
     legend.innerHTML = `
       <span class="legend-title">Max Temperature (°C):</span>
       <div class="legend-item"><span class="legend-swatch" style="background:#84cc16;"></span> &lt; 28°C (Pleasant)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#eab308;"></span> 28–32°C (Mild)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#f59e0b;"></span> 32–35°C (Warm)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#eab308;"></span> 28-32°C (Mild)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#f59e0b;"></span> 32-35°C (Warm)</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#dc2626;"></span> &gt; 35°C (Heat Stress)</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected</div>
     `;
@@ -988,8 +988,8 @@ function updateMapLegend(layerType) {
     legend.innerHTML = `
       <span class="legend-title">Relative Humidity (%):</span>
       <div class="legend-item"><span class="legend-swatch" style="background:#a7f3d0;"></span> &lt; 55% (Dry)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#2dd4bf;"></span> 55–70% (Optimal)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#06b6d4;"></span> 70–85% (Humid)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#2dd4bf;"></span> 55-70% (Optimal)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#06b6d4;"></span> 70-85% (Humid)</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#0284c7;"></span> &gt; 85% (Fungal Risk)</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected</div>
     `;
@@ -1000,8 +1000,8 @@ function updateMapLegend(layerType) {
     legend.innerHTML = `
       <span class="legend-title">Surface Wind Speed (km/h):</span>
       <div class="legend-item"><span class="legend-swatch" style="background:#e2e8f0;"></span> &lt; 10 km/h (Calm)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#38bdf8;"></span> 10–15 km/h (Breeze)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#a855f7;"></span> 15–20 km/h (Drift Hazard)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#38bdf8;"></span> 10-15 km/h (Breeze)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#a855f7;"></span> 15-20 km/h (Drift Hazard)</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#7c3aed;"></span> &gt; 20 km/h (High Wind)</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#ffffff;border:2px solid #000000;"></span> Selected</div>
     `;
@@ -1034,8 +1034,8 @@ function updateMapLegend(layerType) {
     legend.innerHTML = `
       <span class="legend-title">Uncertainty Spread:</span>
       <div class="legend-item"><span class="legend-swatch" style="background:#a7f3d0;"></span> &lt; 5 mm (Tight)</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#fde047;"></span> 5–15 mm</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#fb923c;"></span> 15–30 mm</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#fde047;"></span> 5-15 mm</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#fb923c;"></span> 15-30 mm</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#f87171;"></span> &gt; 30 mm (High)</div>
       <div class="legend-item"><span class="legend-swatch" style="background:transparent;border:2px solid #000000;"></span> Selected GP</div>
     `;
@@ -1045,8 +1045,8 @@ function updateMapLegend(layerType) {
   legend.innerHTML = `
     <span class="legend-title">Precipitation:</span>
     <div class="legend-item"><span class="legend-swatch band-dry"></span> &lt; 2.5 mm (Dry)</div>
-    <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5–15.5 mm (Light)</div>
-    <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5–64.4 mm (Moderate)</div>
+    <div class="legend-item"><span class="legend-swatch band-light"></span> 2.5-15.5 mm (Light)</div>
+    <div class="legend-item"><span class="legend-swatch band-mod"></span> 15.5-64.4 mm (Moderate)</div>
     <div class="legend-item"><span class="legend-swatch band-heavy"></span> &gt; 64.5 mm (Heavy)</div>
     <div class="legend-item"><span class="legend-swatch" style="background:transparent;border:2px solid #000000;"></span> Selected GP</div>
   `;
@@ -1135,13 +1135,13 @@ function setupLiveInference() {
   inferBtn.addEventListener("click", async () => {
     inferBtn.disabled = true;
     inferBtn.textContent = "⏳ Inferring 5×...";
-    if (statusElem) statusElem.textContent = "Running UNet5x forward pass...";
+    if (statusElem) statusElem.textContent = "Running Dense-L Accurate diffusion pass...";
 
     try {
       const res = await fetch("/api/v1/infer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ model_tier: "dense_l" }),
       });
       if (!res.ok) throw new Error("Inference failed");
       const data = await res.json();
@@ -1152,7 +1152,7 @@ function setupLiveInference() {
         statusElem.style.color = "#15803d";
       }
       renderDownscalingPlots();
-      showToast(`⚡ Live 5× Inference: 234 GPs mapped in ${data.execution_time_ms} ms (0.000% Mass Error)`);
+      showToast(`⚡ Dense-L Accurate 5×: 234 GPs mapped in ${data.execution_time_ms} ms (0.000% Mass Error)`);
     } catch (err) {
       inferBtn.textContent = "⚡ Run Live Inference";
       inferBtn.disabled = false;
@@ -1184,8 +1184,8 @@ function setupMapLayerSelector() {
         if (layer === "imd") {
           const avg = getDistrictAvgRain(currentSelectedDayIndex);
           const max = getDistrictMaxRain(currentSelectedDayIndex);
-          const avgStr = avg !== null ? `${avg.toFixed(1)}mm` : "—";
-          const maxStr = max !== null ? `${max.toFixed(1)}mm` : "—";
+          const avgStr = avg !== null ? `${avg.toFixed(1)}mm` : "-";
+          const maxStr = max !== null ? `${max.toFixed(1)}mm` : "-";
           imdBanner.innerHTML = `<span class="banner-icon">⚠️</span><span><strong>IMD Block View:</strong> Uniform ${avgStr} over all 234 GPs • Convective peaks up to ${maxStr} obscured • Zero intra-block resolution</span>`;
           imdBanner.classList.remove("hidden");
         } else {
@@ -1744,7 +1744,7 @@ function renderExclaveModalContent(record) {
               <span class="parcel-rain-val">${p.expected_mm.toFixed(1)}</span>
               <span class="parcel-rain-unit">mm</span>
             </div>
-            <div class="parcel-card-range">Likely: ${p.likely_min_mm.toFixed(1)} – ${p.likely_max_mm.toFixed(1)} mm</div>
+            <div class="parcel-card-range">Likely: ${p.likely_min_mm.toFixed(1)} - ${p.likely_max_mm.toFixed(1)} mm</div>
           </div>
           <div class="parcel-card-footer">
             <span class="parcel-area-share">📊 <strong>${p.area_share_pct.toFixed(1)}%</strong> of GP Area</span>
@@ -1920,7 +1920,7 @@ export function getCycleBadgeProps(cycleDate, cycleAge) {
   } else {
     return {
       className: "badge-red",
-      text: `Cycle: ${dateStr} (age ${age}d) — stale cycle: advisories from last sync`,
+      text: `Cycle: ${dateStr} (age ${age}d) - stale cycle: advisories from last sync`,
     };
   }
 }
@@ -1982,7 +1982,7 @@ async function loadData() {
 
   if (isOffline) {
     if (banner) banner.classList.remove("hidden");
-    if (bannerText) bannerText.textContent = "⚠️ No network — operating on cached 06:00 IST advisory. Chalkboard & dispatch queue active.";
+    if (bannerText) bannerText.textContent = "⚠️ No network - operating on cached 06:00 IST advisory. Chalkboard & dispatch queue active.";
     if (syncBadge) syncBadge.classList.add("offline-mode");
     if (syncStatus) syncStatus.textContent = `Offline: Cached (${records.length} GPs)`;
   } else {
@@ -2480,15 +2480,15 @@ function updateDualModalHUD(records, dayIdx = 0) {
 
   if (!records || !records.length || avg === null) {
     if (subImd) subImd.textContent = "No forecast data loaded";
-    if (subAi) subAi.textContent = "—";
-    if (granImd) granImd.textContent = "—";
-    if (granAi) granAi.textContent = "—";
-    if (peakImd) peakImd.textContent = "—";
-    if (peakAi) peakAi.textContent = "—";
-    if (zonesImd) zonesImd.textContent = "—";
-    if (zonesAi) zonesAi.textContent = "—";
-    if (footerMass) footerMass.textContent = "—";
-    if (provChip) provChip.textContent = "—";
+    if (subAi) subAi.textContent = "-";
+    if (granImd) granImd.textContent = "-";
+    if (granAi) granAi.textContent = "-";
+    if (peakImd) peakImd.textContent = "-";
+    if (peakAi) peakAi.textContent = "-";
+    if (zonesImd) zonesImd.textContent = "-";
+    if (zonesAi) zonesAi.textContent = "-";
+    if (footerMass) footerMass.textContent = "-";
+    if (provChip) provChip.textContent = "-";
     return;
   }
 
@@ -2521,7 +2521,7 @@ function updateDualModalHUD(records, dayIdx = 0) {
   const dayName = activeDay0?.day_label_en || (dayIdx === 0 ? "Today" : `Day +${dayIdx}`);
   const dayLabel = dayDate ? `${dayDate} (${dayName})` : dayName;
   const prov = activeDay0?.provenance || rec0.provenance || "OPENMETEO_FORECAST_DOWNSCALED";
-  const cycleDate = rec0.cycle_date || rec0.forecast_date || "—";
+  const cycleDate = rec0.cycle_date || rec0.forecast_date || "-";
 
   if (granImd) granImd.textContent = "1 Block-Mean Value (0.25°)";
   if (granAi) granAi.textContent = `${records.length} GP Forecasts (5.5 km)`;
@@ -2530,7 +2530,7 @@ function updateDualModalHUD(records, dayIdx = 0) {
   if (zonesImd) zonesImd.textContent = "0 (Single Warning Class)";
   if (zonesAi) zonesAi.textContent = `${wrongCat} GPs in Different Warning Class`;
   if (subImd) subImd.textContent = `Uniform ${avg} mm block-mean • single IMD warning class (${imdCategoryLabel(avg)}) • blind to orographic concentration & rain-shadows`;
-  if (subAi) subAi.textContent = `${mn}–${mx} mm • convective peak resolved • 0.000% parent-cell volume error`;
+  if (subAi) subAi.textContent = `${mn}-${mx} mm • convective peak resolved • 0.000% parent-cell volume error`;
   if (footerMass) footerMass.textContent = `(1/25)Σ HR·cos(φ) = LR • district parent-cell mean ${avg} mm (= coarse block-mean)`;
   if (provChip) provChip.textContent = `Cycle ${cycleDate} • ${dayLabel} • ${prov}`;
 }
@@ -2769,7 +2769,7 @@ function initDualSyncMaps() {
         const v = rec
           ? (rec.multi_day_forecast?.[currentSelectedDayIndex]?.expected_mm ?? rec.expected_mm ?? 0.0)
           : 0.0;
-        const delta = blockAvg !== null ? (v - blockAvg).toFixed(1) : "—";
+        const delta = blockAvg !== null ? (v - blockAvg).toFixed(1) : "-";
         const deltaSign = (blockAvg !== null && (v - blockAvg) > 0) ? "+" : "";
         const alertNote = v >= 15.0
           ? "<span style='color:#059669;font-weight:700;'>🌧️ Convective Peak Resolved</span>"
@@ -2778,7 +2778,7 @@ function initDualSyncMaps() {
           <div style="font-family:sans-serif; font-size:11px; line-height:1.3; color:#0f172a;">
             <strong>${name} (${taluk})</strong><br>
             <span style="color:${v >= 15 ? '#059669' : '#0369a1'}; font-weight:800;">5× Downscaled: ${v.toFixed(1)} mm (Δ ${deltaSign}${delta} mm)</span><br>
-            <span style="color:#64748b;">IMD Block Input: ${blockAvg !== null ? blockAvg.toFixed(1) + ' mm' : '—'}</span><br>
+            <span style="color:#64748b;">IMD Block Input: ${blockAvg !== null ? blockAvg.toFixed(1) + ' mm' : '-'}</span><br>
             ${alertNote}
           </div>
         `, { sticky: true });
