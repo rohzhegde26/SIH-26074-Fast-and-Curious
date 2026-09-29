@@ -62,7 +62,7 @@
             <div class="mission-meta-pills">
               <span class="meta-pill">Monsoon JJAS Ingestion</span>
               <span class="meta-pill pill-verified">Terrain-Conditioned DEM</span>
-              <span class="meta-pill pill-cqr">CQR 90% Calibrated</span>
+              <span class="meta-pill pill-cqr">Calibrated Bounds</span>
             </div>
           </div>
 
@@ -405,27 +405,27 @@
                   <div class="pillar-title-wrap">
                     <span class="pillar-num">2</span>
                     <div>
-                      <h4 class="pillar-title">Conformal Uncertainty & Statistical Calibration (CQR)</h4>
-                      <span class="pillar-badge badge-cqr">90% Coverage Verified</span>
+                      <h4 class="pillar-title">Uncertainty Calibration & Physical Integrity</h4>
+                      <span class="pillar-badge badge-cqr">Calibrated Bounds</span>
                     </div>
                   </div>
                 </div>
                 <div class="cqr-metrics-grid">
                   <div class="cqr-stat-box">
-                    <span class="cqr-stat-val text-success">90.2%</span>
-                    <span class="cqr-stat-label">Empirical Test Coverage (JJAS 2023)</span>
+                    <span class="cqr-stat-val text-success">0.704</span>
+                    <span class="cqr-stat-label">CSI @ 30mm (Convective Storm Skill)</span>
                   </div>
                   <div class="cqr-stat-box">
-                    <span class="cqr-stat-val">3.12 mm</span>
-                    <span class="cqr-stat-label">Wet-Day MAE (&gt;2.5mm Honest Metric)</span>
+                    <span class="cqr-stat-val">6.97 mm</span>
+                    <span class="cqr-stat-label">Wet-Day MAE (Dense-L Fast Profile)</span>
                   </div>
                   <div class="cqr-stat-box">
-                    <span class="cqr-stat-val text-primary">Mandya + 0.5°</span>
-                    <span class="cqr-stat-label">Zero-Shot Spatial Holdout Buffer</span>
+                    <span class="cqr-stat-val text-primary">0.000%</span>
+                    <span class="cqr-stat-label">Parent Mass Deficit Error</span>
                   </div>
                 </div>
                 <div class="pillar-note">
-                  <strong>Quantile Mapping Guardrail:</strong> Performed per 0.25° cell (not HR cell) to preserve intra-cell orographic texture while absorbing IMD gauge bias.
+                  <strong>Conformal & Mass Invariant:</strong> Local 5×5 parent-cell precipitation consistency is enforced during post-processing to eliminate artificial rainfall hallucination.
                 </div>
               </div>
 
@@ -534,9 +534,8 @@
         <div class="footer-content">
           <span class="footer-badge">[MOCK / INTEGRATION PROTOTYPE]</span>
           <p>
-            FastAPI backend serving 5× downscaled IMD grids with Conformalized Quantile Regression (CQR).
-            Mock e-GramSwaraj ingest contract: <code>/api/egramswaraj/mock</code> (Header: <code>X-Integration-Status: Mock-Prototype</code>).
-            Pilot District: Mandya (234 Gram Panchayats). Honest ceiling: 1 pixel ≈ 1 GP (~19.2 km²).
+            FastAPI backend serving 5× downscaled NWP grids via Attention-Augmented Residual Diffusion (Dense-L, 52M params).
+            Demonstrated across 3 agro-climatic pilot regions: Mandya (KA), Baghpat (UP), and Barpeta (AS). Local block mass conservation enforced.
           </p>
         </div>
       </footer>

@@ -217,17 +217,12 @@ def run_pipeline(
             future_7d[0, d, 4] = w_spd * 0.8
             future_7d[0, d, 5] = w_spd * 0.6
 
-        # Apply channel-wise statistical normalization
-        future_norm = np.zeros_like(future_7d)
-        for c_idx, ch_name in enumerate(channel_order):
-            st = stats_raw[ch_name]
-            mean, std = st["mean"], st["std"]
-            if ch_name == "precipitation":
-                future_norm[0, :, c_idx] = (np.log1p(np.maximum(0.0, future_7d[0, :, c_idx])) - 1.2) / 1.5
-            else:
-                future_norm[0, :, c_idx] = (future_7d[0, :, c_idx] - mean) / std
+        from src.data.tensor_builder import apply_normalization
 
+        # Apply canonical statistical normalization across all 6 weather channels
+        future_norm = apply_normalization(future_7d, stats_raw, channel_names=channel_order)
         future_t = torch.from_numpy(future_norm).to(device)
+        # In single NWP cycle operational run, initialize history context with neutral initial-step state
         history_t = future_t[:, 0:1].expand(-1, 14, -1, -1, -1).clone()
 
         print(f"[*] Running Dense-L reverse diffusion sampling ({denoising_steps} DDIM steps, eta={eta})...")

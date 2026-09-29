@@ -402,16 +402,13 @@ def run_live_inference(
             future_np[0, d, 4] = (w_val / 3.6) * 0.8
             future_np[0, d, 5] = (w_val / 3.6) * 0.6
 
-        future_norm = np.zeros_like(future_np)
-        for c_idx, ch_name in enumerate(channel_order):
-            st = stats_raw[ch_name]
-            mean, std = st["mean"], st["std"]
-            if ch_name == "precipitation":
-                future_norm[0, :, c_idx] = (np.log1p(np.maximum(0.0, future_np[0, :, c_idx])) - 1.2) / 1.5
-            else:
-                future_norm[0, :, c_idx] = (future_np[0, :, c_idx] - mean) / std
+        from src.data.tensor_builder import apply_normalization, invert_normalization
 
+        # Apply canonical statistical normalization across all 6 weather channels
+        future_norm = apply_normalization(future_np, stats_raw, channel_names=channel_order)
         future_t = torch.from_numpy(future_norm).to(dense_l_device)
+        # When antecedent historical observations are not provided at live query time,
+        # initialize history context tensor using neutral initial-step forecast conditions
         history_t = future_t[:, 0:1].expand(-1, 14, -1, -1, -1).clone()
 
         infer_steps = 4 if dense_l_device.type == "cpu" else 16

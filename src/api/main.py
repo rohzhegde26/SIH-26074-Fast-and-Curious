@@ -301,20 +301,32 @@ def panchayat_feed_bulk() -> list[VirtualARGResponse]:
 
 @app.get("/api/v1/health", tags=["system"], summary="Model and inference service health status")
 def health_check():
-    """Verifies that UNet5x model weights and inference pipeline are operational."""
-    from src.api.inference_service import load_inference_model, CHECKPOINT_PATH
+    """Verifies that Dense-L spatiotemporal diffusion model weights and inference pipeline are operational."""
+    from src.api.inference_service import load_dense_l_model, DENSE_L_PATH, load_inference_model, CHECKPOINT_PATH
 
-    model, device = load_inference_model()
-    param_count = sum(p.numel() for p in model.parameters())
+    dense_l_model, device = load_dense_l_model()
+    if dense_l_model is not None:
+        param_count = sum(p.numel() for p in dense_l_model.parameters())
+        active_model = "Dense-L Spatiotemporal Residual Diffusion"
+        active_ckpt = str(DENSE_L_PATH)
+    else:
+        model, device = load_inference_model()
+        param_count = sum(p.numel() for p in model.parameters())
+        active_model = "UNet5x-SuperRes-Terrain"
+        active_ckpt = str(CHECKPOINT_PATH)
+
     return {
         "status": "healthy",
         "service": "SIH-26074 Downscaling Engine",
+        "default_model": active_model,
         "device": str(device),
         "model_loaded": True,
-        "checkpoint_path": str(CHECKPOINT_PATH),
-        "trainable_parameters": param_count,
+        "checkpoint_path": active_ckpt,
+        "parameters": param_count,
         "supported_scale": "5x direct (0.25deg to 0.05deg)",
+        "pilot_districts": ["MANDYA (KA)", "BAGHPAT (UP)", "BARPETA (AS)"],
         "panchayats_indexed": 234,
+        "total_multi_region_panchayats": 583,
     }
 
 
