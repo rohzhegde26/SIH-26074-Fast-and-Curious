@@ -1,0 +1,1771 @@
+[
+ {
+  "name": "a-s4-h1h3",
+  "account": "a1",
+  "sprint": "S4",
+  "expected_min": 115.0,
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 1 --N 16 --seed 0 --tag s4_h1_n16_s0",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 3 --N 16 --seed 0 --tag s4_h3_n16_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 1 --N 16 --seed 1 --tag s4_h1_n16_s1",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 3 --N 16 --seed 1 --tag s4_h3_n16_s1"
+   ]
+  ],
+  "needs": [],
+  "state": "done"
+ },
+ {
+  "name": "a-s4-h14",
+  "account": "a1",
+  "sprint": "S4",
+  "expected_min": 60.0,
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 14 --N 16 --seed 0 --tag s4_h14_n16_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 14 --N 16 --seed 1 --tag s4_h14_n16_s1"
+   ]
+  ],
+  "needs": [],
+  "state": "done"
+ },
+ {
+  "name": "a-s4h7-s5n24",
+  "account": "a2",
+  "sprint": "S3/4/5",
+  "expected_min": 115.0,
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 16 --seed 0 --tag s4_h7_n16_s0",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 24 --seed 0 --tag s5_h7_n24_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 16 --seed 1 --tag s4_h7_n16_s1",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 24 --seed 1 --tag s5_h7_n24_s1"
+   ]
+  ],
+  "needs": [],
+  "state": "done"
+ },
+ {
+  "name": "a-s5-n32",
+  "account": "a2",
+  "sprint": "S5",
+  "expected_min": 60.0,
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 32 --seed 0 --tag s5_h7_n32_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 32 --seed 1 --tag s5_h7_n32_s1"
+   ]
+  ],
+  "needs": [],
+  "state": "done"
+ },
+ {
+  "name": "a-s5-n40",
+  "account": "a3",
+  "sprint": "S5",
+  "expected_min": 60.0,
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 40 --seed 0 --tag s5_h7_n40_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 40 --seed 1 --tag s5_h7_n40_s1"
+   ]
+  ],
+  "needs": [],
+  "state": "done"
+ },
+ {
+  "name": "a-lossvar",
+  "account": "a3",
+  "sprint": "S3",
+  "expected_min": 60.0,
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 16 --seed 0 --precip_lin_w 1.0 --tag lin_h7_n16_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 16 --seed 1 --precip_lin_w 1.0 --tag lin_h7_n16_s1"
+   ]
+  ],
+  "needs": [],
+  "state": "done"
+ },
+ {
+  "name": "a2-s4-h5h10",
+  "account": "a1",
+  "sprint": "S4",
+  "expected_min": 115,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 5 --N 16 --seed 0 --tag s4_h5_n16_s0",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 10 --N 16 --seed 0 --tag s4_h10_n16_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 5 --N 16 --seed 1 --tag s4_h5_n16_s1",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 10 --N 16 --seed 1 --tag s4_h10_n16_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "a2-s5-n20n28",
+  "account": "a3",
+  "sprint": "S5",
+  "expected_min": 115,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 20 --seed 0 --tag s5_h7_n20_s0",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 28 --seed 0 --tag s5_h7_n28_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 20 --seed 1 --tag s5_h7_n20_s1",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 28 --seed 1 --tag s5_h7_n28_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "e-qm-check2",
+  "account": "a3",
+  "sprint": "S3",
+  "expected_min": 20,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-a-lossvar"
+  ],
+  "lanes": [
+   [
+    "@eval_det --ckpts **/lin_h7_n16_s0/best.pt --tag qm_lin_s0"
+   ],
+   [
+    "@eval_det --ckpts **/lin_h7_n16_s1/best.pt --tag qm_lin_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "a3-seed2-0",
+  "account": "a2",
+  "sprint": "S4/5 seed2",
+  "expected_min": 120,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 1 --N 16 --seed 2 --tag s4_h1_n16_s2",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 3 --N 16 --seed 2 --tag s4_h3_n16_s2"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 5 --N 16 --seed 2 --tag s4_h5_n16_s2",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 16 --seed 2 --tag s4_h7_n16_s2"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "a3-seed2-1",
+  "account": "a3",
+  "sprint": "S4/5 seed2",
+  "expected_min": 120,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 10 --N 16 --seed 2 --tag s4_h10_n16_s2",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 14 --N 16 --seed 2 --tag s4_h14_n16_s2"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 20 --seed 2 --tag s5_h7_n20_s2",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 24 --seed 2 --tag s5_h7_n24_s2"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "e-qm-check3",
+  "account": "a1",
+  "sprint": "S3",
+  "expected_min": 20,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-a-s4-h14"
+  ],
+  "lanes": [
+   [
+    "@eval_det --ckpts **/s4_h14_n16_s0/best.pt --tag qm3_h14_s0"
+   ],
+   [
+    "@eval_det --ckpts **/s4_h14_n16_s1/best.pt --tag qm3_h14_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "a3-seed2-2",
+  "account": "a1",
+  "sprint": "S4/5 seed2",
+  "expected_min": 120,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 28 --seed 2 --tag s5_h7_n28_s2",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 32 --seed 2 --tag s5_h7_n32_s2"
+   ],
+   [
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 40 --seed 2 --tag s5_h7_n40_s2",
+    "--mode det --size S --epochs 50 --time_budget_min 55 --patience 10 --H 7 --N 16 --seed 2 --precip_lin_w 1.0 --tag lin_h7_n16_s2"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "b0-diff-pilot",
+  "account": "a2",
+  "sprint": "S6 pilot",
+  "expected_min": 95,
+  "needs": [
+   "a-s4h7-s5n24"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-a-s4h7-s5n24"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 40 --patience 8 --time_budget_min 60 --H 7 --N 16 --det_ckpt **/s4_h7_n16_s0/best.pt --eval_members 8 --eval_steps 16 --seed 0 --tag s6pilot_diff_s0"
+   ],
+   [
+    "--mode diff --size S --epochs 40 --patience 8 --time_budget_min 60 --H 7 --N 16 --det_ckpt **/s4_h7_n16_s0/best.pt --eval_members 8 --eval_steps 16 --seed 1 --tag s6pilot_diff_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "b-s9-S",
+  "account": "a1",
+  "sprint": "S6/S9",
+  "expected_min": 110,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --seed 0 --tag s9_dense_S_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --seed 1 --tag s9_dense_S_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "b-s6-diff",
+  "account": "a1",
+  "sprint": "S6",
+  "expected_min": 150,
+  "needs": [
+   "b-s9-S"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-b-s9-S"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 60 --patience 10 --time_budget_min 110 --H 3 --N 16 --precip_lin_w 1.0 --det_ckpt **/s9_dense_S_s0/best.pt --seed 0 --tag s6_diff_s0"
+   ],
+   [
+    "--mode diff --size S --epochs 60 --patience 10 --time_budget_min 110 --H 3 --N 16 --precip_lin_w 1.0 --det_ckpt **/s9_dense_S_s0/best.pt --seed 1 --tag s6_diff_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-s9-M",
+  "account": "a2",
+  "sprint": "S9",
+  "expected_min": 130,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size M --epochs 100 --patience 15 --time_budget_min 115 --H 3 --N 16 --precip_lin_w 1.0 --seed 0 --tag s9_dense_M_s0"
+   ],
+   [
+    "--mode det --size M --epochs 100 --patience 15 --time_budget_min 115 --H 3 --N 16 --precip_lin_w 1.0 --seed 1 --tag s9_dense_M_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-s9-L",
+  "account": "a2",
+  "sprint": "S9",
+  "expected_min": 175,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size L --epochs 100 --patience 15 --time_budget_min 160 --H 3 --N 16 --precip_lin_w 1.0 --seed 0 --tag s9_dense_L_s0"
+   ],
+   [
+    "--mode det --size L --epochs 100 --patience 15 --time_budget_min 160 --H 3 --N 16 --precip_lin_w 1.0 --seed 1 --tag s9_dense_L_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-confirm-h14-n16",
+  "account": "a3",
+  "sprint": "S4/5 confirm",
+  "expected_min": 110,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 14 --N 16 --precip_lin_w 1.0 --seed 0 --tag s45_confirm_h14_n16_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 14 --N 16 --precip_lin_w 1.0 --seed 1 --tag s45_confirm_h14_n16_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-confirm-h3-n20",
+  "account": "a3",
+  "sprint": "S4/5 confirm",
+  "expected_min": 140,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 3 --N 20 --precip_lin_w 1.0 --seed 0 --tag s45_confirm_h3_n20_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 3 --N 20 --precip_lin_w 1.0 --seed 1 --tag s45_confirm_h3_n20_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-confirm-h3-n40",
+  "account": "a1",
+  "sprint": "S4/5 confirm",
+  "expected_min": 140,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 3 --N 40 --precip_lin_w 1.0 --seed 0 --tag s45_confirm_h3_n40_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 3 --N 40 --precip_lin_w 1.0 --seed 1 --tag s45_confirm_h3_n40_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-confirm-h14-n40",
+  "account": "a3",
+  "sprint": "S4/5 confirm",
+  "expected_min": 140,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 14 --N 40 --precip_lin_w 1.0 --seed 0 --tag s45_confirm_h14_n40_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 14 --N 40 --precip_lin_w 1.0 --seed 1 --tag s45_confirm_h14_n40_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-s9-moe-e4k1f50",
+  "account": "a3",
+  "sprint": "S9",
+  "expected_min": 110,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 4 --moe_topk 1 --moe_frac 0.5 --seed 0 --tag s9_moe_e4k1f50_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 4 --moe_topk 1 --moe_frac 0.5 --seed 1 --tag s9_moe_e4k1f50_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-s9-moe-e8k1f50",
+  "account": "a2",
+  "sprint": "S9",
+  "expected_min": 110,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 1 --moe_frac 0.5 --seed 0 --tag s9_moe_e8k1f50_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 1 --moe_frac 0.5 --seed 1 --tag s9_moe_e8k1f50_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-s9-moe-e16k1f50",
+  "account": "a1",
+  "sprint": "S9",
+  "expected_min": 110,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 16 --moe_topk 1 --moe_frac 0.5 --seed 0 --tag s9_moe_e16k1f50_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 16 --moe_topk 1 --moe_frac 0.5 --seed 1 --tag s9_moe_e16k1f50_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-s9-moe-e4k2f50",
+  "account": "a1",
+  "sprint": "S9",
+  "expected_min": 110,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 4 --moe_topk 2 --moe_frac 0.5 --seed 0 --tag s9_moe_e4k2f50_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 4 --moe_topk 2 --moe_frac 0.5 --seed 1 --tag s9_moe_e4k2f50_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-s9-moe-e8k2f50",
+  "account": "a3",
+  "sprint": "S9",
+  "expected_min": 110,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --seed 0 --tag s9_moe_e8k2f50_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --seed 1 --tag s9_moe_e8k2f50_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-s9-moe-e16k2f50",
+  "account": "a2",
+  "sprint": "S9",
+  "expected_min": 110,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 16 --moe_topk 2 --moe_frac 0.5 --seed 0 --tag s9_moe_e16k2f50_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 16 --moe_topk 2 --moe_frac 0.5 --seed 1 --tag s9_moe_e16k2f50_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-s9-moe-e8k1f25",
+  "account": "a3",
+  "sprint": "S9",
+  "expected_min": 110,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 1 --moe_frac 0.25 --seed 0 --tag s9_moe_e8k1f25_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 1 --moe_frac 0.25 --seed 1 --tag s9_moe_e8k1f25_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "c-s9-moe-e8k1f100",
+  "account": "a2",
+  "sprint": "S9",
+  "expected_min": 110,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 1 --moe_frac 1.0 --seed 0 --tag s9_moe_e8k1f100_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 95 --H 3 --N 16 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 1 --moe_frac 1.0 --seed 1 --tag s9_moe_e8k1f100_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "f-v21-h3-n16",
+  "account": "a1",
+  "sprint": "S4/5 val2021",
+  "expected_min": 140,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 3 --N 16 --precip_lin_w 1.0 --val_year 2021 --seed 0 --tag s45v21_h3_n16_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 3 --N 16 --precip_lin_w 1.0 --val_year 2021 --seed 1 --tag s45v21_h3_n16_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "f-v21-h14-n16",
+  "account": "a1",
+  "sprint": "S4/5 val2021",
+  "expected_min": 140,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 14 --N 16 --precip_lin_w 1.0 --val_year 2021 --seed 0 --tag s45v21_h14_n16_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 14 --N 16 --precip_lin_w 1.0 --val_year 2021 --seed 1 --tag s45v21_h14_n16_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "f-v21-h3-n20",
+  "account": "a3",
+  "sprint": "S4/5 val2021",
+  "expected_min": 140,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 3 --N 20 --precip_lin_w 1.0 --val_year 2021 --seed 0 --tag s45v21_h3_n20_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 3 --N 20 --precip_lin_w 1.0 --val_year 2021 --seed 1 --tag s45v21_h3_n20_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "f-v21-h3-n40",
+  "account": "a3",
+  "sprint": "S4/5 val2021",
+  "expected_min": 140,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 3 --N 40 --precip_lin_w 1.0 --val_year 2021 --seed 0 --tag s45v21_h3_n40_s0"
+   ],
+   [
+    "--mode det --size S --epochs 100 --patience 15 --time_budget_min 130 --H 3 --N 40 --precip_lin_w 1.0 --val_year 2021 --seed 1 --tag s45v21_h3_n40_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "planner": "phase_bc",
+  "needs": [
+   "a-s4-h1h3",
+   "a-s4-h14",
+   "a-s4h7-s5n24",
+   "a-s5-n32",
+   "a-s5-n40",
+   "a-lossvar",
+   "a2-s4-h5h10",
+   "a2-s5-n20n28"
+  ],
+  "planned": true
+ },
+ {
+  "planner": "phase_d",
+  "needs": [
+   "b-s6-diff"
+  ],
+  "planned": true
+ },
+ {
+  "name": "d-s7-p0",
+  "account": "a1",
+  "sprint": "S7",
+  "expected_min": 110,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-b-s9-S",
+   "sih26074-v3-b-s6-diff"
+  ],
+  "lanes": [
+   [
+    "@eval_diff --diff_ckpt **/s6_diff_s0/best.pt --det_ckpt **/s9_dense_S_s0/best.pt --study s7 --part 0 --nparts 4 --tag s7_p0"
+   ],
+   [
+    "@eval_diff --diff_ckpt **/s6_diff_s0/best.pt --det_ckpt **/s9_dense_S_s0/best.pt --study s7 --part 1 --nparts 4 --tag s7_p1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-det-a",
+  "account": "a2",
+  "sprint": "S10 det",
+  "expected_min": 100,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 75 --patience 15 --time_budget_min 120 --H 3 --N 40 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2018-2022 --seed 0 --tag s10_cf_f0_s0"
+   ],
+   [
+    "--mode det --size S --epochs 75 --patience 15 --time_budget_min 120 --H 3 --N 40 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2017,2021,2022 --seed 0 --tag s10_cf_f1_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-det-b",
+  "account": "a2",
+  "sprint": "S10 det",
+  "expected_min": 100,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 75 --patience 15 --time_budget_min 120 --H 3 --N 40 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2020 --seed 0 --tag s10_cf_f2_s0"
+   ],
+   [
+    "--mode det --size S --epochs 75 --patience 15 --time_budget_min 120 --H 3 --N 40 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2022 --seed 0 --tag s10_fin_det_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-oof",
+  "account": "a2",
+  "sprint": "S10 crossfit",
+  "expected_min": 20,
+  "needs": [
+   "s10-det-a",
+   "s10-det-b"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10-det-a",
+   "sih26074-v3-s10-det-b"
+  ],
+  "lanes": [
+   [
+    "@oof --mode oof --base **/s10_fin_det_s0/best.pt --folds **/s10_cf_f0_s0/best.pt=2015-2017 **/s10_cf_f1_s0/best.pt=2018-2020 **/s10_cf_f2_s0/best.pt=2021-2022 --tag oof"
+   ],
+   [
+    "@oof --mode insample --base **/s10_fin_det_s0/best.pt --tag ins"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-diff-a",
+  "account": "a2",
+  "sprint": "S10 diff",
+  "expected_min": 110,
+  "needs": [
+   "s10-oof"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 60 --patience 10 --time_budget_min 100 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/oof/ydet.npz --seed 0 --tag s10_diff_oof_S_s0"
+   ],
+   [
+    "--mode diff --size S --epochs 60 --patience 10 --time_budget_min 100 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/oof/ydet.npz --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --seed 0 --tag s10_diff_oof_MoE_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-diff-b",
+  "account": "a2",
+  "sprint": "S10 diff",
+  "expected_min": 110,
+  "needs": [
+   "s10-oof"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 60 --patience 10 --time_budget_min 100 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/ins/ydet.npz --seed 0 --tag s10_diff_ins_S_s0"
+   ],
+   [
+    "--mode diff --size S --epochs 60 --patience 10 --time_budget_min 100 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2021 --val_years 2022 --det_pred_file **/oof/ydet.npz --seed 0 --tag s10_diff_oof_S_cal_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-cal",
+  "account": "a2",
+  "sprint": "S10 calib",
+  "expected_min": 40,
+  "needs": [
+   "s10-diff-a",
+   "s10-diff-b"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10-oof",
+   "sih26074-v3-s10-diff-a",
+   "sih26074-v3-s10-diff-b"
+  ],
+  "lanes": [
+   [
+    "@calibrate --diff_ckpt **/s10_diff_oof_S_cal_s0/best.pt --det_pred_file **/oof/ydet.npz --fit_years 2022 --eval_years 2023 --apply_ckpt **/s10_diff_oof_S_s0/best.pt --tag cal_S"
+   ],
+   [
+    "@calibrate --diff_ckpt **/s10_diff_oof_S_cal_s0/best.pt --det_pred_file **/oof/ydet.npz --fit_years 2022 --eval_years 2023 --apply_ckpt **/s10_diff_oof_MoE_s0/best.pt --tag cal_MoE"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10r-det-a",
+  "account": "a3",
+  "sprint": "S10 det seed1",
+  "expected_min": 100,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 75 --patience 15 --time_budget_min 120 --H 3 --N 40 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2018-2022 --seed 1 --tag s10_cf_f0_s1"
+   ],
+   [
+    "--mode det --size S --epochs 75 --patience 15 --time_budget_min 120 --H 3 --N 40 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2017,2021,2022 --seed 1 --tag s10_cf_f1_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10r-det-b",
+  "account": "a3",
+  "sprint": "S10 det seed1",
+  "expected_min": 100,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 75 --patience 15 --time_budget_min 120 --H 3 --N 40 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2020 --seed 1 --tag s10_cf_f2_s1"
+   ],
+   [
+    "--mode det --size S --epochs 75 --patience 15 --time_budget_min 120 --H 3 --N 40 --precip_lin_w 1.0 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2022 --seed 1 --tag s10_fin_det_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10r-oof",
+  "account": "a3",
+  "sprint": "S10 crossfit seed1",
+  "expected_min": 20,
+  "needs": [
+   "s10r-det-a",
+   "s10r-det-b"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10r-det-a",
+   "sih26074-v3-s10r-det-b"
+  ],
+  "lanes": [
+   [
+    "@oof --mode oof --base **/s10_fin_det_s1/best.pt --folds **/s10_cf_f0_s1/best.pt=2015-2017 **/s10_cf_f1_s1/best.pt=2018-2020 **/s10_cf_f2_s1/best.pt=2021-2022 --tag oof"
+   ],
+   [
+    "@oof --mode insample --base **/s10_fin_det_s1/best.pt --tag ins"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10r-diff",
+  "account": "a3",
+  "sprint": "S10 diff seed1",
+  "expected_min": 110,
+  "needs": [
+   "s10r-oof"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10r-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 60 --patience 10 --time_budget_min 100 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/oof/ydet.npz --seed 1 --tag s10_diff_oof_S_s1"
+   ],
+   [
+    "--mode diff --size S --epochs 60 --patience 10 --time_budget_min 100 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/ins/ydet.npz --seed 1 --tag s10_diff_ins_S_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10v-a",
+  "account": "a1",
+  "sprint": "S10 recipe",
+  "expected_min": 95,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --patience 15 --time_budget_min 120 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2022 --seed 0 --epochs 50 --precip_lin_w 1.0 --tag s10v_e50_lin_s0"
+   ],
+   [
+    "--mode det --size S --patience 15 --time_budget_min 120 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2022 --seed 0 --epochs 75 --tag s10v_e75_nolin_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10v-b",
+  "account": "a1",
+  "sprint": "S10 recipe",
+  "expected_min": 65,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --patience 15 --time_budget_min 120 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2022 --seed 0 --epochs 50 --tag s10v_e50_nolin_s0"
+   ]
+  ],
+  "retries": 0,
+  "state": "done"
+ },
+ {
+  "name": "s10f-det-a",
+  "account": "a1",
+  "sprint": "S10 final recipe",
+  "expected_min": 65,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2018-2022 --seed 0 --tag s10f_cf_f0_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2017,2021,2022 --seed 0 --tag s10f_cf_f1_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10f-det-b",
+  "account": "a1",
+  "sprint": "S10 final recipe",
+  "expected_min": 65,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2020 --seed 0 --tag s10f_cf_f2_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2022 --seed 0 --tag s10f_fin_det_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10f-oof",
+  "account": "a1",
+  "sprint": "S10 final recipe",
+  "expected_min": 20,
+  "needs": [
+   "s10f-det-a",
+   "s10f-det-b"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10f-det-a",
+   "sih26074-v3-s10f-det-b"
+  ],
+  "lanes": [
+   [
+    "@oof --mode oof --base **/s10f_fin_det_s0/best.pt --folds **/s10f_cf_f0_s0/best.pt=2015-2017 **/s10f_cf_f1_s0/best.pt=2018-2020 **/s10f_cf_f2_s0/best.pt=2021-2022 --tag oof"
+   ],
+   [
+    "@oof --mode insample --base **/s10f_fin_det_s0/best.pt --tag ins"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10f-diff",
+  "account": "a1",
+  "sprint": "S10 final recipe",
+  "expected_min": 100,
+  "needs": [
+   "s10f-oof"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10f-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 120 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/oof/ydet.npz --seed 0 --tag s10f_diff_oof_S_s0"
+   ],
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 120 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/ins/ydet.npz --seed 0 --tag s10f_diff_ins_S_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10s1-det-a",
+  "account": "a2",
+  "sprint": "S10 seed",
+  "expected_min": 65,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2018-2022 --seed 1 --tag s10f_cf_f0_s1"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2017,2021,2022 --seed 1 --tag s10f_cf_f1_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10s1-det-b",
+  "account": "a2",
+  "sprint": "S10 seed",
+  "expected_min": 65,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2020 --seed 1 --tag s10f_cf_f2_s1"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2022 --seed 1 --tag s10f_fin_det_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10s1-oof",
+  "account": "a2",
+  "sprint": "S10 seed",
+  "expected_min": 20,
+  "needs": [
+   "s10s1-det-a",
+   "s10s1-det-b"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10s1-det-a",
+   "sih26074-v3-s10s1-det-b"
+  ],
+  "lanes": [
+   [
+    "@oof --mode oof --base **/s10f_fin_det_s1/best.pt --folds **/s10f_cf_f0_s1/best.pt=2015-2017 **/s10f_cf_f1_s1/best.pt=2018-2020 **/s10f_cf_f2_s1/best.pt=2021-2022 --tag oof"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10s1-diff",
+  "account": "a2",
+  "sprint": "S10 seed",
+  "expected_min": 100,
+  "needs": [
+   "s10s1-oof"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10s1-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 120 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/oof/ydet.npz --seed 1 --tag s10f_diff_oof_S_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10s2-det-a",
+  "account": "a3",
+  "sprint": "S10 seed",
+  "expected_min": 65,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2018-2022 --seed 2 --tag s10f_cf_f0_s2"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2017,2021,2022 --seed 2 --tag s10f_cf_f1_s2"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10s2-det-b",
+  "account": "a3",
+  "sprint": "S10 seed",
+  "expected_min": 65,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2020 --seed 2 --tag s10f_cf_f2_s2"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2022 --seed 2 --tag s10f_fin_det_s2"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10s2-oof",
+  "account": "a3",
+  "sprint": "S10 seed",
+  "expected_min": 20,
+  "needs": [
+   "s10s2-det-a",
+   "s10s2-det-b"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10s2-det-a",
+   "sih26074-v3-s10s2-det-b"
+  ],
+  "lanes": [
+   [
+    "@oof --mode oof --base **/s10f_fin_det_s2/best.pt --folds **/s10f_cf_f0_s2/best.pt=2015-2017 **/s10f_cf_f1_s2/best.pt=2018-2020 **/s10f_cf_f2_s2/best.pt=2021-2022 --tag oof"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10s2-diff",
+  "account": "a3",
+  "sprint": "S10 seed",
+  "expected_min": 100,
+  "needs": [
+   "s10s2-oof"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10s2-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 120 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/oof/ydet.npz --seed 2 --tag s10f_diff_oof_S_s2"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-calmodel",
+  "account": "a1",
+  "sprint": "S10 calib",
+  "expected_min": 100,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-s10f-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 120 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2021 --val_years 2022 --det_pred_file **/oof/ydet.npz --seed 0 --tag s10f_diff_oof_S_cal_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10s0-oofm",
+  "account": "a1",
+  "sprint": "S10 seed",
+  "expected_min": 15,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-s10f-det-a",
+   "sih26074-v3-s10f-det-b"
+  ],
+  "lanes": [
+   [
+    "@oof --mode oof --base **/s10f_fin_det_s0/best.pt --folds **/s10f_cf_f0_s0/best.pt=2015-2017 **/s10f_cf_f1_s0/best.pt=2018-2020 **/s10f_cf_f2_s0/best.pt=2021-2022 --tag oofm"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10cap-SM",
+  "account": "a4",
+  "sprint": "S10 capacity",
+  "expected_min": 90,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --train_years 2015-2022 --seed 0 --tag s10cap_S_s0"
+   ],
+   [
+    "--mode det --size M --epochs 50 --patience 15 --time_budget_min 110 --H 3 --N 40 --train_years 2015-2022 --seed 0 --tag s10cap_M_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10cap-L",
+  "account": "a4",
+  "sprint": "S10 capacity",
+  "expected_min": 130,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size L --epochs 50 --patience 15 --time_budget_min 150 --H 3 --N 40 --train_years 2015-2022 --seed 0 --tag s10cap_L_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-calfit",
+  "account": "a1",
+  "sprint": "S10 calib",
+  "expected_min": 40,
+  "needs": [
+   "s10-calmodel",
+   "s10f-diff"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10f-oof",
+   "sih26074-v3-s10-calmodel",
+   "sih26074-v3-s10f-diff"
+  ],
+  "lanes": [
+   [
+    "@calibrate --diff_ckpt **/s10f_diff_oof_S_cal_s0/best.pt --det_pred_file **/oof/ydet.npz --fit_years 2022 --eval_years 2023 --apply_ckpt **/s10f_diff_oof_S_s0/best.pt --tag calf"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-modes",
+  "account": "a1",
+  "sprint": "S10 modes",
+  "expected_min": 60,
+  "needs": [
+   "s10-calfit"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10f-det-b",
+   "sih26074-v3-s10f-oof",
+   "sih26074-v3-s10f-diff",
+   "sih26074-v3-s10-calfit"
+  ],
+  "lanes": [
+   [
+    "@modes --det_ckpt **/s10f_fin_det_s0/best.pt --diff_ckpt **/s10f_diff_oof_S_s0/best.pt --oof_file **/oof/ydet.npz --alpha_file **/calf/calibration.json --steps 8 16 24 32 --members 4 8 --with_fast --tag modes_a"
+   ],
+   [
+    "@modes --det_ckpt **/s10f_fin_det_s0/best.pt --diff_ckpt **/s10f_diff_oof_S_s0/best.pt --oof_file **/oof/ydet.npz --alpha_file **/calf/calibration.json --steps 8 16 24 32 --members 16 --tag modes_b"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10cap2-SL",
+  "account": "a4",
+  "sprint": "S10 capacity seeds",
+  "expected_min": 125,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --train_years 2015-2022 --seed 1 --tag s10cap_S_s1",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --train_years 2015-2022 --seed 2 --tag s10cap_S_s2"
+   ],
+   [
+    "--mode det --size L --epochs 50 --patience 15 --time_budget_min 150 --H 3 --N 40 --train_years 2015-2022 --seed 1 --tag s10cap_L_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10cap2-ML",
+  "account": "a4",
+  "sprint": "S10 capacity seeds",
+  "expected_min": 160,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size M --epochs 50 --patience 15 --time_budget_min 110 --H 3 --N 40 --train_years 2015-2022 --seed 1 --tag s10cap_M_s1",
+    "--mode det --size M --epochs 50 --patience 15 --time_budget_min 110 --H 3 --N 40 --train_years 2015-2022 --seed 2 --tag s10cap_M_s2"
+   ],
+   [
+    "--mode det --size L --epochs 50 --patience 15 --time_budget_min 150 --H 3 --N 40 --train_years 2015-2022 --seed 2 --tag s10cap_L_s2"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10dcap-s1",
+  "account": "a2",
+  "sprint": "S10 denoiser capacity",
+  "expected_min": 200,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-s10s1-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size M --epochs 80 --patience 10 --time_budget_min 180 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/oof/ydet.npz --seed 1 --tag s10dcap_M_s1"
+   ],
+   [
+    "--mode diff --size L --epochs 80 --patience 10 --time_budget_min 260 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/oof/ydet.npz --seed 1 --tag s10dcap_L_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10dcap-s2",
+  "account": "a3",
+  "sprint": "S10 denoiser capacity",
+  "expected_min": 200,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-s10s2-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size M --epochs 80 --patience 10 --time_budget_min 180 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/oof/ydet.npz --seed 2 --tag s10dcap_M_s2"
+   ],
+   [
+    "--mode diff --size L --epochs 80 --patience 10 --time_budget_min 260 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/oof/ydet.npz --seed 2 --tag s10dcap_L_s2"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10dcap-val",
+  "account": "a2",
+  "sprint": "S10 denoiser capacity (selection)",
+  "expected_min": 200,
+  "needs": [
+   "s10s1-diff"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s10s1-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 120 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2021 --val_years 2022 --det_pred_file **/oof/ydet.npz --seed 1 --tag s10dcap_S_val_s1",
+    "--mode diff --size M --epochs 80 --patience 10 --time_budget_min 180 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2021 --val_years 2022 --det_pred_file **/oof/ydet.npz --seed 1 --tag s10dcap_M_val_s1"
+   ],
+   [
+    "--mode diff --size L --epochs 80 --patience 10 --time_budget_min 260 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2021 --val_years 2022 --det_pred_file **/oof/ydet.npz --seed 1 --tag s10dcap_L_val_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-steps22",
+  "account": "a1",
+  "sprint": "S10 modes (2022 selection)",
+  "expected_min": 30,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-s10f-det-b",
+   "sih26074-v3-s10f-oof",
+   "sih26074-v3-s10-calmodel",
+   "sih26074-v3-s10-calfit"
+  ],
+  "lanes": [
+   [
+    "@modes --det_ckpt **/s10f_cf_f2_s0/best.pt --diff_ckpt **/s10f_diff_oof_S_cal_s0/best.pt --oof_file **/oof/ydet.npz --alpha_file **/calf/calibration.json --members 8 --eval_year 2022 --steps 8 16 --tag steps22_a"
+   ],
+   [
+    "@modes --det_ckpt **/s10f_cf_f2_s0/best.pt --diff_ckpt **/s10f_diff_oof_S_cal_s0/best.pt --oof_file **/oof/ydet.npz --alpha_file **/calf/calibration.json --members 8 --eval_year 2022 --steps 24 32 --tag steps22_b"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10-bench",
+  "account": "a1",
+  "sprint": "S10 latency",
+  "expected_min": 10,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-s10f-det-b",
+   "sih26074-v3-s10f-diff"
+  ],
+  "lanes": [
+   [
+    "@bench --det_ckpt **/s10f_fin_det_s0/best.pt --diff_ckpt **/s10f_diff_oof_S_s0/best.pt --tag bench"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s10dcap-s0",
+  "account": "a4",
+  "sprint": "S10 denoiser capacity (shippable seed 0)",
+  "expected_min": 200,
+  "needs": [],
+  "kernel_sources": [
+   "dataset:sih26074-v3-oof-s0"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size M --epochs 80 --patience 10 --time_budget_min 180 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/sih26074-v3-oof-s0/ydet.npz --seed 0 --tag s10dcap_M_s0"
+   ],
+   [
+    "--mode diff --size L --epochs 80 --patience 10 --time_budget_min 260 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --train_years 2015-2022 --det_pred_file **/sih26074-v3-oof-s0/ydet.npz --seed 0 --tag s10dcap_L_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s11-a",
+  "account": "a4",
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 0 --tag s11_h3_obs_s0",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 0 --fc_history --tag s11_h3_fc_s0",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 5 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 0 --tag s11_h5_obs_s0",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 5 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 0 --fc_history --tag s11_h5_fc_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 1 --tag s11_h3_obs_s1",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 1 --fc_history --tag s11_h3_fc_s1",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 5 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 1 --tag s11_h5_obs_s1",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 5 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 1 --fc_history --tag s11_h5_fc_s1"
+   ]
+  ],
+  "sprint": "S11 history x forecast-history",
+  "expected_min": 210,
+  "needs": [],
+  "state": "done"
+ },
+ {
+  "name": "s11-b",
+  "account": "a4",
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 2 --tag s11_h3_obs_s2",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 3 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 2 --fc_history --tag s11_h3_fc_s2",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 7 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 0 --tag s11_h7_obs_s0",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 7 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 0 --fc_history --tag s11_h7_fc_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 7 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 1 --tag s11_h7_obs_s1",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 7 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 1 --fc_history --tag s11_h7_fc_s1",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 7 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 2 --tag s11_h7_obs_s2",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 7 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 2 --fc_history --tag s11_h7_fc_s2"
+   ]
+  ],
+  "sprint": "S11 history x forecast-history",
+  "expected_min": 210,
+  "needs": [],
+  "state": "done"
+ },
+ {
+  "name": "s11-c",
+  "account": "a3",
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 5 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 2 --tag s11_h5_obs_s2",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 5 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 2 --fc_history --tag s11_h5_fc_s2",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 10 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 0 --tag s11_h10_obs_s0",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 10 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 0 --fc_history --tag s11_h10_fc_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 10 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 1 --tag s11_h10_obs_s1",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 10 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 1 --fc_history --tag s11_h10_fc_s1",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 10 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 2 --tag s11_h10_obs_s2",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 10 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 2 --fc_history --tag s11_h10_fc_s2"
+   ]
+  ],
+  "sprint": "S11 history x forecast-history",
+  "expected_min": 210,
+  "needs": [],
+  "state": "done"
+ },
+ {
+  "name": "s11-d",
+  "account": "a3",
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 14 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 0 --tag s11_h14_obs_s0",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 14 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 0 --fc_history --tag s11_h14_fc_s0",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 14 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 2 --tag s11_h14_obs_s2"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 14 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 1 --tag s11_h14_obs_s1",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 14 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 1 --fc_history --tag s11_h14_fc_s1",
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --H 14 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --train_years 2015-2021 --val_years 2022 --seed 2 --fc_history --tag s11_h14_fc_s2"
+   ]
+  ],
+  "sprint": "S11 history x forecast-history",
+  "expected_min": 165,
+  "state": "done"
+ },
+ {
+  "name": "s11-post",
+  "account": "a1",
+  "sprint": "S11 post-training",
+  "expected_min": 60,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-s10f-oof",
+   "sih26074-v3-s10-calmodel",
+   "sih26074-v3-s10-calfit",
+   "sih26074-v3-s10f-diff",
+   "dataset:sih26074-v3-oof-s12"
+  ],
+  "lanes": [
+   [
+    "@post --det_files **/oof/ydet.npz **/oof_s1.npz **/oof_s2.npz --diff_ckpt **/s10f_diff_oof_S_cal_s0/best.pt --alpha_file **/calf/calibration.json --eval_year 2022 --steps 24 --members 16 --tag post22"
+   ],
+   [
+    "@post --det_files **/oof/ydet.npz **/oof_s1.npz **/oof_s2.npz --diff_ckpt **/s10f_diff_oof_S_s0/best.pt --alpha_file **/calf/calibration.json --eval_year 2023 --steps 24 --members 16 --tag post23"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s11-davg",
+  "account": "a1",
+  "sprint": "S11 denoiser on 3-seed averaged backbone",
+  "expected_min": 100,
+  "needs": [],
+  "kernel_sources": [
+   "dataset:sih26074-v3-oof-avg3"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 120 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --det_pred_file **/oof_avg3.npz --seed 0 --train_years 2015-2021 --val_years 2022 --tag s11_diff_avg3_cal_s0"
+   ],
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 120 --H 3 --N 40 --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --det_pred_file **/oof_avg3.npz --seed 0 --train_years 2015-2022 --tag s11_diff_avg3_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s11-post2",
+  "account": "a1",
+  "sprint": "S11 post-training (tail cap)",
+  "expected_min": 30,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-s10f-oof",
+   "sih26074-v3-s10-calmodel",
+   "sih26074-v3-s10-calfit",
+   "sih26074-v3-s10f-diff",
+   "dataset:sih26074-v3-oof-s12"
+  ],
+  "lanes": [
+   [
+    "@post --det_files **/oof/ydet.npz **/oof_s1.npz **/oof_s2.npz --diff_ckpt **/s10f_diff_oof_S_cal_s0/best.pt --alpha_file **/calf/calibration.json --eval_year 2022 --steps 24 --members 16 --backbones single --tag post22b"
+   ],
+   [
+    "@post --det_files **/oof/ydet.npz **/oof_s1.npz **/oof_s2.npz --diff_ckpt **/s10f_diff_oof_S_s0/best.pt --alpha_file **/calf/calibration.json --eval_year 2023 --steps 24 --members 16 --backbones single --tag post23b"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s12s0-det-a",
+  "account": "a2",
+  "expected_min": 65,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2018-2022 --seed 0 --tag s12_cf_f0_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2015-2017,2021,2022 --seed 0 --tag s12_cf_f1_s0"
+   ]
+  ],
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "state": "done"
+ },
+ {
+  "name": "s12s0-det-b",
+  "account": "a2",
+  "expected_min": 70,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2015-2020 --seed 0 --tag s12_cf_f2_s0"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2015-2022 --seed 0 --tag s12_fin_det_s0"
+   ]
+  ],
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "state": "done"
+ },
+ {
+  "name": "s12s0-oof",
+  "account": "a2",
+  "expected_min": 15,
+  "needs": [
+   "s12s0-det-a",
+   "s12s0-det-b"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s12s0-det-a",
+   "sih26074-v3-s12s0-det-b"
+  ],
+  "lanes": [
+   [
+    "@oof --mode oof --base **/s12_fin_det_s0/best.pt --folds **/s12_cf_f0_s0/best.pt=2015-2017 **/s12_cf_f1_s0/best.pt=2018-2020 **/s12_cf_f2_s0/best.pt=2021-2022 --tag oof"
+   ]
+  ],
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "state": "done"
+ },
+ {
+  "name": "s12s1-det-a",
+  "account": "a3",
+  "expected_min": 65,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2018-2022 --seed 1 --tag s12_cf_f0_s1"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2015-2017,2021,2022 --seed 1 --tag s12_cf_f1_s1"
+   ]
+  ],
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "state": "done"
+ },
+ {
+  "name": "s12s1-det-b",
+  "account": "a3",
+  "expected_min": 70,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2015-2020 --seed 1 --tag s12_cf_f2_s1"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2015-2022 --seed 1 --tag s12_fin_det_s1"
+   ]
+  ],
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "state": "done"
+ },
+ {
+  "name": "s12s1-oof",
+  "account": "a3",
+  "expected_min": 15,
+  "needs": [
+   "s12s1-det-a",
+   "s12s1-det-b"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s12s1-det-a",
+   "sih26074-v3-s12s1-det-b"
+  ],
+  "lanes": [
+   [
+    "@oof --mode oof --base **/s12_fin_det_s1/best.pt --folds **/s12_cf_f0_s1/best.pt=2015-2017 **/s12_cf_f1_s1/best.pt=2018-2020 **/s12_cf_f2_s1/best.pt=2021-2022 --tag oof"
+   ]
+  ],
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "state": "done"
+ },
+ {
+  "name": "s12s2-det-a",
+  "account": "a4",
+  "expected_min": 65,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2018-2022 --seed 2 --tag s12_cf_f0_s2"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2015-2017,2021,2022 --seed 2 --tag s12_cf_f1_s2"
+   ]
+  ],
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "state": "done"
+ },
+ {
+  "name": "s12s2-det-b",
+  "account": "a4",
+  "expected_min": 70,
+  "needs": [],
+  "lanes": [
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2015-2020 --seed 2 --tag s12_cf_f2_s2"
+   ],
+   [
+    "--mode det --size S --epochs 50 --patience 15 --time_budget_min 90 --N 40 --moe_experts 8 --moe_topk 2 --moe_frac 0.5 --H 5 --fc_history --train_years 2015-2022 --seed 2 --tag s12_fin_det_s2"
+   ]
+  ],
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "state": "done"
+ },
+ {
+  "name": "s12s2-oof",
+  "account": "a4",
+  "expected_min": 15,
+  "needs": [
+   "s12s2-det-a",
+   "s12s2-det-b"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s12s2-det-a",
+   "sih26074-v3-s12s2-det-b"
+  ],
+  "lanes": [
+   [
+    "@oof --mode oof --base **/s12_fin_det_s2/best.pt --folds **/s12_cf_f0_s2/best.pt=2015-2017 **/s12_cf_f1_s2/best.pt=2018-2020 **/s12_cf_f2_s2/best.pt=2021-2022 --tag oof"
+   ]
+  ],
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "state": "done"
+ },
+ {
+  "name": "s12s0-diff",
+  "account": "a2",
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "expected_min": 100,
+  "needs": [
+   "s12s0-oof"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s12s0-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 140 --H 5 --N 40 --fc_history --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --det_pred_file **/oof/ydet.npz --seed 0 --train_years 2015-2022 --tag s12_diff_s0"
+   ],
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 140 --H 5 --N 40 --fc_history --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --det_pred_file **/oof/ydet.npz --seed 0 --train_years 2015-2021 --val_years 2022 --tag s12_diff_cal_s0"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s12s1-diff",
+  "account": "a3",
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "expected_min": 100,
+  "needs": [
+   "s12s1-oof"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s12s1-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 140 --H 5 --N 40 --fc_history --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --det_pred_file **/oof/ydet.npz --seed 1 --train_years 2015-2022 --tag s12_diff_s1"
+   ],
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 140 --H 5 --N 40 --fc_history --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --det_pred_file **/oof/ydet.npz --seed 1 --train_years 2015-2021 --val_years 2022 --tag s12_diff_cal_s1"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s12s2-diff",
+  "account": "a4",
+  "sprint": "s12 pipeline (--H 5 --fc_history)",
+  "expected_min": 100,
+  "needs": [
+   "s12s2-oof"
+  ],
+  "kernel_sources": [
+   "sih26074-v3-s12s2-oof"
+  ],
+  "lanes": [
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 140 --H 5 --N 40 --fc_history --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --det_pred_file **/oof/ydet.npz --seed 2 --train_years 2015-2022 --tag s12_diff_s2"
+   ],
+   [
+    "--mode diff --size S --epochs 80 --patience 10 --time_budget_min 140 --H 5 --N 40 --fc_history --eval_sampler dpmpp2m --eval_steps 24 --eval_members 8 --det_pred_file **/oof/ydet.npz --seed 2 --train_years 2015-2021 --val_years 2022 --tag s12_diff_cal_s2"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "s11-post3",
+  "account": "a1",
+  "sprint": "S11 post-training (revised tail cap)",
+  "expected_min": 30,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-s10f-oof",
+   "sih26074-v3-s10-calmodel",
+   "sih26074-v3-s10-calfit",
+   "sih26074-v3-s10f-diff",
+   "dataset:sih26074-v3-oof-s12"
+  ],
+  "lanes": [
+   [
+    "@post --det_files **/oof/ydet.npz **/oof_s1.npz **/oof_s2.npz --diff_ckpt **/s10f_diff_oof_S_cal_s0/best.pt --alpha_file **/calf/calibration.json --eval_year 2022 --steps 24 --members 16 --backbones single --tag post22c"
+   ],
+   [
+    "@post --det_files **/oof/ydet.npz **/oof_s1.npz **/oof_s2.npz --diff_ckpt **/s10f_diff_oof_S_s0/best.pt --alpha_file **/calf/calibration.json --eval_year 2023 --steps 24 --members 16 --backbones single --tag post23c"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "demo-pre23",
+  "account": "a1",
+  "sprint": "demo precompute",
+  "expected_min": 40,
+  "needs": [],
+  "kernel_sources": [
+   "dataset:sih26074-v3-bundle"
+  ],
+  "lanes": [
+   [
+    "@precompute --bundle_glob **/modes.yaml --gp_cells **/gp_cells.json --year 2023 --bs 4 --modes FAST BALANCED --with_obs --tag demo23_a"
+   ],
+   [
+    "@precompute --bundle_glob **/modes.yaml --gp_cells **/gp_cells.json --year 2023 --bs 4 --modes ACCURATE ENSEMBLE --tag demo23_b"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "d-s7-p2",
+  "account": "a1",
+  "sprint": "S7",
+  "expected_min": 110,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-b-s9-S",
+   "sih26074-v3-b-s6-diff"
+  ],
+  "lanes": [
+   [
+    "@eval_diff --diff_ckpt **/s6_diff_s0/best.pt --det_ckpt **/s9_dense_S_s0/best.pt --study s7 --part 2 --nparts 4 --tag s7_p2"
+   ],
+   [
+    "@eval_diff --diff_ckpt **/s6_diff_s0/best.pt --det_ckpt **/s9_dense_S_s0/best.pt --study s7 --part 3 --nparts 4 --tag s7_p3"
+   ]
+  ],
+  "state": "done"
+ },
+ {
+  "name": "d-s8-p0",
+  "account": "a1",
+  "sprint": "S8",
+  "expected_min": 110,
+  "needs": [],
+  "kernel_sources": [
+   "sih26074-v3-b-s9-S",
+   "sih26074-v3-b-s6-diff"
+  ],
+  "lanes": [
+   [
+    "@eval_diff --diff_ckpt **/s6_diff_s0/best.pt --det_ckpt **/s9_dense_S_s0/best.pt --study s8 --part 0 --nparts 2 --tag s8_p0"
+   ],
+   [
+    "@eval_diff --diff_ckpt **/s6_diff_s0/best.pt --det_ckpt **/s9_dense_S_s0/best.pt --study s8 --part 1 --nparts 2 --tag s8_p1"
+   ]
+  ],
+  "state": "done"
+ }
+]

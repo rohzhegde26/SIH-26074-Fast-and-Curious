@@ -1,0 +1,8 @@
+FAST 3-file average + rain QM  2015: CSS 0.3132 bias 1.03 csi30 0.217 Tmax MAE 0.899
+FAST 3-file average + rain QM  2016: CSS 0.2927 bias 1.06 csi30 0.240 Tmax MAE 0.860
+FAST 3-file average + rain QM  2017: CSS 0.2782 bias 1.05 csi30 0.174 Tmax MAE 0.975
+FAST 3-file average + rain QM  2018: CSS 0.2384 bias 1.09 csi30 0.235 Tmax MAE 0.856
+FAST 3-file average + rain QM  2019: CSS 0.2758 bias 0.93 csi30 0.204 Tmax MAE 0.918
+FAST 3-file average + rain QM  2020: CSS 0.2637 bias 1.17 csi30 0.259 Tmax MAE 0.906
+FAST 3-file average + rain QM  2021: CSS 0.2713 bias 1.05 csi30 0.220 Tmax MAE 0.901
+FAST 3-file average + rain QM  2022: CSS 0.2808 bias 0.77 csi30 0.285 Tmax MAE 0.951

@@ -1,0 +1,55 @@
+stage,model,size,seed,params_total_M,params_active_M,steps,members,calibration,css,precip_crps,precip_ssr,precip_cov90,brier30,precip_bias_ratio,precip_csi30,precip_fss15,tmax_mae,tmax_crps,rh_mae,wind_vec_rmse,latency_s_one_forecast,peak_vram_gb,train_min
+deterministic,dense,S,0,17.72,17.72,0,1,,0.2443,,,,,0.6839,0.1973,0.4791,1.099,,3.3708,0.6354,,,52.4
+deterministic,dense,S,1,17.72,17.72,0,1,,0.231,,,,,0.6082,0.1817,0.4706,1.0995,,3.4169,0.6501,,,51.4
+deterministic,dense,S,2,17.72,17.72,0,1,,0.2374,,,,,0.6391,0.1954,0.488,1.1185,,3.4998,0.6531,,,51.4
+deterministic,dense,M,0,34.22,34.22,0,1,,0.2355,,,,,0.636,0.1918,0.4674,1.0954,,3.4428,0.6497,,,77.1
+deterministic,dense,M,1,34.22,34.22,0,1,,0.2218,,,,,0.6017,0.1777,0.4572,1.1378,,3.481,0.6511,,,74.7
+deterministic,dense,M,2,34.22,34.22,0,1,,0.2307,,,,,0.6682,0.1806,0.4778,1.1485,,3.5064,0.6486,,,74.6
+deterministic,dense,L,0,58.68,58.68,0,1,,0.2389,,,,,0.6388,0.1948,0.5009,1.1362,,3.4366,0.6388,,,115.6
+deterministic,dense,L,1,58.68,58.68,0,1,,0.2341,,,,,0.6075,0.1808,0.4884,1.1097,,3.4512,0.6543,,,112.3
+deterministic,dense,L,2,58.68,58.68,0,1,,0.2371,,,,,0.6225,0.18,0.4698,1.1199,,3.3914,0.6454,,,105.8
+deterministic,MoE E8 top-2 50%,S,0,28.77,19.31,0,1,,0.2361,,,,,0.6564,0.1928,0.4882,1.1289,,3.4785,0.645,,,56.3
+deterministic,MoE E8 top-2 50%,S,1,28.77,19.31,0,1,,0.2205,,,,,0.6003,0.1692,0.4688,1.143,,3.4865,0.6541,,,53.0
+deterministic,MoE E8 top-2 50%,S,2,28.77,19.31,0,1,,0.2484,,,,,0.6791,0.2105,0.5257,1.1393,,3.5045,0.6484,,,54.6
+diffusion denoiser,cross-fitted residual diffusion,S,0,17.77,17.77,24,8,raw,0.2814,4.431,1.1076,0.4827,0.0389,0.9125,0.1925,0.5654,1.0719,0.8008,3.3085,0.6011,,,75.0
+diffusion denoiser,cross-fitted residual diffusion,S,1,17.77,17.77,24,8,raw,0.2448,4.5021,0.8498,0.4951,0.0392,0.7156,0.1303,0.5164,1.0898,0.8099,3.3555,0.6051,,,81.1
+diffusion denoiser,cross-fitted residual diffusion,S,2,17.77,17.77,24,8,raw,0.2642,4.4583,1.0231,0.4291,0.0385,0.8086,0.1582,0.5675,1.0948,0.8106,3.2698,0.6072,,,77.0
+diffusion denoiser,cross-fitted residual diffusion,M,0,34.28,34.28,24,8,raw,0.2683,4.5057,0.6219,0.4449,0.0381,0.7239,0.1681,0.5509,1.0603,0.7974,3.2296,0.5984,,,118.7
+diffusion denoiser,cross-fitted residual diffusion,M,1,34.28,34.28,24,8,raw,0.241,4.566,0.6666,0.4759,0.0394,0.6817,0.1164,0.5056,1.0929,0.8136,3.3139,0.5929,,,123.4
+diffusion denoiser,cross-fitted residual diffusion,M,2,34.28,34.28,24,8,raw,0.2618,4.5446,0.6012,0.4647,0.0384,0.7525,0.1468,0.5552,1.0866,0.8089,3.3079,0.6059,,,123.9
+diffusion denoiser,cross-fitted residual diffusion,L,0,58.75,58.75,24,8,raw,0.2632,4.5488,0.5646,0.4144,0.0381,0.6897,0.1542,0.5457,1.0524,0.7933,3.24,0.598,,,169.1
+diffusion denoiser,cross-fitted residual diffusion,L,1,58.75,58.75,24,8,raw,0.2484,4.5909,0.5941,0.4776,0.0392,0.7192,0.1193,0.5215,1.0868,0.8165,3.3329,0.5882,,,178.5
+diffusion denoiser,cross-fitted residual diffusion,L,2,58.75,58.75,24,8,raw,0.2592,4.5564,0.5697,0.4646,0.0384,0.7178,0.1391,0.5465,1.0711,0.8025,3.2732,0.6017,,,178.0
+operating point (shipped seed 0),FAST raw,S,0,,,0,1,raw,0.2361,,,,,0.6564,0.1928,0.4882,1.1289,,3.4785,0.645,0.061,,
+operating point (shipped seed 0),FAST + rain QM (multi-season OOF fit),S,0,,,0,1,rain QM,0.2435,,,,,1.0888,0.2046,0.4975,1.1289,,3.4785,0.645,0.061,,
+operating point (shipped seed 0),diffusion K=4 S=8 raw,S,0,,,8,4,raw,0.2351,4.7613,0.6877,0.141,0.0416,0.6135,0.1154,0.4956,1.0771,0.8516,3.2714,0.6032,0.829,0.57,
+operating point (shipped seed 0),diffusion K=4 S=8 spread-calibrated,S,0,,,8,4,spread-calibrated,0.2351,4.5384,0.7722,0.5126,0.0411,0.6135,0.1154,0.4956,1.0771,0.7711,3.2714,0.6032,0.829,0.57,
+operating point (shipped seed 0),diffusion K=4 S=16 raw,S,0,,,16,4,raw,0.263,4.4471,0.994,0.2158,0.0418,0.8146,0.1757,0.557,1.0862,0.8193,3.3309,0.6088,1.722,0.57,
+operating point (shipped seed 0),diffusion K=4 S=16 spread-calibrated,S,0,,,16,4,spread-calibrated,0.263,4.249,1.1027,0.6045,0.0412,0.8146,0.1757,0.557,1.0861,0.734,3.3309,0.6088,1.722,0.57,
+operating point (shipped seed 0),diffusion K=4 S=24 raw,S,0,,,24,4,raw,0.2672,4.4152,1.1046,0.2544,0.0428,0.9097,0.1814,0.555,1.0935,0.8069,3.347,0.6186,2.598,0.57,
+operating point (shipped seed 0),diffusion K=4 S=24 spread-calibrated,S,0,,,24,4,spread-calibrated,0.2672,4.2218,1.226,0.6319,0.0422,0.9097,0.1814,0.555,1.0934,0.7212,3.347,0.6186,2.598,0.57,
+operating point (shipped seed 0),diffusion K=4 S=32 raw,S,0,,,32,4,raw,0.2684,4.3998,1.1382,0.2782,0.0432,0.9617,0.1831,0.5558,1.0983,0.7943,3.3468,0.6229,3.447,0.57,
+operating point (shipped seed 0),diffusion K=4 S=32 spread-calibrated,S,0,,,32,4,spread-calibrated,0.2684,4.2068,1.2559,0.6478,0.0426,0.9617,0.1831,0.5558,1.0983,0.7078,3.3468,0.6229,3.447,0.57,
+operating point (shipped seed 0),diffusion K=8 S=8 raw,S,0,,,8,8,raw,0.241,4.7427,0.6713,0.2873,0.0393,0.6078,0.1136,0.4979,1.063,0.8479,3.2406,0.5921,1.755,0.61,
+operating point (shipped seed 0),diffusion K=8 S=8 spread-calibrated,S,0,,,8,8,spread-calibrated,0.241,4.5723,0.7672,0.7615,0.0389,0.6078,0.1136,0.4979,1.0631,0.7784,3.2406,0.5921,1.755,0.61,
+operating point (shipped seed 0),diffusion K=8 S=16 raw,S,0,,,16,8,raw,0.2693,4.4981,0.9875,0.415,0.0389,0.8034,0.1749,0.5497,1.0778,0.8231,3.2849,0.5978,3.449,0.61,
+operating point (shipped seed 0),diffusion K=8 S=16 spread-calibrated,S,0,,,16,8,spread-calibrated,0.2693,4.3633,1.1118,0.8191,0.0387,0.8034,0.1749,0.5497,1.0778,0.7515,3.2849,0.5978,3.449,0.61,
+operating point (shipped seed 0),diffusion K=8 S=24 raw,S,0,,,24,8,raw,0.2821,4.4173,1.1112,0.4858,0.0388,0.9077,0.1956,0.5661,1.0753,0.802,3.305,0.6014,5.165,0.61,
+operating point (shipped seed 0),diffusion K=8 S=24 spread-calibrated,S,0,,,24,8,spread-calibrated,0.2821,4.296,1.2475,0.84,0.0386,0.9077,0.1956,0.5661,1.0753,0.7326,3.305,0.6014,5.165,0.61,
+operating point (shipped seed 0),diffusion K=8 S=32 raw,S,0,,,32,8,raw,0.2839,4.4269,1.1601,0.5157,0.0397,0.9741,0.1955,0.5661,1.0751,0.7891,3.3333,0.6059,6.853,0.61,
+operating point (shipped seed 0),diffusion K=8 S=32 spread-calibrated,S,0,,,32,8,spread-calibrated,0.2839,4.3116,1.2934,0.8529,0.0393,0.9741,0.1955,0.5661,1.0752,0.7232,3.3333,0.6059,6.853,0.61,
+operating point (shipped seed 0),diffusion K=16 S=8 raw,S,0,,,8,16,raw,0.2422,4.7504,0.6637,0.4761,0.0384,0.6125,0.1094,0.4945,1.0672,0.8545,3.2301,0.5852,3.498,0.68,
+operating point (shipped seed 0),diffusion K=16 S=8 spread-calibrated,S,0,,,8,16,spread-calibrated,0.2422,4.6025,0.7708,0.8328,0.0381,0.6125,0.1094,0.4945,1.0672,0.7883,3.2301,0.5852,3.498,0.68,
+operating point (shipped seed 0),diffusion K=16 S=16 raw,S,0,,,16,16,raw,0.2788,4.4846,0.9913,0.6234,0.0369,0.8087,0.1846,0.5633,1.0643,0.8179,3.2654,0.5911,7.024,0.68,
+operating point (shipped seed 0),diffusion K=16 S=16 spread-calibrated,S,0,,,16,16,spread-calibrated,0.2788,4.382,1.1312,0.8729,0.0368,0.8087,0.1846,0.5633,1.0643,0.7543,3.2654,0.5911,7.024,0.68,
+operating point (shipped seed 0),diffusion K=16 S=24 raw,S,0,,,24,16,raw,0.29,4.4331,1.125,0.6914,0.0371,0.9156,0.2026,0.5713,1.0698,0.8034,3.2627,0.5919,10.47,0.68,
+operating point (shipped seed 0),diffusion K=16 S=24 spread-calibrated,S,0,,,24,16,spread-calibrated,0.29,4.3465,1.2713,0.8886,0.037,0.9156,0.2026,0.5713,1.0698,0.7422,3.2627,0.5919,10.47,0.68,
+operating point (shipped seed 0),diffusion K=16 S=32 raw,S,0,,,32,16,raw,0.2948,4.4193,1.1784,0.7188,0.0374,0.9868,0.2131,0.5675,1.0701,0.7928,3.3169,0.5966,13.909,0.68,
+operating point (shipped seed 0),diffusion K=16 S=32 spread-calibrated,S,0,,,32,16,spread-calibrated,0.2948,4.3343,1.3301,0.8972,0.0373,0.9868,0.2131,0.5675,1.0702,0.7353,3.3169,0.5966,13.909,0.68,
+"latency bench (T4, batch 1)",FAST (sequential),S,0,,,0,1,,,,,,,,,,,,,,0.056,0.24,
+"latency bench (T4, batch 1)",BALANCED (sequential),S,0,,,16,8,,,,,,,,,,,,,,3.276,0.27,
+"latency bench (T4, batch 1)",BALANCED (batched),S,0,,,16,8,,,,,,,,,,,,,,2.605,0.56,
+"latency bench (T4, batch 1)",ACCURATE (sequential),S,0,,,32,8,,,,,,,,,,,,,,7.277,0.26,
+"latency bench (T4, batch 1)",ACCURATE (batched),S,0,,,32,8,,,,,,,,,,,,,,5.328,0.56,
+"latency bench (T4, batch 1)",ENSEMBLE (sequential),S,0,,,24,16,,,,,,,,,,,,,,10.614,0.27,
+"latency bench (T4, batch 1)",ENSEMBLE (batched),S,0,,,24,16,,,,,,,,,,,,,,8.312,0.9,

@@ -1,0 +1,40 @@
+dataset_name: multitask_temporal_v3_realgfs
+fitted_partition: train_only (2015-2021, 852 samples, land pixels)
+channels:
+  precipitation:
+    transform: log1p_zscore
+    mean: 0.9878154993057251
+    std: 1.3757673501968384
+    min: 0.0
+    max: 500.0
+    unit: mm
+  tmax:
+    mean: 27.24075698852539
+    std: 2.654057025909424
+    min: 15.640899658203125
+    max: 41.147552490234375
+    unit: degC
+  tmin:
+    mean: 21.35643768310547
+    std: 1.6006999015808105
+    min: 11.404449462890625
+    max: 28.793365478515625
+    unit: degC
+  rh:
+    mean: 83.24864959716797
+    std: 9.15991497039795
+    min: 43.914066314697266
+    max: 99.99859619140625
+    unit: '%'
+  wind_u:
+    mean: 2.75480580329895
+    std: 1.6656851768493652
+    min: -4.107279300689697
+    max: 10.10634708404541
+    unit: m/s
+  wind_v:
+    mean: 0.37355777621269226
+    std: 0.7964569330215454
+    min: -4.238726615905762
+    max: 8.875587463378906
+    unit: m/s

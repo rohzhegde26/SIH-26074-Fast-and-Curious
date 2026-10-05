@@ -1,1 +1,0 @@
-"""SIH weather application package."""

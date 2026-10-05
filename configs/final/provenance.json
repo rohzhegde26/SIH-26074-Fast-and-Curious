@@ -1,0 +1,8 @@
+{
+ "det": "ckpts/s10f-det-b/out/s10f_fin_det_s0/best.pt",
+ "extra_dets": [
+  "ckpts/s10s1-det-b/out/s10f_fin_det_s1/best.pt",
+  "ckpts/s10s2-det-b/out/s10f_fin_det_s2/best.pt"
+ ],
+ "diff": "ckpts/s10f-diff/out/s10f_diff_oof_S_s0/best.pt"
+}

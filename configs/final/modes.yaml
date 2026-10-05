@@ -1,0 +1,22 @@
+FAST:
+  members: 1
+  rain_qm: true
+  backbone: avg
+BALANCED:
+  steps: 24
+  members: 8
+  spread_calibration: true
+  backbone: single
+  rain_cap: true
+ACCURATE:
+  steps: 32
+  members: 8
+  spread_calibration: true
+  backbone: single
+  rain_cap: true
+ENSEMBLE:
+  steps: 24
+  members: 16
+  spread_calibration: true
+  backbone: single
+  rain_cap: true
